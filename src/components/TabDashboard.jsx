@@ -27,9 +27,7 @@ export default function TabDashboard({ ctx }) {
     setTempOverallBudget, setTempOverallBudgetDisplay,
     quickAddGoalId, setQuickAddGoalId,
     changeTab,
-    haptic,
-    formatRp,
-  } = ctx;
+    } = ctx;
 
   return (
         <>

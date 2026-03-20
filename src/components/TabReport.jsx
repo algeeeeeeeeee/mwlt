@@ -20,9 +20,7 @@ export default function TabReport({ ctx }) {
     overallBudget,
     showExportMenu, setShowExportMenu,
     exportCSV, exportPDFReport,
-    haptic,
-    formatRp,
-    showToast,
+      showToast,
   } = ctx;
 
   return (

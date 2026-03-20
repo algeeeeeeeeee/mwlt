@@ -17,14 +17,11 @@ export default function TabDate({ ctx }) {
     transactions, categories,
     income,
     budgets, setBudgets,
-
     overallBudget,
     triggerThemeChange,
     setTempOverallBudget, setTempOverallBudgetDisplay,
     setShowOverallBudgetModal,
-    haptic,
-    formatRp,
-    showToast,
+      showToast,
     deleteTransaction,
   } = ctx;
 
