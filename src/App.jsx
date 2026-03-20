@@ -1865,6 +1865,13 @@ export default function App() {
     [...transactions].sort((a, b) => b.id - a.id).slice(0, recentCount),
     [transactions, recentCount]);
 
+  const startEdit = (t) => {
+    const amtDisplay = t.amount ? Number(t.amount).toLocaleString("id-ID") : "";
+    setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"" });
+    setEditItem(t.id);
+    setShowForm(true);
+  };
+
   // ctx object passed to all lazy-loaded tab components
   const ctx = useMemo(() => ({
     T, dark, lang, L, setLang,
@@ -1990,13 +1997,6 @@ export default function App() {
     }
     setForm({ date: today(), amount: "", category: Object.keys(categories)[0] || "other", description: "", location: "", note: "" });
     setShowForm(false);
-  };
-
-  const startEdit = (t) => {
-    const amtDisplay = t.amount ? Number(t.amount).toLocaleString("id-ID") : "";
-    setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"" });
-    setEditItem(t.id);
-    setShowForm(true);
   };
 
   // (deleteTransaction defined above with undo support)
