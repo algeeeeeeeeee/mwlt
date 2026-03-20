@@ -25,7 +25,6 @@ export default function TabDashboard({ ctx }) {
     setTempIncome, setTempIncomeDisplay,
     setIncomeAdj, setIncomeAdjDisplay, setEditIncome,
     setTempOverallBudget, setTempOverallBudgetDisplay,
-    setBudgets, setBudgetsDisplay,
     quickAddGoalId, setQuickAddGoalId,
     changeTab,
     haptic,
