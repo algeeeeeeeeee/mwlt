@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id" style="background:#0a0a0a">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Meowlett" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#166534" />
+    <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/meow.png" />
+    <link rel="apple-touch-startup-image" href="/meow.png" />
+    <link rel="icon" type="image/png" href="/meow.png" />
+    <link rel="preload" as="image" href="/meow.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Meowlett</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
+      input, textarea, select { -webkit-touch-callout: default; -webkit-user-select: text; user-select: text; }
+      html, body {
+        margin: 0; padding: 0;
+        width: 100%; height: 100%;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        overscroll-behavior: none;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        background: #0a0a0a;
+      }
+      @media (prefers-color-scheme: light) { html, body { background: #f5f4f0 !important; } }
+      #root { width: 100%; min-height: 100dvh; overflow-x: hidden; position: relative; }
+      #splash {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 99999;
+        background: #0a0a0a;
+        transition: opacity 0.4s ease;
+        will-change: opacity;
+        overflow: hidden;
+      }
+      @media (prefers-color-scheme: light) {
+        #splash { background: #f5f4f0; }
+        #splash-text { color: #1a1a1a !important; }
+        #splash-sub { color: #888 !important; }
+      }
+      #splash-inner {
+        position: absolute;
+        left: 0; right: 0;
+        display: flex; flex-direction: column;
+        align-items: center; gap: 14px;
+      }
+      #splash-logo { width:72px; height:72px; border-radius:20px; overflow:hidden; flex-shrink:0; }
+      #splash-logo img { width:72px; height:72px; object-fit:cover; display:block; }
+      #splash-text { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.5px; }
+      #splash-sub { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; font-size:13px; color:rgba(255,255,255,0.4); margin-top:-6px; }
+      #splash-bar-wrap { width:160px; height:4px; background:rgba(255,255,255,0.12); border-radius:99px; overflow:hidden; margin-top:8px; }
+      @media (prefers-color-scheme: light) { #splash-bar-wrap { background:rgba(0,0,0,0.1); } }
+      @keyframes splash-bar { 0%{width:0%} 100%{width:100%} }
+      @keyframes splash-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+      #splash-bar { height:100%; width:0%; border-radius:99px; background:var(--splash-color,#fb7185);
+        background-size:200% 100%;
+        animation: splash-bar 2.7s cubic-bezier(0.4,0,0.2,1) forwards, splash-shimmer 1.2s linear infinite; }
+    </style>
+  </head>
+  <body>
+    <div id="splash">
+      <div id="splash-inner">
+        <div id="splash-logo"><img src="/meow.png" alt="" width="72" height="72"/></div>
+        <div id="splash-text">Meowlett</div>
+        <div id="splash-sub">Purr-fect finances</div>
+        <div id="splash-bar-wrap"><div id="splash-bar"></div></div>
+      </div>
+    </div>
+    <script>
+      // JS centering — pakai window.innerHeight biar akurat di iOS PWA
+      function centerSplash() {
+        var inner = document.getElementById('splash-inner');
+        if (!inner) return;
+        var vh = window.innerHeight;
+        var h = inner.offsetHeight;
+        var top = Math.max(0, (vh - h) / 2);
+        inner.style.top = top + 'px';
+      }
+      centerSplash();
+      window.addEventListener('resize', centerSplash);
+
+      // Theme color
+      (function(){
+        var presets={green:'#4ade80',blue:'#60a5fa',purple:'#c084fc',rose:'#fb7185',orange:'#fb923c',teal:'#2dd4bf'};
+        try {
+          var preset=localStorage.getItem('gm_theme_preset')||'rose';
+          var color=preset==='custom'?localStorage.getItem('gm_custom_primary')||'#4ade80':presets[preset]||'#fb7185';
+          document.documentElement.style.setProperty('--splash-color',color);
+          var lighter=color+'99';
+          document.getElementById('splash-bar').style.background='linear-gradient(90deg,'+color+' 0%,'+lighter+' 50%,'+color+' 100%)';
+          document.getElementById('splash-bar').style.backgroundSize='200% 100%';
+        } catch(e){}
+      })();
+
+      // Hide splash
+      window.__hideSplash=function(){
+        var s=document.getElementById('splash');
+        var r=document.getElementById('root');
+        if(r){r.style.visibility='visible';r.style.opacity='1';}
+        if(s){s.style.opacity='0';setTimeout(function(){s.remove();document.body.style.overflow='';},400);}
+      };
+    </script>
+    <div id="root" style="visibility:hidden;opacity:0;transition:opacity 0.3s ease;"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if (window.navigator.standalone) {
+        document.addEventListener('DOMContentLoaded', () => {
+          const saved = sessionStorage.getItem('scrollTop');
+          if (saved) {
+            const root = document.getElementById('root');
+            if (root) root.scrollTop = parseInt(saved, 10);
+          }
+        });
+        window.addEventListener('pagehide', () => {
+          const root = document.getElementById('root');
+          if (root) sessionStorage.setItem('scrollTop', root.scrollTop);
+        });
+      }
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
