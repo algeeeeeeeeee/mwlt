@@ -1865,6 +1865,69 @@ export default function App() {
     [...transactions].sort((a, b) => b.id - a.id).slice(0, recentCount),
     [transactions, recentCount]);
 
+  const saveCat = () => {
+    if (!catForm.label.trim()) return;
+    if (editCatKey) {
+      // Preserve labelId if editing a default category (prevent English stuck bug)
+      const existing = categories[editCatKey] || {};
+      const defaults = DEFAULT_CATEGORIES[editCatKey];
+      const labelId = existing.labelId || defaults?.labelId || catForm.label;
+      setCategories(prev => ({ ...prev, [editCatKey]: { label: catForm.label, labelId, icon: catForm.icon, color: catForm.color } }));
+      setEditCatKey(null);
+    } else {
+      const key = catForm.label.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now();
+      setCategories(prev => ({ ...prev, [key]: { label: catForm.label, icon: catForm.icon, color: catForm.color } }));
+    }
+    setCatForm({ label: "", icon: "package", color: "#94a3b8" });
+  };
+
+  const startEditCat = (key) => {
+    setEditCatKey(key);
+    setCatForm({ label: categories[key].label, icon: categories[key].icon, color: categories[key].color });
+  };
+
+  const deleteCat = (key) => {
+    if (Object.keys(categories).length <= 1) return;
+    setCategories(prev => { const c = { ...prev }; delete c[key]; return c; });
+  };
+
+  const expensePct = income > 0 ? Math.min(100, Math.round((totalExpense / income) * 100)) : 0;
+
+  const handleNotification = async () => {
+    if (notifEnabled) {
+      setNotifEnabled(false);
+      try { localStorage.setItem("gm_notif", "0"); } catch {}
+      showToast(L.toastReminderOff);
+      return;
+    }
+
+    // Check if running as installed PWA on iOS
+    const isStandalone = window.navigator.standalone === true ||
+      window.matchMedia("(display-mode: standalone)").matches;
+
+    if (!isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      showToast(L.toastAddHome);
+      return;
+    }
+
+    if (!("Notification" in window)) {
+      showToast("err:Browser tidak support notifikasi");
+      return;
+    }
+
+    const perm = await requestNotificationPermission();
+    if (perm === "granted") {
+      setNotifEnabled(true);
+      try { localStorage.setItem("gm_notif", "1"); } catch {}
+      scheduleSmartReminder({ hour: reminderHour, minute: 0, days: reminderDays, smart: reminderSmart, lang, getTransactions: () => transactions });
+      await sendLocalNotification("Meowlett", lang === "en" ? "Reminder on! You'll be notified every day at 9 PM." : "Pengingat aktif! Kamu akan diingatkan setiap hari jam 9 malam.");
+      showToast(L.toastReminderOn);
+    } else if (perm === "denied") {
+      showToast("err:Izin notifikasi ditolak");
+    } else {
+      showToast("err:Notifikasi tidak didukung");
+    }
+  };
   const startEdit = (t) => {
     const amtDisplay = t.amount ? Number(t.amount).toLocaleString("id-ID") : "";
     setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"" });
@@ -1940,6 +2003,12 @@ export default function App() {
     dateExpense,
     triggerThemeChange,
     changeTab,
+    // functions
+    deleteCat, saveCat, startEditCat, deleteTransaction, undoDelete, handleNotification,
+    // state missing from initial ctx
+    setIncome, setTransactions,
+    notifEnabled, showNotifModal, setShowNotifModal,
+    weeklyNotif, setWeeklyNotif, weeklyNotifDay, setWeeklyNotifDay,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [tab, transactions, categories, savingsGoals, income, recurring, recurringIncome,
     dark, lang, themePresetId, customPrimary, customAccent, loaded, tabAnim,
@@ -2002,69 +2071,6 @@ export default function App() {
 
   // (deleteTransaction defined above with undo support)
 
-  const saveCat = () => {
-    if (!catForm.label.trim()) return;
-    if (editCatKey) {
-      // Preserve labelId if editing a default category (prevent English stuck bug)
-      const existing = categories[editCatKey] || {};
-      const defaults = DEFAULT_CATEGORIES[editCatKey];
-      const labelId = existing.labelId || defaults?.labelId || catForm.label;
-      setCategories(prev => ({ ...prev, [editCatKey]: { label: catForm.label, labelId, icon: catForm.icon, color: catForm.color } }));
-      setEditCatKey(null);
-    } else {
-      const key = catForm.label.toLowerCase().replace(/\s+/g, "_") + "_" + Date.now();
-      setCategories(prev => ({ ...prev, [key]: { label: catForm.label, icon: catForm.icon, color: catForm.color } }));
-    }
-    setCatForm({ label: "", icon: "package", color: "#94a3b8" });
-  };
-
-  const startEditCat = (key) => {
-    setEditCatKey(key);
-    setCatForm({ label: categories[key].label, icon: categories[key].icon, color: categories[key].color });
-  };
-
-  const deleteCat = (key) => {
-    if (Object.keys(categories).length <= 1) return;
-    setCategories(prev => { const c = { ...prev }; delete c[key]; return c; });
-  };
-
-  const expensePct = income > 0 ? Math.min(100, Math.round((totalExpense / income) * 100)) : 0;
-
-  const handleNotification = async () => {
-    if (notifEnabled) {
-      setNotifEnabled(false);
-      try { localStorage.setItem("gm_notif", "0"); } catch {}
-      showToast(L.toastReminderOff);
-      return;
-    }
-
-    // Check if running as installed PWA on iOS
-    const isStandalone = window.navigator.standalone === true ||
-      window.matchMedia("(display-mode: standalone)").matches;
-
-    if (!isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      showToast(L.toastAddHome);
-      return;
-    }
-
-    if (!("Notification" in window)) {
-      showToast("err:Browser tidak support notifikasi");
-      return;
-    }
-
-    const perm = await requestNotificationPermission();
-    if (perm === "granted") {
-      setNotifEnabled(true);
-      try { localStorage.setItem("gm_notif", "1"); } catch {}
-      scheduleSmartReminder({ hour: reminderHour, minute: 0, days: reminderDays, smart: reminderSmart, lang, getTransactions: () => transactions });
-      await sendLocalNotification("Meowlett", lang === "en" ? "Reminder on! You'll be notified every day at 9 PM." : "Pengingat aktif! Kamu akan diingatkan setiap hari jam 9 malam.");
-      showToast(L.toastReminderOn);
-    } else if (perm === "denied") {
-      showToast("err:Izin notifikasi ditolak");
-    } else {
-      showToast("err:Notifikasi tidak didukung");
-    }
-  };
 
   const todayStr = today();
 
