@@ -1170,6 +1170,14 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem("gm_tx_receipts") || "{}"); } catch { return {}; }
   });
   useEffect(() => { try { localStorage.setItem("gm_tx_receipts", JSON.stringify(txReceipts)); } catch {} }, [txReceipts]);
+
+  const [userTags, setUserTags] = useState(() => { try { return JSON.parse(localStorage.getItem("gm_user_tags") || "[]"); } catch { return []; } });
+  useEffect(() => { try { localStorage.setItem("gm_user_tags", JSON.stringify(userTags)); } catch {} }, [userTags]);
+
+  const [txTags, setTxTags] = useState(() => { try { return JSON.parse(localStorage.getItem("gm_tx_tags") || "{}"); } catch { return {}; } });
+  useEffect(() => { try { localStorage.setItem("gm_tx_tags", JSON.stringify(txTags)); } catch {} }, [txTags]);
+
+  const [showTagModal, setShowTagModal] = useState(false);
   const [showNameEdit, setShowNameEdit] = useState(false);
   const [tempName, setTempName] = useState("");
   const [toast, setToast] = useState(null);
@@ -1912,7 +1920,7 @@ export default function App() {
     navbarOffset, setNavbarOffset,
     exportCSV, exportPDFReport,
     ICON_OPTIONS, COLOR_OPTIONS,
-    userTags, txTags, txReceipts,
+    userTags, setUserTags, txTags, setTxTags, txReceipts, setTxReceipts,
     showTagModal, setShowTagModal,
     setShowOverallBudgetModal,
     setEditingGoal, setGoalForm,
