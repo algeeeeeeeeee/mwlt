@@ -4,7 +4,7 @@ import { PresetIcon } from "./ui.jsx";
 
 export default function TabDate({ ctx }) {
   const {
-    T, dark, lang, L,
+    T, dark, lang, L, TP, CS, CSN,
     tabAnim, loaded, headerHeight,
     themeAccent, themePrimary,
     themePresetId, setThemePresetId,

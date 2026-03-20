@@ -4,7 +4,7 @@ import { CatIcon } from "./ui.jsx";
 
 export default function TabSettings({ ctx }) {
   const {
-    T, dark, lang, L, setLang,
+    T, dark, lang, L, TP, CS, CSN, setLang,
     tabAnim, loaded, headerHeight,
     themeAccent, themePrimary,
     userName, setUserName,

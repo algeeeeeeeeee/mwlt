@@ -4,7 +4,7 @@ import { CatIcon, SwipeRow } from "./ui.jsx";
 
 export default function TabTransactions({ ctx }) {
   const {
-    T, dark, lang, L,
+    T, dark, lang, L, TP, CS, CSN,
     tabAnim, loaded, headerHeight,
     transactions, categories,
     filtered, filteredTotal,

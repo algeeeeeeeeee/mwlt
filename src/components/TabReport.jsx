@@ -5,7 +5,7 @@ import { CatIcon } from "./ui.jsx";
 
 export default function TabReport({ ctx }) {
   const {
-    T, dark, lang, L,
+    T, dark, lang, L, TP, CS, CSN,
     tabAnim, loaded, headerHeight,
     transactions, categories,
     reportTxns, reportTotal, reportByCat,

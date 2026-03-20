@@ -7,7 +7,7 @@ import { CatIcon } from "./ui.jsx";
 
 export default function TabDashboard({ ctx }) {
   const {
-    T, dark, lang, L,
+    T, dark, lang, L, TP, CS, CSN,
     tabAnim, loaded, headerHeight,
     income, totalExpense, balance, savePct, monthlySave,
     balanceCardRef,
