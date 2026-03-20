@@ -35,6 +35,11 @@ export default function TabSettings({ ctx }) {
     ICON_OPTIONS, COLOR_OPTIONS,
     streak,
     userTags, showTagModal, setShowTagModal,
+    formatRp,
+    showToast,
+    budgetsDisplay,
+    themePresetId,
+    THEME_PRESETS,
   } = ctx;
 
   return (

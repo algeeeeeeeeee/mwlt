@@ -17,7 +17,7 @@ export default function TabDashboard({ ctx }) {
     streak, weeklyInsight,
     savingsGoals, setSavingsGoals,
     overallBudget,
-    quickAddGoalId, setQuickAddGoalId,
+    budgets, setBudgets, setBudgetsDisplay,
     quickAddAmtDisplay, setQuickAddAmtDisplay, setQuickAddAmt,
     setShowOverallBudgetModal,
     setEditingGoal, setGoalForm,
@@ -26,7 +26,10 @@ export default function TabDashboard({ ctx }) {
     setIncomeAdj, setIncomeAdjDisplay, setEditIncome,
     setTempOverallBudget, setTempOverallBudgetDisplay,
     setBudgets, setBudgetsDisplay,
+    quickAddGoalId, setQuickAddGoalId,
     changeTab,
+    haptic,
+    formatRp,
   } = ctx;
 
   return (
