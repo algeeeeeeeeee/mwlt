@@ -1875,6 +1875,7 @@ export default function App() {
   // ctx object passed to all lazy-loaded tab components
   const ctx = useMemo(() => ({
     T, dark, lang, L, setLang,
+    TP, CS, CSN,
     tabAnim, loaded, headerHeight,
     themeAccent, themePrimary, themePresetId, setThemePresetId,
     customPrimary, setCustomPrimary, customAccent, setCustomAccent,
@@ -1948,7 +1949,7 @@ export default function App() {
     userName, showNameEdit, tempName, profilePhoto, catForm, editCatKey,
     showCatManager, showBudgetLimit, showAppearanceModal, showDataModal,
     followSystem, darkOverride, userTags, txTags, txReceipts, showTagModal,
-    quickAddGoalId, quickAddAmtDisplay, T, L, themeAccent, themePrimary,
+    quickAddGoalId, quickAddAmtDisplay, T, L, themeAccent, themePrimary, TP, CS, CSN,
   ]);
 
   const submitForm = () => {
