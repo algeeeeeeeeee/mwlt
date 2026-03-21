@@ -132,17 +132,35 @@
         } catch(e){}
       })();
 
-      // Hide splash — remove inline bg so app CSS takes over
+      // Hide splash
       window.__hideSplash=function(){
         var s=document.getElementById('splash');
         var r=document.getElementById('root');
         if(r){r.style.visibility='visible';r.style.opacity='1';}
-        if(s){s.style.opacity='0';setTimeout(function(){
-          s.remove();
-
-          document.body.style.overflow='';
-        },400);}
+        if(s){s.style.opacity='0';setTimeout(function(){s.remove();},400);}
       };
+
+      // Re-show splash every time PWA resumes from background
+      window.addEventListener('pageshow',function(e){
+        if(!e.persisted)return;
+        var isDark=window.__splashDark;
+        var bg=isDark?'#0a0a0a':'#f5f4f0';
+        var tc=isDark?'#fff':'#1a1a1a';
+        var sc=isDark?'rgba(255,255,255,0.4)':'#888';
+        var s=document.createElement('div');
+        s.id='splash-resume';
+        s.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:'+bg+';display:flex;align-items:center;justify-content:center;transition:opacity 0.4s ease;';
+        s.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;">'
+          +'<div style="width:72px;height:72px;border-radius:20px;overflow:hidden;"><img src="/meow.png" width="72" height="72" style="object-fit:cover;display:block;"/></div>'
+          +'<div style="font-family:-apple-system,sans-serif;font-size:22px;font-weight:700;color:'+tc+';letter-spacing:-0.5px;">Meowlett</div>'
+          +'<div style="font-family:-apple-system,sans-serif;font-size:13px;color:'+sc+';">Purr-fect finances</div>'
+          +'</div>';
+        document.body.appendChild(s);
+        setTimeout(function(){
+          s.style.opacity='0';
+          setTimeout(function(){s.remove();},400);
+        },1500);
+      });
     </script>
     <div id="root" style="visibility:hidden;opacity:0;transition:opacity 0.3s ease;"></div>
     <script type="module" src="/src/main.jsx"></script>
