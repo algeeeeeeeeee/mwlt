@@ -3112,8 +3112,8 @@ export default function App() {
               {searchQuery && <button onClick={() => setSearchQuery("")} style={{ position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex" }}><X size={14} color={T.textSub}/></button>}
             </div>
 
-            <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
-              {/* Period chip */}
+            {/* Filter row: periode + 2 icon sort */}
+            <div style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
               <div style={{ position:"relative", flexShrink:0 }}>
                 <select value={filterPeriod} onChange={e=>setFilterPeriod(e.target.value)}
                   style={{ appearance:"none", WebkitAppearance:"none", border:"none", outline:"none", cursor:"pointer", fontFamily:"inherit",
@@ -3126,53 +3126,46 @@ export default function App() {
                 <ChevronDown size={10} color="rgba(255,255,255,0.7)" strokeWidth={2.5}
                   style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
               </div>
-
               <div style={{ flex:1 }}/>
-
-              {/* Sort date icon — tap toggles terbaru/terlama */}
-              <button
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => { haptic(); setSortOrder(sortOrder === "date-desc" ? "date-asc" : "date-desc"); }}
-                style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${sortOrder.startsWith("date") ? T.accentText+"60" : T.cardBorder}`, background: sortOrder.startsWith("date") ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={sortOrder.startsWith("date") ? T.accentText : T.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <button onMouseDown={e=>e.preventDefault()} onClick={() => { haptic(); setSortOrder(sortOrder==="date-desc"?"date-asc":"date-desc"); }}
+                style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${sortOrder.startsWith("date")?T.accentText+"60":T.cardBorder}`, background:sortOrder.startsWith("date")?T.accentText+"15":dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={sortOrder.startsWith("date")?T.accentText:T.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                  {sortOrder === "date-asc" ? <polyline points="12 14 12 18 15 18"/> : <polyline points="15 14 12 14 12 18"/>}
+                  {sortOrder==="date-asc"?<polyline points="12 14 12 18 15 18"/>:<polyline points="15 14 12 14 12 18"/>}
                 </svg>
               </button>
-
-              {/* Sort amount icon — tap toggles terbesar/terkecil */}
-              <button
-                onMouseDown={e => e.preventDefault()}
-                onClick={() => { haptic(); setSortOrder(sortOrder === "amt-desc" ? "amt-asc" : "amt-desc"); }}
-                style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${sortOrder.startsWith("amt") ? T.accentText+"60" : T.cardBorder}`, background: sortOrder.startsWith("amt") ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={sortOrder.startsWith("amt") ? T.accentText : T.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  {sortOrder === "amt-asc"
-                    ? <><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></>
-                    : <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></>
+              <button onMouseDown={e=>e.preventDefault()} onClick={() => { haptic(); setSortOrder(sortOrder==="amt-desc"?"amt-asc":"amt-desc"); }}
+                style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${sortOrder.startsWith("amt")?T.accentText+"60":T.cardBorder}`, background:sortOrder.startsWith("amt")?T.accentText+"15":dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={sortOrder.startsWith("amt")?T.accentText:T.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  {sortOrder==="amt-asc"
+                    ?<><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></>
+                    :<><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></>
                   }
                 </svg>
               </button>
+            </div>
 
-              {/* Payment method icon — tap cycles semua/tunai/transfer/qris */}
-              {(() => {
-                const pmCycle = ["all","cash","transfer","qris"];
-                const nextPm = pmCycle[(pmCycle.indexOf(filterPayment)+1) % pmCycle.length];
-                const isFiltered = filterPayment !== "all";
-                const col = isFiltered ? T.accentText : T.textSub;
-                const pmIcon = filterPayment==="cash"
-                  ? <DollarSign size={15} color={col} strokeWidth={2.5}/>
-                  : filterPayment==="transfer"
-                  ? <Landmark size={15} color={col} strokeWidth={2.5}/>
-                  : filterPayment==="qris"
-                  ? <QrCode size={15} color={col} strokeWidth={2.5}/>
-                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>;
+            {/* Payment method chips row */}
+            <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+              {[
+                { key:"all", label:lang==="en"?"All":"Semua", Icon:null },
+                { key:"cash", label:L.cash||"Tunai", Icon:DollarSign },
+                { key:"transfer", label:L.transfer||"Transfer", Icon:Landmark },
+                { key:"qris", label:L.qris||"QRIS", Icon:QrCode },
+              ].map(({ key, label, Icon }) => {
+                const isOn = filterPayment === key;
                 return (
-                  <button onClick={() => { haptic("light"); setFilterPayment(nextPm); }}
-                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isFiltered ? T.accentText+"60" : T.cardBorder}`, background: isFiltered ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
-                    {pmIcon}
+                  <button key={key} onClick={() => { haptic(); setFilterPayment(key); }}
+                    style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:4, padding:"6px 4px", borderRadius:99, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s",
+                      background: isOn ? T.accentText+"15" : dark?"rgba(255,255,255,0.04)":"rgba(0,0,0,0.04)",
+                      border: isOn ? `1.5px solid ${T.accentText}60` : `1px solid ${T.cardBorder}`,
+                      color: isOn ? T.accentText : T.textSub }}>
+                    {Icon && <Icon size={11} strokeWidth={2.5} color={isOn?T.accentText:T.textSub}/>}
+                    {!Icon && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={isOn?T.accentText:T.textSub} strokeWidth="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>}
+                    {label}
                   </button>
                 );
-              })()}
+              })}
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <p style={{ fontSize:12, color:T.textSub, fontWeight:600 }}>{filtered.length} {L.transactions_label}</p>
