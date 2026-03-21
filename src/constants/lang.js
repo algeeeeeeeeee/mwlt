@@ -112,6 +112,8 @@ export const LANG = {
     reminderNotifTitle:"🐾 Belum catat pengeluaran hari ini!",
     reminderNotifBody:"Jangan lupa input transaksi biar keuanganmu tetap terkontrol 🐱",
 
+    paymentMethod:"Metode Bayar", cash:"Tunai", transfer:"Transfer", qris:"QRIS",
+    filterPayment:"Metode",
     splitBills:"Patungan", splitBillsDesc:"Bagi tagihan bareng teman dengan mudah",
     splitNew:"Split Bill Baru", splitEdit:"Edit Split Bill", splitSaved:"ok:Split bill disimpan",
     splitDeleted:"ok:Dihapus", splitActive:"AKTIF", splitSettled:"LUNAS",
@@ -254,6 +256,8 @@ export const LANG = {
     reminderNotifTitle:"🐾 No spending recorded today!",
     reminderNotifBody:"Don't forget to log transactions to stay on track 🐱",
 
+    paymentMethod:"Payment Method", cash:"Cash", transfer:"Transfer", qris:"QRIS",
+    filterPayment:"Method",
     splitBills:"Split Bills", splitBillsDesc:"Split bills with friends easily",
     splitNew:"New Split Bill", splitEdit:"Edit Split", splitSaved:"ok:Split bill saved",
     splitDeleted:"ok:Deleted", splitActive:"ACTIVE", splitSettled:"SETTLED",
