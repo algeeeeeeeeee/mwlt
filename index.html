@@ -26,7 +26,10 @@
           var followSystem = localStorage.getItem('gm_follow_system');
           var darkOverride = localStorage.getItem('gm_dark_override');
           var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (followSystem === '0' && darkOverride !== null) return darkOverride === 'true';
+          // followSystem null or '1' = follow system
+          // followSystem '0' = manual override
+          // But if darkOverride is set, always use it regardless of followSystem
+          if (darkOverride !== null && followSystem !== '1') return darkOverride === 'true';
           return systemDark;
         } catch(e) { return true; }
       })();
