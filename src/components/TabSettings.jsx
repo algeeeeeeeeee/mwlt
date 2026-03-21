@@ -35,11 +35,9 @@ export default function TabSettings({ ctx }) {
     ICON_OPTIONS, COLOR_OPTIONS,
     streak,
     userTags, showTagModal, setShowTagModal,
-    notifEnabled, weeklyNotif, weeklyNotifDay, setWeeklyNotif, setWeeklyNotifDay,
-    showNotifModal, setShowNotifModal,
-    showToast, setIncome, setTransactions,
-    budgetsDisplay, kbHeight,
-    saveCat, startEditCat, deleteCat, handleNotification,
+    kbHeight,
+    budgetsDisplay,
+    showToast,
   } = ctx;
 
   return (

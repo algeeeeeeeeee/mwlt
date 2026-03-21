@@ -2001,7 +2001,6 @@ export default function App() {
     showNotifModal, setShowNotifModal,
     setIncome, setTransactions,
     undoDelete,
-    budgetsDisplay,
     saveCat, startEditCat, deleteCat,
     handleNotification,
     deleteTransaction,

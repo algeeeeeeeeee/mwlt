@@ -25,7 +25,7 @@ export default function TabTransactions({ ctx }) {
     txTags, userTags,
     txReceipts,
     setShowTagModal,
-    deleteTransaction, undoDelete, setTransactions, showToast,
+    setTransactions,
   } = ctx;
 
   return (
