@@ -237,7 +237,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
   const save = () => {
     if (!form.title || !form.total) return;
     const names = form.members.split(",").map(s=>s.trim()).filter(Boolean);
-    if (names.length < 2) { showToast("err:"+(lang==="en"?"Min 2 members":"Min 2 orang")); return; }
+    if (names.length < 2) { showToast("err:"+L.splitMinMembers); return; }
     const perPerson = Math.round(Number(form.total) / names.length);
     const item = {
       id: editId || Date.now(),
@@ -257,7 +257,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
     } else {
       setSplitBills(p => [...p, item]);
     }
-    showToast("ok:"+(lang==="en"?"Split bill saved":"Split bill disimpan"));
+    showToast("ok:"+L.splitSaved.replace("ok:",""));
     haptic("success");
     resetForm(); setEditId(null); setView("list");
   };
@@ -310,7 +310,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px 14px", borderBottom:`1px solid ${T.cardBorder}`, flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:9 }}>
             <Users size={18} color={themeAccent} strokeWidth={2}/>
-            <p style={{ fontSize:16, fontWeight:900, color:T.text }}>{lang==="en"?"Split Bills":"Patungan"}</p>
+            <p style={{ fontSize:16, fontWeight:900, color:T.text }}>{L.splitBills}</p>
           </div>
           <div style={{ display:"flex", gap:8, alignItems:"center" }}>
             {view==="list" && (
@@ -332,7 +332,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
           {view==="form" && (
             <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               <p style={{ fontSize:13, fontWeight:800, color:T.text, marginBottom:4 }}>
-                {editId ? (lang==="en"?"Edit Split":"Edit Split Bill") : (lang==="en"?"New Split Bill":"Split Bill Baru")}
+                {editId ? L.splitEdit : L.splitNew}
               </p>
               <input className="inp" placeholder={lang==="en"?L.splitTitle:"Judul (mis. Makan di X)"}
                 value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
@@ -363,7 +363,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
                   <Equal size={14} color={themeAccent} strokeWidth={2.5}/>
                   <p style={{ fontSize:13, fontWeight:800, color:T.text }}>
                     {formatRp(Math.round(Number(form.total) / form.members.split(",").filter(s=>s.trim()).length))}
-                    <span style={{ fontSize:11, fontWeight:600, color:T.textSub }}> / {lang==="en"?"person":"orang"}</span>
+                    <span style={{ fontSize:11, fontWeight:600, color:T.textSub }}> / {L.splitPerson}</span>
                   </p>
                 </div>
               )}
@@ -390,12 +390,12 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
                 <div style={{ background:`linear-gradient(135deg,${themePrimary},${themeAccent}88)`, borderRadius:18, padding:"18px 20px 20px", marginBottom:14 }}>
                   <p style={{ fontSize:18, fontWeight:900, color:"white", marginBottom:4 }}>{bill.title}</p>
                   <p style={{ fontSize:13, color:"rgba(255,255,255,0.75)", marginBottom:12 }}>
-                    {bill.date} · {bill.members.length} {lang==="en"?"people":"orang"}
+                    {bill.date} · {bill.members.length} {L.splitPeople}
                   </p>
                   <div style={{ display:"flex", gap:20 }}>
                     <div>
                       <p style={{ fontSize:20, fontWeight:900, color:"white" }}>{formatRp(bill.total)}</p>
-                      <p style={{ fontSize:10, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>{lang==="en"?"TOTAL":"TOTAL"}</p>
+                      <p style={{ fontSize:10, color:"rgba(255,255,255,0.6)", fontWeight:600 }}>{"TOTAL"}</p>
                     </div>
                     <div>
                       <p style={{ fontSize:20, fontWeight:900, color:"white" }}>{formatRp(perPerson)}</p>
@@ -415,8 +415,8 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
 
                 {/* Paid by info */}
                 <p style={{ fontSize:11, fontWeight:700, color:T.textSub, marginBottom:10 }}>
-                  {lang==="en"?"Paid by":"Dibayar oleh"}: <span style={{ color:themeAccent }}>{bill.paidBy}</span>
-                  {" — "}{lang==="en"?"tap to mark who has paid back":"tap untuk tandai yang sudah bayar balik"}
+                  {L.splitPaidBy}: <span style={{ color:themeAccent }}>{bill.paidBy}</span>
+                  {" — "}{L.splitTapMark}
                 </p>
 
                 {/* Members list */}
@@ -438,10 +438,10 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
                           <p style={{ fontSize:14, fontWeight:700, color:T.text }}>{m.name}</p>
                           <p style={{ fontSize:11, color:T.textSub, marginTop:1 }}>
                             {isPayer
-                              ? (lang==="en"?"Paid the bill 💳":"Yang bayar duluan 💳")
+                              ? (L.splitPaidBill)
                               : isDone
-                                ? (lang==="en"?"Has paid back ✓":"Sudah bayar balik ✓")
-                                : (lang==="en"?"Hasn't paid back":"Belum bayar balik")
+                                ? (L.splitHasPaid)
+                                : (L.splitNotPaid)
                             }
                           </p>
                         </div>
@@ -481,10 +481,10 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
                     <Users size={32} color={themeAccent} strokeWidth={1.5}/>
                   </div>
                   <p style={{ fontSize:15, fontWeight:800, color:T.text, marginBottom:6 }}>
-                    {lang==="en"?"No split bills yet":"Belum ada split bill"}
+                    {L.splitEmpty}
                   </p>
                   <p style={{ fontSize:12, color:T.textSub }}>
-                    {lang==="en"?"Split bills with friends easily":"Bagi tagihan bareng teman dengan mudah"}
+                    {L.splitBillsDesc}
                   </p>
                 </div>
               ) : (
@@ -505,7 +505,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
                                 <div>
                                   <p style={{ fontSize:14, fontWeight:800, color:T.text, marginBottom:2 }}>{bill.title}</p>
                                   <p style={{ fontSize:11, color:T.textSub }}>
-                                    {bill.members.length} {lang==="en"?"people":"orang"} · {formatRp(Math.round(bill.total/bill.members.length))}/{lang==="en"?"person":"org"}
+                                    {bill.members.length} {L.splitPeople} · {formatRp(Math.round(bill.total/bill.members.length))}/{lang==="en"?"person":"org"}
                                   </p>
                                 </div>
                                 <p style={{ fontSize:15, fontWeight:900, color:T.text }}>{formatRp(bill.total)}</p>
