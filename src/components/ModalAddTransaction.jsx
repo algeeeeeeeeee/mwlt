@@ -1,4 +1,4 @@
-import { Calculator2, Calendar, Hash, ImagePlus, Image, Trash2, X, ZoomIn } from "../icons.jsx";
+import { Calculator2, Calendar, Coins, Hash, ImagePlus, Image, Landmark, QrCode, Trash2, X, ZoomIn } from "../icons.jsx";
 import { getCatLabel, haptic, today } from "../utils/helpers.js";
 import { darken } from "../utils/theme.js";
 import React from "react";
@@ -81,6 +81,28 @@ export default function ModalAddTransaction({ ctx }) {
                           cursor:"pointer", transition:"all 0.15s" }}>
                         <CatIcon iconKey={v.icon} size={11} color={isSel ? v.color : T.textSub}/>
                         <span style={{ fontSize:11, fontWeight: isSel ? 700 : 500, color: isSel ? v.color : T.textSub, whiteSpace:"nowrap" }}>{getCatLabel(v, lang)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+
+                {/* Metode Bayar */}
+                <div style={{ display:"flex", gap:6 }}>
+                  {[
+                    { key:"cash", label: L.cash||"Tunai", Icon: CircleDollarSign },
+                    { key:"transfer", label: L.transfer||"Transfer", Icon: Landmark },
+                    { key:"qris", label: L.qris||"QRIS", Icon: QrCode },
+                  ].map(opt => {
+                    const isSel = (form.paymentMethod || "cash") === opt.key;
+                    return (
+                      <button key={opt.key} onClick={() => { haptic("light"); setForm(f => ({ ...f, paymentMethod: opt.key })); }}
+                        style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding:"8px 4px", borderRadius:12,
+                          background: isSel ? themeAccent+"18" : T.catBg,
+                          border: isSel ? `2px solid ${themeAccent}` : `1.5px solid ${T.cardBorder}`,
+                          cursor:"pointer", transition:"all 0.15s" }}>
+                        <opt.Icon size={16} color={isSel ? themeAccent : T.textSub} strokeWidth={2}/>
+                        <span style={{ fontSize:10, fontWeight: isSel ? 800 : 600, color: isSel ? themeAccent : T.textSub }}>{opt.label}</span>
                       </button>
                     );
                   })}
