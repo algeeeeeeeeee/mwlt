@@ -19,13 +19,15 @@ export const fmtDate = (d, lang = "id") => {
   });
 };
 
-export function groupByDate(txns) {
+export function groupByDate(txns, dateAsc = false) {
   const groups = {};
   txns.forEach(t => {
     if (!groups[t.date]) groups[t.date] = [];
     groups[t.date].push(t);
   });
-  return Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0]));
+  return Object.entries(groups).sort((a, b) =>
+    dateAsc ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0])
+  );
 }
 
 export function dateLabel(dateStr, lang = "id") {
