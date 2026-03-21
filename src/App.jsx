@@ -1,9 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback, createContext, useContext, lazy, Suspense } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 
-// App-wide context — all tab components use this instead of props
-export const AppCtx = createContext(null);
-
-// Lazy-loaded tab components
+// Lazy-loaded tab components for code-splitting
 const TabDashboard    = lazy(() => import("./components/TabDashboard.jsx"));
 const TabTransactions = lazy(() => import("./components/TabTransactions.jsx"));
 const TabReport       = lazy(() => import("./components/TabReport.jsx"));
@@ -25,7 +22,7 @@ import {
   CreditCard, ImagePlus, Image, ZoomIn, AlarmClock, BellRing, CheckCheck, Tag, Tags,
   Users, UserPlus, Equal, Receipt,
   HeartPulse, Rocket, Flag, Ban, DiamondPlus, SunMoon, Globe, PaintRoller, Grape, BadgeInfo, Cat, HandCoins,
-  Waves, Citrus, PaintbrushVertical, MessageCircle, CirclePlus, Smile
+  Waves, Citrus, PaintbrushVertical, MessageCircle, CirclePlus, Smile, Star
 } from "./icons.jsx";
 import { formatRp, today, getWeek, getMonth, fmtDate, groupByDate, dateLabel, getCatLabel, haptic, parseRpInput, rpInputProps } from "./utils/helpers.js";
 import { darken, lighten, getLuminance, getContrastText, buildTheme } from "./utils/theme.js";
@@ -234,6 +231,7 @@ const THEME_LABELS = { green:"themeGreen", blue:"themeBlue", purple:"themePurple
 
 // ── Split Bills Modal ─────────────────────────────────────────────────────────
 function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAccent, themePrimary, dark, lang, formatRp, parseRpInput, haptic, showToast }) {
+  const L = LANG[lang] || LANG.id;
   const [view, setView] = React.useState("list"); // list | form | detail
   const [editId, setEditId] = React.useState(null);
   const [detail, setDetail] = React.useState(null);
@@ -273,7 +271,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
 
   const del = (id) => {
     setSplitBills(p => p.filter(x => x.id !== id));
-    showToast("ok:"+(lang==="en"?"Deleted":"Dihapus"));
+    showToast("ok:"+L.splitDeleted.replace("ok:",""));
     setView("list"); setDetail(null); haptic();
   };
 
@@ -343,17 +341,17 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
               <p style={{ fontSize:13, fontWeight:800, color:T.text, marginBottom:4 }}>
                 {editId ? (L.splitEdit) : (L.splitNew)}
               </p>
-              <input className="inp" placeholder={lang==="en"?"Title (e.g. Dinner at X)":"Judul (mis. Makan di X)"}
+              <input className="inp" placeholder={lang==="en"?L.splitTitle:"Judul (mis. Makan di X)"}
                 value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}
                 style={{ background:T.inp, border:`1.5px solid ${T.inpBorder}`, color:T.text }}/>
-              <input className="inp" type="text" inputMode="numeric" placeholder={lang==="en"?"Total bill (e.g. 300.000)":"Total tagihan (mis. 300.000)"}
+              <input className="inp" type="text" inputMode="numeric" placeholder={lang==="en"?L.splitTotal:"Total tagihan (mis. 300.000)"}
                 value={form.totalDisplay||""}
                 onFocus={e=>e.target.select()}
                 onChange={e=>{ const {display,raw}=parseRpInput(e.target.value); setForm(f=>({...f,total:raw,totalDisplay:display})); }}
                 style={{ background:T.inp, border:`1.5px solid ${T.inpBorder}`, color:T.text }}/>
               <div>
                 <p style={{ fontSize:10, fontWeight:700, color:T.textSub, marginBottom:4 }}>
-                  {lang==="en"?"Members (comma-separated)":"Anggota (pisah koma)"}
+                  {L.splitMembers}
                 </p>
                 <input className="inp" placeholder={lang==="en"?"e.g. Alice, Bob, Charlie":"mis. Andi, Budi, Cici"}
                   value={form.members} onChange={e=>setForm(f=>({...f,members:e.target.value}))}
@@ -361,9 +359,9 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
               </div>
               <div>
                 <p style={{ fontSize:10, fontWeight:700, color:T.textSub, marginBottom:4 }}>
-                  {lang==="en"?"Who paid?":"Siapa yang bayar duluan?"}
+                  {L.splitPayer}
                 </p>
-                <input className="inp" placeholder={lang==="en"?"Name of payer":"Nama yang bayar"}
+                <input className="inp" placeholder={L.splitPayerPlaceholder}
                   value={form.paidBy} onChange={e=>setForm(f=>({...f,paidBy:e.target.value}))}
                   style={{ background:T.inp, border:`1.5px solid ${T.inpBorder}`, color:T.text }}/>
               </div>
@@ -378,7 +376,7 @@ function SplitBillsModal({ show, onClose, splitBills, setSplitBills, T, themeAcc
               )}
               <div style={{ display:"flex", gap:8, marginTop:4 }}>
                 <button onClick={() => { haptic("success"); save(); }} style={{ flex:1, padding:"12px 0", borderRadius:14, background:`linear-gradient(135deg,${themeAccent},${themePrimary})`, border:"none", color:"white", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
-                  {lang==="en"?"Save":"Simpan"}
+                {lang==="en"?"Save":"Simpan"}
                 </button>
                 <button onClick={() => { setView("list"); setEditId(null); resetForm(); }}
                   style={{ flex:.5, padding:"12px 0", borderRadius:14, background:T.btnG||T.card2, border:`1.5px solid ${T.btnGBorder||T.cardBorder}`, color:T.btnGText||T.textSub, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
@@ -1173,14 +1171,6 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem("gm_tx_receipts") || "{}"); } catch { return {}; }
   });
   useEffect(() => { try { localStorage.setItem("gm_tx_receipts", JSON.stringify(txReceipts)); } catch {} }, [txReceipts]);
-
-  const [userTags, setUserTags] = useState(() => { try { return JSON.parse(localStorage.getItem("gm_user_tags") || "[]"); } catch { return []; } });
-  useEffect(() => { try { localStorage.setItem("gm_user_tags", JSON.stringify(userTags)); } catch {} }, [userTags]);
-
-  const [txTags, setTxTags] = useState(() => { try { return JSON.parse(localStorage.getItem("gm_tx_tags") || "{}"); } catch { return {}; } });
-  useEffect(() => { try { localStorage.setItem("gm_tx_tags", JSON.stringify(txTags)); } catch {} }, [txTags]);
-
-  const [showTagModal, setShowTagModal] = useState(false);
   const [showNameEdit, setShowNameEdit] = useState(false);
   const [tempName, setTempName] = useState("");
   const [toast, setToast] = useState(null);
@@ -1868,6 +1858,142 @@ export default function App() {
     [...transactions].sort((a, b) => b.id - a.id).slice(0, recentCount),
     [transactions, recentCount]);
 
+  // ctx object passed to all lazy-loaded tab components
+  const ctx = useMemo(() => ({
+    T, dark, lang, L, setLang,
+    tabAnim, loaded, headerHeight,
+    themeAccent, themePrimary, themePresetId, setThemePresetId,
+    customPrimary, setCustomPrimary, customAccent, setCustomAccent,
+    showThemePicker, setShowThemePicker,
+    THEME_PRESETS,
+    income, totalExpense, balance, savePct, monthlySave,
+    transactions, categories, setCategories,
+    savingsGoals, setSavingsGoals,
+    overallBudget, setOverallBudget,
+    budgets, setBudgets,
+    recurring, setRecurring,
+    recurringIncome, setRecurringIncome,
+    filtered, filteredTotal,
+    filterPeriod, setFilterPeriod,
+    filterCat, setFilterCat,
+    sortOrder, setSortOrder,
+    editItem, setEditItem,
+    form, setForm,
+    setShowForm,
+    startEdit,
+    recurForm, setRecurForm,
+    showRecurPanel, setShowRecurPanel,
+    editRecurId, setEditRecurId,
+    recurIncomeForm, setRecurIncomeForm,
+    showRecurIncomePanel, setShowRecurIncomePanel,
+    editRecurIncomeId, setEditRecurIncomeId,
+    recentTxns, recentCount, setRecentCount,
+    donutData, catBreakdown, sparkline7, monthPrediction, avgMonthlySaved,
+    streak, weeklyInsight, weeklyTrend,
+    monthCompareData, monthInsights, catTrendData,
+    prevMonth,
+    reportTxns, reportTotal, reportByCat,
+    reportDate, setReportDate,
+    quickAddGoalId, setQuickAddGoalId,
+    quickAddAmtDisplay, setQuickAddAmtDisplay, setQuickAddAmt,
+    balanceCardRef,
+    showExportMenu, setShowExportMenu,
+    userName, setUserName,
+    showNameEdit, setShowNameEdit,
+    tempName, setTempName,
+    profilePhoto, profileInputRef, handleProfilePhotoChange,
+    catForm, setCatForm,
+    editCatKey, setEditCatKey,
+    showCatManager, setShowCatManager,
+    showBudgetLimit, setShowBudgetLimit,
+    showAppearanceModal, setShowAppearanceModal,
+    showDataModal, setShowDataModal,
+    followSystem, setFollowSystem,
+    darkOverride, setDarkOverride,
+    navbarOffset, setNavbarOffset,
+    exportCSV, exportPDFReport,
+    ICON_OPTIONS, COLOR_OPTIONS,
+    userTags, txTags, txReceipts,
+    showTagModal, setShowTagModal,
+    setShowOverallBudgetModal,
+    setEditingGoal, setGoalForm,
+    setTempIncome, setTempIncomeDisplay,
+    setIncomeAdj, setIncomeAdjDisplay, setEditIncome,
+    setTempOverallBudget, setTempOverallBudgetDisplay,
+    budgetsDisplay, setBudgetsDisplay,
+    showToast, haptic,
+    dateExpense,
+    triggerThemeChange,
+    changeTab,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [tab, transactions, categories, savingsGoals, income, recurring, recurringIncome,
+    dark, lang, themePresetId, customPrimary, customAccent, loaded, tabAnim,
+    filtered, filterPeriod, filterCat, sortOrder, editItem, form, recurForm,
+    showRecurPanel, editRecurId, recurIncomeForm, showRecurIncomePanel, editRecurIncomeId,
+    recentTxns, recentCount, overallBudget, budgets, reportDate, showExportMenu,
+    userName, showNameEdit, tempName, profilePhoto, catForm, editCatKey,
+    showCatManager, showBudgetLimit, showAppearanceModal, showDataModal,
+    followSystem, darkOverride, userTags, txTags, txReceipts, showTagModal,
+    quickAddGoalId, quickAddAmtDisplay, T, L, themeAccent, themePrimary,
+  ]);
+
+  const submitForm = () => {
+    if (!form.amount || !form.description) return;
+    haptic("success");
+    if (editItem) {
+      setTransactions(prev => prev.map(t => t.id === editItem ? { ...form, id: editItem, amount: Number(form.amount) } : t));
+      setEditItem(null);
+      showToast("ok:"+L.txUpdated);
+    } else {
+      const newAmount = Number(form.amount);
+      setTransactions(prev => {
+        const updated = [...prev, { ...form, id: Date.now(), amount: newAmount }];
+        // Cek budget warning setelah tambah
+        const catKey = form.category;
+        const limit = budgets[catKey] || 0;
+        if (limit > 0 && !isRestoringRef.current) {
+          const spent = updated.filter(t => t.category === catKey && t.date.startsWith(getMonth(form.date))).reduce((s,t) => s+t.amount, 0);
+          const catName = getCatLabel(categories[catKey], lang) || catKey;
+          const pct = Math.round(spent / limit * 100);
+          if (spent >= limit) {
+            setTimeout(() => {
+              showToast(lang === "en"
+                ? `warn:${catName} budget exceeded! (${pct}% used)`
+                : `warn:Budget ${catName} terlampaui! (${pct}% terpakai)`);
+              if (notifEnabled) sendLocalNotification(
+                lang === "en" ? "Budget Alert" : "Peringatan Budget",
+                lang === "en" ? `${catName} budget is over the limit (${pct}%)` : `Budget ${catName} sudah melebihi batas (${pct}%)`
+              );
+            }, 400);
+          } else if (spent >= limit * 0.8) {
+            setTimeout(() => {
+              showToast(lang === "en"
+                ? `warn:${catName} budget at ${pct}% — almost full!`
+                : `warn:Budget ${catName} sudah ${pct}% — hampir habis!`);
+              if (notifEnabled && pct >= 90) sendLocalNotification(
+                lang === "en" ? "Budget Warning" : "Peringatan Budget",
+                lang === "en" ? `${catName} budget is at ${pct}%` : `Budget ${catName} sudah ${pct}%`
+              );
+            }, 400);
+          }
+        }
+        return updated;
+      });
+      showToast("ok:"+L.txAdded);
+    }
+    setForm({ date: today(), amount: "", category: Object.keys(categories)[0] || "other", description: "", location: "", note: "" });
+    setShowForm(false);
+  };
+
+  const startEdit = (t) => {
+    const amtDisplay = t.amount ? Number(t.amount).toLocaleString("id-ID") : "";
+    setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"" });
+    setEditItem(t.id);
+    setShowForm(true);
+  };
+
+  // (deleteTransaction defined above with undo support)
+
   const saveCat = () => {
     if (!catForm.label.trim()) return;
     if (editCatKey) {
@@ -1931,135 +2057,10 @@ export default function App() {
       showToast("err:Notifikasi tidak didukung");
     }
   };
-  const startEdit = (t) => {
-    const amtDisplay = t.amount ? Number(t.amount).toLocaleString("id-ID") : "";
-    setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"" });
-    setEditItem(t.id);
-    setShowForm(true);
-  };
-
-
-  const submitForm = () => {
-    if (!form.amount || !form.description) return;
-    haptic("success");
-    if (editItem) {
-      setTransactions(prev => prev.map(t => t.id === editItem ? { ...form, id: editItem, amount: Number(form.amount) } : t));
-      setEditItem(null);
-      showToast("ok:"+L.txUpdated);
-    } else {
-      const newAmount = Number(form.amount);
-      setTransactions(prev => {
-        const updated = [...prev, { ...form, id: Date.now(), amount: newAmount }];
-        // Cek budget warning setelah tambah
-        const catKey = form.category;
-        const limit = budgets[catKey] || 0;
-        if (limit > 0 && !isRestoringRef.current) {
-          const spent = updated.filter(t => t.category === catKey && t.date.startsWith(getMonth(form.date))).reduce((s,t) => s+t.amount, 0);
-          const catName = getCatLabel(categories[catKey], lang) || catKey;
-          const pct = Math.round(spent / limit * 100);
-          if (spent >= limit) {
-            setTimeout(() => {
-              showToast(lang === "en"
-                ? `warn:${catName} budget exceeded! (${pct}% used)`
-                : `warn:Budget ${catName} terlampaui! (${pct}% terpakai)`);
-              if (notifEnabled) sendLocalNotification(
-                lang === "en" ? "Budget Alert" : "Peringatan Budget",
-                lang === "en" ? `${catName} budget is over the limit (${pct}%)` : `Budget ${catName} sudah melebihi batas (${pct}%)`
-              );
-            }, 400);
-          } else if (spent >= limit * 0.8) {
-            setTimeout(() => {
-              showToast(lang === "en"
-                ? `warn:${catName} budget at ${pct}% — almost full!`
-                : `warn:Budget ${catName} sudah ${pct}% — hampir habis!`);
-              if (notifEnabled && pct >= 90) sendLocalNotification(
-                lang === "en" ? "Budget Warning" : "Peringatan Budget",
-                lang === "en" ? `${catName} budget is at ${pct}%` : `Budget ${catName} sudah ${pct}%`
-              );
-            }, 400);
-          }
-        }
-        return updated;
-      });
-      showToast("ok:"+L.txAdded);
-    }
-    setForm({ date: today(), amount: "", category: Object.keys(categories)[0] || "other", description: "", location: "", note: "" });
-    setShowForm(false);
-  };
-
-  // (deleteTransaction defined above with undo support)
-
 
   const todayStr = today();
 
-  // Memoized context value — only rebuilds when relevant state changes
-  const ctxValue = useMemo(() => ({
-    T, dark, lang, L, setLang, TP, CS, CSN,
-    tabAnim, loaded, headerHeight,
-    themeAccent, themePrimary, themePresetId, setThemePresetId,
-    customPrimary, setCustomPrimary, customAccent, setCustomAccent,
-    showThemePicker, setShowThemePicker, THEME_PRESETS,
-    income, setIncome, totalExpense, balance, savePct, monthlySave,
-    transactions, setTransactions, categories, setCategories,
-    savingsGoals, setSavingsGoals,
-    overallBudget, setOverallBudget,
-    budgets, setBudgets, budgetsDisplay, setBudgetsDisplay,
-    recurring, setRecurring, recurForm, setRecurForm,
-    showRecurPanel, setShowRecurPanel, editRecurId, setEditRecurId,
-    recurringIncome, setRecurringIncome,
-    recurIncomeForm, setRecurIncomeForm,
-    showRecurIncomePanel, setShowRecurIncomePanel,
-    editRecurIncomeId, setEditRecurIncomeId,
-    filtered, filteredTotal,
-    filterPeriod, setFilterPeriod, filterCat, setFilterCat,
-    sortOrder, setSortOrder, searchQuery, setSearchQuery,
-    editItem, setEditItem, form, setForm, setShowForm,
-    startEdit, submitForm,
-    recentTxns, recentCount, setRecentCount,
-    donutData, catBreakdown, sparkline7, monthPrediction, avgMonthlySaved,
-    streak, weeklyInsight, weeklyTrend,
-    monthCompareData, monthInsights, catTrendData, prevMonth,
-    reportTxns, reportTotal, reportByCat, reportDate, setReportDate,
-    quickAddGoalId, setQuickAddGoalId,
-    quickAddAmtDisplay, setQuickAddAmtDisplay, setQuickAddAmt,
-    balanceCardRef,
-    showExportMenu, setShowExportMenu,
-    userName, setUserName, showNameEdit, setShowNameEdit,
-    tempName, setTempName, profilePhoto, profileInputRef, handleProfilePhotoChange,
-    catForm, setCatForm, editCatKey, setEditCatKey,
-    showCatManager, setShowCatManager, showBudgetLimit, setShowBudgetLimit,
-    showAppearanceModal, setShowAppearanceModal,
-    showDataModal, setShowDataModal,
-    navbarOffset, setNavbarOffset,
-    followSystem, setFollowSystem, darkOverride, setDarkOverride,
-    exportCSV, exportPDFReport, ICON_OPTIONS, COLOR_OPTIONS,
-    userTags, setUserTags, txTags, setTxTags, txReceipts, setTxReceipts,
-    showTagModal, setShowTagModal,
-    setShowOverallBudgetModal, setEditingGoal, setGoalForm,
-    setTempIncome, setTempIncomeDisplay,
-    setIncomeAdj, setIncomeAdjDisplay, setEditIncome,
-    setTempOverallBudget, setTempOverallBudgetDisplay,
-    showToast, haptic, dateExpense, triggerThemeChange, changeTab,
-    deleteCat, saveCat, startEditCat, deleteTransaction, undoDelete,
-    handleNotification, notifEnabled,
-    showNotifModal, setShowNotifModal,
-    weeklyNotif, setWeeklyNotif, weeklyNotifDay, setWeeklyNotifDay,
-    IBN, dateWishlist, setDateWishlist,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [tab, transactions, categories, savingsGoals, income, recurring, recurringIncome,
-    dark, lang, themePresetId, customPrimary, customAccent, loaded, tabAnim,
-    filtered, filterPeriod, filterCat, sortOrder, searchQuery, editItem, form,
-    recurForm, showRecurPanel, editRecurId, recurIncomeForm, showRecurIncomePanel,
-    editRecurIncomeId, recentTxns, recentCount, overallBudget, budgets, budgetsDisplay,
-    reportDate, showExportMenu, userName, showNameEdit, tempName, profilePhoto,
-    catForm, editCatKey, showCatManager, showBudgetLimit, showAppearanceModal,
-    showDataModal, followSystem, darkOverride, userTags, txTags, txReceipts,
-    showTagModal, quickAddGoalId, quickAddAmtDisplay, T, L, themeAccent, themePrimary,
-    TP, CS, CSN, notifEnabled, showNotifModal, weeklyNotif, weeklyNotifDay, dateWishlist,
-  ]);
-
   return (
-    <AppCtx.Provider value={ctxValue}>
     <div className={`theme-transition${themeChanging ? " theme-flash" : ""}`} style={{ minHeight:"100dvh", background:T.bg, "--primary":themePrimary, "--accent":themeAccent }}>
 
       {/* Statusbar handled by shared fixed header */}
@@ -2367,13 +2368,15 @@ export default function App() {
         const isErr  = prefix === "err";
         const isInfo = prefix === "info";
         const isWarn = prefix === "warn";
+        const isHome = isInfo && (msg.toLowerCase().includes("home screen") || msg.toLowerCase().includes("home screen"));
         const bgColor = isErr ? "#ef4444" : isWarn ? "#f59e0b" : isInfo ? (dark ? darken(themePrimary,0.5) : darken(themePrimary,0.1)) : dark ? darken(themePrimary,0.3) : themePrimary;
         return (
           <div className="toast" style={{ position:"fixed", bottom:"90px", left:"50%", transform:"translateX(-50%)", background:bgColor, color:"white", padding:"10px 18px", borderRadius:40, fontSize:13, fontWeight:700, zIndex:9999, whiteSpace:"nowrap", boxShadow:"0 8px 32px rgba(0,0,0,0.3)", display:"flex", alignItems:"center", gap:7 }}>
             {isOk   && <CheckCircle size={15} color="white" strokeWidth={2.5}/>}
             {isDel  && <Trash2 size={15} color="white" strokeWidth={2.5}/>}
             {isErr  && <AlertCircle size={15} color="white" strokeWidth={2.5}/>}
-            {isInfo && <AlertTriangle size={15} color="white" strokeWidth={2.5}/>}
+            {isInfo && !isHome && <AlertTriangle size={15} color="white" strokeWidth={2.5}/>}
+            {isHome && <Star size={15} color="white" strokeWidth={2.5}/>}
             {msg || toast}
           </div>
         );
@@ -2645,23 +2648,37 @@ export default function App() {
 )}
 
         {tab === "dashboard" && (
-          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}><TabDashboard/></Suspense>
+          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}>
+            <TabDashboard ctx={ctx}/>
+          </Suspense>
         )}
+
         {/* ── TRANSACTIONS ── */}
         {tab === "transactions" && (
-          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}><TabTransactions/></Suspense>
+          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}>
+            <TabTransactions ctx={ctx}/>
+          </Suspense>
         )}
+
         {/* ── REPORT ── */}
         {tab === "report" && (
-          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}><TabReport/></Suspense>
+          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}>
+            <TabReport ctx={ctx}/>
+          </Suspense>
         )}
+
         {/* ── DATE ── */}
         {tab === "date" && (
-          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}><TabDate/></Suspense>
+          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}>
+            <TabDate ctx={ctx}/>
+          </Suspense>
         )}
+
         {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
-          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}><TabSettings/></Suspense>
+          <Suspense fallback={<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"60vh"}}><div className="skeleton" style={{width:48,height:48,borderRadius:"50%"}}/></div>}>
+            <TabSettings ctx={ctx}/>
+          </Suspense>
         )}
 
         {/* ── NOTIFICATION MODAL ── */}
@@ -3216,6 +3233,6 @@ export default function App() {
         })()}
       </div>
     </div>
-  </AppCtx.Provider>
   );
 }
+

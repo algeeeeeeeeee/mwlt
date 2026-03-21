@@ -17,7 +17,7 @@ import {
   Smartphone, Smile, Sparkles, Sun, SunMoon,
   Tag, Tags, Target, Trash2, TrendingUp, Umbrella, Upload, User,
   UserPlus, Users, Utensils, Wallet, Waves, WifiOff, Wind, Wrench, X,
-  Zap, ZoomIn
+  Zap, ZoomIn, Star
 } from 'lucide-react';
 
 // ChartPie safe fallback
@@ -44,7 +44,7 @@ export {
   Smartphone, Smile, Sparkles, Sun, SunMoon,
   Tag, Tags, Target, Trash2, TrendingUp, Umbrella, Upload, User,
   UserPlus, Users, Utensils, Wallet, Waves, WifiOff, Wind, Wrench, X,
-  Zap, ZoomIn
+  Zap, ZoomIn, Star
 };
 
 export const Calculator2 = Calculator;
