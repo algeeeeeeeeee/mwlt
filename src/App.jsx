@@ -1732,7 +1732,7 @@ export default function App() {
       const d = new Date(); d.setDate(d.getDate() - i*7);
       const wk = getWeek(d.toISOString().split("T")[0]);
       const total = transactions.filter(t => getWeek(t.date)===wk).reduce((s,t) => s+t.amount, 0);
-      weeks.push({ label:`W${8-i}`, total });
+      weeks.push({ label:`${lang==="en"?"W":"M"}${8-i}`, total });
     }
     return weeks;
   }, [transactions]);
@@ -3112,29 +3112,62 @@ export default function App() {
               {searchQuery && <button onClick={() => setSearchQuery("")} style={{ position:"absolute",right:11,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",display:"flex" }}><X size={14} color={T.textSub}/></button>}
             </div>
 
-            <div style={{ display:"flex", gap:5, marginBottom:10, overflowX:"auto" }}>
-              {[
-                { val:filterPeriod, set:setFilterPeriod, opts:[["daily",L.filterToday],["weekly",L.filterWeek],["monthly",L.filterMonth]] },
-                { val:sortOrder.startsWith("amt")?sortOrder:"amt-desc", set:v=>setSortOrder(v), opts:[["amt-desc",L.sortHighest],["amt-asc",L.sortLowest]] },
-                { val:sortOrder.startsWith("date")?sortOrder:"date-desc", set:v=>setSortOrder(v), opts:[["date-desc",L.sortNewest],["date-asc",L.sortOldest]] },
-                { val:filterPayment, set:setFilterPayment, opts:[["all",L.filterPayment||"Metode"],["cash",L.cash||"Tunai"],["transfer",L.transfer||"Transfer"],["qris",L.qris||"QRIS"]] },
-              ].map(({ val, set, opts }, i) => {
-                const isActive = i===0 ? true : i===1 ? sortOrder.startsWith("amt") : i===2 ? sortOrder.startsWith("date") : filterPayment!=="all";
+            <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
+              {/* Period chip — tetap dropdown */}
+              <div style={{ position:"relative", flexShrink:0 }}>
+                <select value={filterPeriod} onChange={e=>setFilterPeriod(e.target.value)}
+                  style={{ appearance:"none", WebkitAppearance:"none", border:"none", outline:"none", cursor:"pointer", fontFamily:"inherit",
+                    background: themePrimary, color:"white", fontSize:12, fontWeight:700, borderRadius:99,
+                    padding:"6px 24px 6px 12px" }}>
+                  <option value="daily">{L.filterToday}</option>
+                  <option value="weekly">{L.filterWeek}</option>
+                  <option value="monthly">{L.filterMonth}</option>
+                </select>
+                <ChevronDown size={10} color="rgba(255,255,255,0.7)" strokeWidth={2.5}
+                  style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
+              </div>
+
+              <div style={{ flex:1 }}/>
+
+              {/* Sort icon button — tap cycles through sort options */}
+              {(() => {
+                const sortCycle = ["date-desc","date-asc","amt-desc","amt-asc"];
+                const sortIcons = {
+                  "date-desc": <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>,
+                  "date-asc":  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
+                  "amt-desc":  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></svg>,
+                  "amt-asc":   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></svg>,
+                };
+                const nextSort = sortCycle[(sortCycle.indexOf(sortOrder)+1) % sortCycle.length];
+                const isCustomSort = sortOrder !== "date-desc";
                 return (
-                  <div key={i} style={{ position:"relative", flexShrink:0 }}>
-                    <select value={val} onChange={e=>set(e.target.value)}
-                      style={{ appearance:"none", WebkitAppearance:"none", border:"none", outline:"none", cursor:"pointer", fontFamily:"inherit",
-                        background: isActive ? themePrimary : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)",
-                        color: isActive ? "white" : T.textSub,
-                        fontSize:12, fontWeight:700, borderRadius:99,
-                        padding:"6px 24px 6px 12px" }}>
-                      {opts.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
-                    <ChevronDown size={10} color={isActive?"rgba(255,255,255,0.7)":T.textSub} strokeWidth={2.5}
-                      style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
-                  </div>
+                  <button onClick={() => { haptic("light"); setSortOrder(nextSort); }}
+                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isCustomSort ? T.accentText+"60" : T.cardBorder}`, background: isCustomSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color: isCustomSort ? T.accentText : T.textSub }}>
+                    {sortIcons[sortOrder]}
+                  </button>
                 );
-              })}
+              })()}
+
+              {/* Payment method icon button — cycles cash/transfer/qris/all */}
+              {(() => {
+                const pmCycle = ["all","cash","transfer","qris"];
+                const nextPm = pmCycle[(pmCycle.indexOf(filterPayment)+1) % pmCycle.length];
+                const isFiltered = filterPayment !== "all";
+                const pmIconColor = isFiltered ? T.accentText : T.textSub;
+                const pmIcon = filterPayment==="cash"
+                  ? <DollarSign size={15} color={pmIconColor} strokeWidth={2.5}/>
+                  : filterPayment==="transfer"
+                  ? <Landmark size={15} color={pmIconColor} strokeWidth={2.5}/>
+                  : filterPayment==="qris"
+                  ? <QrCode size={15} color={pmIconColor} strokeWidth={2.5}/>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={pmIconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>;
+                return (
+                  <button onClick={() => { haptic("light"); setFilterPayment(nextPm); }}
+                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isFiltered ? T.accentText+"60" : T.cardBorder}`, background: isFiltered ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                    {pmIcon}
+                  </button>
+                );
+              })()}
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <p style={{ fontSize:12, color:T.textSub, fontWeight:600 }}>{filtered.length} {L.transactions_label}</p>
@@ -3598,7 +3631,7 @@ export default function App() {
                   </div>
                   {/* Toggle */}
                   <div style={{ display:"flex", gap:4 }}>
-                    {[["bar", lang==="en"?"Bar":"Bar"], ["line", lang==="en"?"Line":"Line"]].map(([v, label]) => (
+                    {[["bar", lang==="en"?"Bar":"Batang"], ["line", lang==="en"?"Line":"Garis"]].map(([v, label]) => (
                       <button key={v} onClick={() => setCatTrendView(v)}
                         style={{ padding:"4px 10px", borderRadius:20, border:`1.5px solid ${catTrendView===v ? themeAccent : T.cardBorder}`, background: catTrendView===v ? themeAccent+"22" : "transparent", color: catTrendView===v ? T.accentText : T.textSub, fontSize:11, fontWeight:700, cursor:"pointer" }}>
                         {label}
