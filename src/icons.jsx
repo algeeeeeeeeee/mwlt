@@ -12,7 +12,7 @@ import {
   Settings, Share2, Shirt, ShoppingBag, SlidersHorizontal, Smartphone, Sparkles, Sun,
   Tag, Tags, Target, Trash2, TrendingUp, Umbrella, Upload, User,
   UserPlus, Users, Utensils, Wallet, Waves, WifiOff, Wind, Wrench, X,
-  Zap, ZoomIn, Citrus
+  Zap, ZoomIn, Citrus, Star
 } from 'lucide-react';
 
 // House and ChartPie renamed/missing in some versions — safe dynamic fallback
