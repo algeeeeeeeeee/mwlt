@@ -3064,7 +3064,7 @@ export default function App() {
                 const monthTx = transactions.filter(t => getMonth(t.date) === currentMonth);
                 const total = monthTx.reduce((s,t)=>s+t.amount,0);
                 const methods = [
-                  { key:"cash", label:L.cash||"Tunai", Icon:CircleDollarSign, color:"#4ade80" },
+                  { key:"cash", label:L.cash||"Tunai", Icon:DollarSign, color:"#4ade80" },
                   { key:"transfer", label:L.transfer||"Transfer", Icon:Landmark, color:"#3b82f6" },
                   { key:"qris", label:L.qris||"QRIS", Icon:QrCode, color:"#8b5cf6" },
                 ];
@@ -3196,11 +3196,17 @@ export default function App() {
                               <div style={{ flex:1, minWidth:0 }}>
                                 <p style={{ fontSize:14, fontWeight:700, color:T.text }}>{t.description}</p>
                                 <p style={{ fontSize:11, color:T.textSub, marginTop:2 }}>{getCatLabel(cat, lang)}{t.location ? ` · ${t.location}` : ""}{t.note ? ` · ${t.note}` : ""}
-                                  {t.paymentMethod && t.paymentMethod !== "cash" && (
-                                    <span style={{ marginLeft:4, display:"inline-flex", alignItems:"center", gap:2, padding:"1px 6px", borderRadius:99, background: t.paymentMethod==="qris" ? "#8b5cf620" : "#3b82f620", border: `1px solid ${t.paymentMethod==="qris" ? "#8b5cf640" : "#3b82f640"}`, fontSize:9, fontWeight:800, color: t.paymentMethod==="qris" ? "#8b5cf6" : "#3b82f6", verticalAlign:"middle" }}>
-                                      {t.paymentMethod==="qris" ? <><QrCode size={8} strokeWidth={2}/> QRIS</> : <><Landmark size={8} strokeWidth={2}/> Transfer</>}
-                                    </span>
-                                  )}
+                                  {(() => {
+                                    const pm = t.paymentMethod||"cash";
+                                    const pmColor = pm==="cash" ? "#4ade80" : pm==="qris" ? "#8b5cf6" : "#3b82f6";
+                                    const pmIcon = pm==="cash" ? <DollarSign size={8} strokeWidth={2}/> : pm==="qris" ? <QrCode size={8} strokeWidth={2}/> : <Landmark size={8} strokeWidth={2}/>;
+                                    const pmLabel = pm==="cash" ? (L.cash||"Tunai") : pm==="qris" ? "QRIS" : (L.transfer||"Transfer");
+                                    return (
+                                      <span style={{ marginLeft:4, display:"inline-flex", alignItems:"center", gap:2, padding:"1px 6px", borderRadius:99, background:pmColor+"20", border:`1px solid ${pmColor}40`, fontSize:9, fontWeight:800, color:pmColor, verticalAlign:"middle" }}>
+                                        {pmIcon} {pmLabel}
+                                      </span>
+                                    );
+                                  })()}
                                 </p>
                                 {txReceipts[String(t.id)] && (
                                   <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
@@ -4848,7 +4854,7 @@ export default function App() {
                 {/* Metode Bayar */}
                 <div style={{ display:"flex", gap:6 }}>
                   {[
-                    { key:"cash", label:L.cash||"Tunai", Icon:Coins },
+                    { key:"cash", label:L.cash||"Tunai", Icon:DollarSign },
                     { key:"transfer", label:L.transfer||"Transfer", Icon:Landmark },
                     { key:"qris", label:L.qris||"QRIS", Icon:QrCode },
                   ].map(opt => {
