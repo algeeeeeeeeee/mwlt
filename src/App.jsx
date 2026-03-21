@@ -1594,7 +1594,7 @@ export default function App() {
       const q = searchQuery.toLowerCase();
       list = list.filter(t => t.description.toLowerCase().includes(q) || (t.location||"").toLowerCase().includes(q) || (t.note||"").toLowerCase().includes(q));
     }
-    return list.sort((a, b) => {
+    return [...list].sort((a, b) => {
       if (sortOrder === "date-asc")  return a.date.localeCompare(b.date);
       if (sortOrder === "amt-desc")  return b.amount - a.amount;
       if (sortOrder === "amt-asc")   return a.amount - b.amount;
@@ -3130,41 +3130,28 @@ export default function App() {
               <div style={{ flex:1 }}/>
 
               {/* Sort date icon — tap toggles terbaru/terlama */}
-              {(() => {
-                const isDateSort = sortOrder.startsWith("date");
-                const isDesc = sortOrder === "date-desc";
-                const col = isDateSort ? T.accentText : T.textSub;
-                return (
-                  <button onClick={() => { haptic("light"); setSortOrder(!isDateSort ? "date-desc" : isDesc ? "date-asc" : "date-desc"); }}
-                    title={isDesc ? L.sortNewest : L.sortOldest}
-                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isDateSort ? T.accentText+"60" : T.cardBorder}`, background: isDateSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color:col }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                      {isDateSort && !isDesc && <polyline points="12 14 12 18 15 18"/>}
-                      {(!isDateSort || isDesc) && <polyline points="15 14 12 14 12 18"/>}
-                    </svg>
-                  </button>
-                );
-              })()}
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => { haptic(); setSortOrder(sortOrder === "date-desc" ? "date-asc" : "date-desc"); }}
+                style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${sortOrder.startsWith("date") ? T.accentText+"60" : T.cardBorder}`, background: sortOrder.startsWith("date") ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={sortOrder.startsWith("date") ? T.accentText : T.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  {sortOrder === "date-asc" ? <polyline points="12 14 12 18 15 18"/> : <polyline points="15 14 12 14 12 18"/>}
+                </svg>
+              </button>
 
               {/* Sort amount icon — tap toggles terbesar/terkecil */}
-              {(() => {
-                const isAmtSort = sortOrder.startsWith("amt");
-                const isDesc = sortOrder === "amt-desc";
-                const col = isAmtSort ? T.accentText : T.textSub;
-                return (
-                  <button onClick={() => { haptic("light"); setSortOrder(!isAmtSort ? "amt-desc" : isDesc ? "amt-asc" : "amt-desc"); }}
-                    title={isDesc ? L.sortHighest : L.sortLowest}
-                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isAmtSort ? T.accentText+"60" : T.cardBorder}`, background: isAmtSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color:col }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      {isAmtSort && !isDesc
-                        ? <><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></>
-                        : <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></>
-                      }
-                    </svg>
-                  </button>
-                );
-              })()}
+              <button
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => { haptic(); setSortOrder(sortOrder === "amt-desc" ? "amt-asc" : "amt-desc"); }}
+                style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${sortOrder.startsWith("amt") ? T.accentText+"60" : T.cardBorder}`, background: sortOrder.startsWith("amt") ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={sortOrder.startsWith("amt") ? T.accentText : T.textSub} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  {sortOrder === "amt-asc"
+                    ? <><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></>
+                    : <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></>
+                  }
+                </svg>
+              </button>
 
               {/* Payment method icon — tap cycles semua/tunai/transfer/qris */}
               {(() => {
