@@ -19,7 +19,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-    <script>document.documentElement.style.background=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"#f5f4f0":"#0a0a0a";</script>
     <style>
       * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
       input, textarea, select { -webkit-touch-callout: default; -webkit-user-select: text; user-select: text; }
@@ -44,13 +43,11 @@
         transition: opacity 0.4s ease;
         will-change: opacity;
         overflow: hidden;
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
       }
       @media (prefers-color-scheme: light) {
         #splash { background: #f5f4f0; }
         #splash-text { color: #1a1a1a !important; }
-        #splash-sub { color: #555 !important; }
+        #splash-sub { color: #888 !important; }
       }
       #splash-inner {
         position: absolute;
@@ -81,12 +78,7 @@
       </div>
     </div>
     <script>
-      // Set correct background before paint
-      (function(){
-        var isDark=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)').matches:true;
-        document.documentElement.style.background=isDark?'#0a0a0a':'#f5f4f0';
-      })();
-      // JS centering — pakai window.innerHeight biar akurat di iOS PWA
+      // JS centering
       function centerSplash() {
         var inner = document.getElementById('splash-inner');
         if (!inner) return;
@@ -98,7 +90,7 @@
       centerSplash();
       window.addEventListener('resize', centerSplash);
 
-      // Theme color
+      // Theme color from localStorage
       (function(){
         var presets={green:'#4ade80',blue:'#60a5fa',purple:'#c084fc',rose:'#fb7185',orange:'#fb923c',teal:'#2dd4bf'};
         try {
@@ -116,7 +108,7 @@
         var s=document.getElementById('splash');
         var r=document.getElementById('root');
         if(r){r.style.visibility='visible';r.style.opacity='1';}
-        if(s){s.style.opacity='0';setTimeout(function(){s.remove();},400);}
+        if(s){s.style.opacity='0';setTimeout(function(){s.remove();document.body.style.overflow='';},400);}
       };
     </script>
     <div id="root" style="visibility:hidden;opacity:0;transition:opacity 0.3s ease;"></div>
