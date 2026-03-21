@@ -20,14 +20,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
     <script>
-      // Runs before any CSS or paint — sets bg color on BOTH html and body
-      // to prevent dark bleed showing behind splash in light mode
-      var __isLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-      var __bg = __isLight ? '#f5f4f0' : '#0a0a0a';
-      document.documentElement.style.background = __bg;
-      document.addEventListener('DOMContentLoaded', function() {
-        document.body.style.background = __bg;
-      });
+      // Detect dark/light from app localStorage setting, fallback to system
+      window.__splashDark = (function() {
+        try {
+          var followSystem = localStorage.getItem('gm_follow_system');
+          var darkOverride = localStorage.getItem('gm_dark_override');
+          var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (followSystem === '0' && darkOverride !== null) return darkOverride === 'true';
+          return systemDark;
+        } catch(e) { return true; }
+      })();
+      document.documentElement.style.background = window.__splashDark ? '#0a0a0a' : '#f5f4f0';
     </script>
     <style>
       * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
@@ -88,6 +91,19 @@
       </div>
     </div>
     <script>
+      // Apply app-based dark/light to splash elements immediately
+      (function() {
+        var isDark = window.__splashDark;
+        var s = document.getElementById('splash');
+        if (s) s.style.background = isDark ? '#0a0a0a' : '#f5f4f0';
+        var t = document.getElementById('splash-text');
+        if (t) t.style.color = isDark ? '#fff' : '#1a1a1a';
+        var sub = document.getElementById('splash-sub');
+        if (sub) sub.style.color = isDark ? 'rgba(255,255,255,0.4)' : '#888';
+        var bar = document.getElementById('splash-bar-wrap');
+        if (bar) bar.style.background = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)';
+        document.body.style.background = isDark ? '#0a0a0a' : '#f5f4f0';
+      })();
       // JS centering
       function centerSplash() {
         var inner = document.getElementById('splash-inner');
@@ -120,8 +136,7 @@
         if(r){r.style.visibility='visible';r.style.opacity='1';}
         if(s){s.style.opacity='0';setTimeout(function(){
           s.remove();
-          document.documentElement.style.background='';
-          document.body.style.background='';
+
           document.body.style.overflow='';
         },400);}
       };
