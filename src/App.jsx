@@ -2179,7 +2179,7 @@ export default function App() {
       {/* Install banner */}
       {showInstallBanner && (
         <div style={{ position:"fixed",bottom:"72px",left:14,right:14,zIndex:500,background:themePrimary,borderRadius:20,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:`0 8px 32px ${themePrimary}88` }}>
-          <Star size={28} color={T.primaryText} strokeWidth={1.5}/>
+          <Star size={28} color="white" strokeWidth={1.5}/>
           <div style={{ flex:1 }}>
             <p style={{ fontSize:13,fontWeight:800,color:"white" }}>Pasang ke Home Screen</p>
             <p style={{ fontSize:11,color:"rgba(255,255,255,0.7)" }}>Akses lebih cepat, bisa offline!</p>
