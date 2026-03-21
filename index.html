@@ -19,6 +19,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <script>
+      // Run before CSS — set html background to prevent flash
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        document.documentElement.style.setProperty('background', '#f5f4f0', 'important');
+      } else {
+        document.documentElement.style.setProperty('background', '#0a0a0a', 'important');
+      }
+    </script>
     <style>
       * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
       input, textarea, select { -webkit-touch-callout: default; -webkit-user-select: text; user-select: text; }
@@ -103,12 +111,16 @@
         } catch(e){}
       })();
 
-      // Hide splash
+      // Hide splash — also clear the inline bg so CSS media query takes over for app
       window.__hideSplash=function(){
         var s=document.getElementById('splash');
         var r=document.getElementById('root');
         if(r){r.style.visibility='visible';r.style.opacity='1';}
-        if(s){s.style.opacity='0';setTimeout(function(){s.remove();document.body.style.overflow='';},400);}
+        if(s){s.style.opacity='0';setTimeout(function(){
+          s.remove();
+          document.body.style.overflow='';
+          document.documentElement.style.removeProperty('background');
+        },400);}
       };
     </script>
     <div id="root" style="visibility:hidden;opacity:0;transition:opacity 0.3s ease;"></div>
