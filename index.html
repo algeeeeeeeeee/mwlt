@@ -20,12 +20,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
     <script>
-      // Run before CSS — set html background to prevent flash
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-        document.documentElement.style.setProperty('background', '#f5f4f0', 'important');
-      } else {
-        document.documentElement.style.setProperty('background', '#0a0a0a', 'important');
-      }
+      // Runs before any CSS or paint — sets bg color on BOTH html and body
+      // to prevent dark bleed showing behind splash in light mode
+      var __isLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      var __bg = __isLight ? '#f5f4f0' : '#0a0a0a';
+      document.documentElement.style.background = __bg;
+      document.addEventListener('DOMContentLoaded', function() {
+        document.body.style.background = __bg;
+      });
     </script>
     <style>
       * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; box-sizing: border-box; }
@@ -47,7 +49,7 @@
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
         z-index: 99999;
-        background: #f5f4f0;
+        background: #0a0a0a;
         transition: opacity 0.4s ease;
         will-change: opacity;
         overflow: hidden;
@@ -65,9 +67,9 @@
       }
       #splash-logo { width:72px; height:72px; border-radius:20px; overflow:hidden; flex-shrink:0; }
       #splash-logo img { width:72px; height:72px; object-fit:cover; display:block; }
-      #splash-text { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; font-size:22px; font-weight:700; color:#1a1a1a; letter-spacing:-0.5px; }
-      #splash-sub { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; font-size:13px; color:#888; margin-top:-6px; }
-      #splash-bar-wrap { width:160px; height:4px; background:rgba(0,0,0,0.1); border-radius:99px; overflow:hidden; margin-top:8px; }
+      #splash-text { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; font-size:22px; font-weight:700; color:#fff; letter-spacing:-0.5px; }
+      #splash-sub { font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; font-size:13px; color:rgba(255,255,255,0.4); margin-top:-6px; }
+      #splash-bar-wrap { width:160px; height:4px; background:rgba(255,255,255,0.12); border-radius:99px; overflow:hidden; margin-top:8px; }
       @media (prefers-color-scheme: light) { #splash-bar-wrap { background:rgba(0,0,0,0.1); } }
       @keyframes splash-bar { 0%{width:0%} 100%{width:100%} }
       @keyframes splash-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -111,15 +113,16 @@
         } catch(e){}
       })();
 
-      // Hide splash — also clear the inline bg so CSS media query takes over for app
+      // Hide splash — remove inline bg so app CSS takes over
       window.__hideSplash=function(){
         var s=document.getElementById('splash');
         var r=document.getElementById('root');
         if(r){r.style.visibility='visible';r.style.opacity='1';}
         if(s){s.style.opacity='0';setTimeout(function(){
           s.remove();
+          document.documentElement.style.background='';
+          document.body.style.background='';
           document.body.style.overflow='';
-          document.documentElement.style.removeProperty('background');
         },400);}
       };
     </script>
