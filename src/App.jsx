@@ -15,7 +15,7 @@ import {
   CreditCard, ImagePlus, Image, ZoomIn, AlarmClock, BellRing, CheckCheck, Tag, Tags,
   Users, UserPlus, Equal, Receipt,
   HeartPulse, Rocket, Flag, Ban, DiamondPlus, SunMoon, Globe, PaintRoller, Grape, BadgeInfo, Cat, HandCoins,
-  Waves, Citrus, PaintbrushVertical, MessageCircle, CirclePlus, Smile, Star
+  Waves, Citrus, PaintbrushVertical, MessageCircle, CirclePlus, Smile, Star, QrCode, Landmark
 } from "./icons.jsx";
 import { formatRp, today, getWeek, getMonth, fmtDate, groupByDate, dateLabel, getCatLabel, haptic, parseRpInput, rpInputProps } from "./utils/helpers.js";
 import { darken, lighten, getLuminance, getContrastText, buildTheme } from "./utils/theme.js";
@@ -1024,7 +1024,7 @@ export default function App() {
   const [filterCat, setFilterCat] = useState("all");
   const [sortOrder, setSortOrder] = useState("date-desc"); // new sort state
   const [showCalc, setShowCalc] = useState(false); // calculator modal
-  const [form, setForm] = useState({ date: today(), amount: "", category: "food", description: "", location: "", note: "" });
+  const [form, setForm] = useState({ date: today(), amount: "", category: "food", description: "", location: "", note: "", paymentMethod: "cash" });
   const [editIncome, setEditIncome] = useState(false);
   const headerRef = useRef(null);
   const sharedHeaderRef = useRef(null);
@@ -1248,6 +1248,7 @@ export default function App() {
 
   // Search
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterPayment, setFilterPayment] = useState("all");
 
   // Recurring
   const [recurring, setRecurring] = useState(() => {
@@ -1588,6 +1589,7 @@ export default function App() {
     if (filterPeriod === "daily") list = list.filter(t => t.date === now);
     else if (filterPeriod === "weekly") list = list.filter(t => getWeek(t.date) === currentWeek);
     else list = list.filter(t => getMonth(t.date) === currentMonth);
+    if (filterPayment !== "all") list = list.filter(t => (t.paymentMethod||"cash") === filterPayment);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(t => t.description.toLowerCase().includes(q) || (t.location||"").toLowerCase().includes(q) || (t.note||"").toLowerCase().includes(q));
@@ -1598,7 +1600,7 @@ export default function App() {
       if (sortOrder === "amt-asc")   return a.amount - b.amount;
       return b.date.localeCompare(a.date); // date-desc default
     });
-  }, [transactions, filterPeriod, filterCat, now, currentWeek, currentMonth, searchQuery, sortOrder]);
+  }, [transactions, filterPeriod, filterCat, now, currentWeek, currentMonth, searchQuery, sortOrder, filterPayment]);
 
   const dateExpense = useMemo(() =>
     transactions.filter(t => t.category === "date" && getMonth(t.date) === currentMonth).reduce((s, t) => s + t.amount, 0),
@@ -1848,7 +1850,7 @@ export default function App() {
     if (!form.amount || !form.description) return;
     haptic("success");
     if (editItem) {
-      setTransactions(prev => prev.map(t => t.id === editItem ? { ...form, id: editItem, amount: Number(form.amount) } : t));
+      setTransactions(prev => prev.map(t => t.id === editItem ? { ...form, id: editItem, amount: Number(form.amount), paymentMethod: form.paymentMethod||"cash" } : t));
       setEditItem(null);
       showToast("ok:"+L.txUpdated);
     } else {
@@ -1888,13 +1890,13 @@ export default function App() {
       });
       showToast("ok:"+L.txAdded);
     }
-    setForm({ date: today(), amount: "", category: Object.keys(categories)[0] || "other", description: "", location: "", note: "" });
+    setForm({ date: today(), amount: "", category: Object.keys(categories)[0] || "other", description: "", location: "", note: "", paymentMethod: "cash" });
     setShowForm(false);
   };
 
   const startEdit = (t) => {
     const amtDisplay = t.amount ? Number(t.amount).toLocaleString("id-ID") : "";
-    setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"" });
+    setForm({ date: t.date, amount: t.amount, amountDisplay: amtDisplay, category: t.category, description: t.description, location: t.location, note: t.note||"", paymentMethod: t.paymentMethod||"cash" });
     setEditItem(t.id);
     setShowForm(true);
   };
@@ -3049,6 +3051,52 @@ export default function App() {
               ) : (
                 <DonutChart data={donutData} total={totalExpense} T={T} />
               )}
+
+            {/* Payment Method Stats */}
+            <div className="card" style={{ padding:"16px 18px", marginBottom:14, ...CS }}>
+              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:12 }}>
+                <div style={{ width:28, height:28, borderRadius:9, background:`${TP}18`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <Wallet size={13} strokeWidth={2} color={TP}/>
+                </div>
+                <p style={{ fontSize:14, fontWeight:800, color:T.text }}>{L.paymentMethod||"Metode Bayar"}</p>
+              </div>
+              {(() => {
+                const monthTx = transactions.filter(t => getMonth(t.date) === currentMonth);
+                const total = monthTx.reduce((s,t)=>s+t.amount,0);
+                const methods = [
+                  { key:"cash", label:L.cash||"Tunai", Icon:CircleDollarSign, color:"#4ade80" },
+                  { key:"transfer", label:L.transfer||"Transfer", Icon:Landmark, color:"#3b82f6" },
+                  { key:"qris", label:L.qris||"QRIS", Icon:QrCode, color:"#8b5cf6" },
+                ];
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                    {methods.map(m => {
+                      const txs = monthTx.filter(t => (t.paymentMethod||"cash") === m.key);
+                      const amt = txs.reduce((s,t)=>s+t.amount,0);
+                      const pct = total > 0 ? Math.round(amt/total*100) : 0;
+                      return (
+                        <div key={m.key}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <m.Icon size={14} color={m.color} strokeWidth={2}/>
+                              <p style={{ fontSize:13, fontWeight:700, color:T.text }}>{m.label}</p>
+                              <span style={{ fontSize:11, color:T.textSub, fontWeight:600 }}>{txs.length}x</span>
+                            </div>
+                            <div style={{ textAlign:"right" }}>
+                              <p style={{ fontSize:13, fontWeight:800, color:"#f87171" }}>-{formatRp(amt)}</p>
+                              <p style={{ fontSize:10, color:T.textSub, fontWeight:600 }}>{pct}%</p>
+                            </div>
+                          </div>
+                          <div style={{ height:5, borderRadius:99, background:T.catBg, overflow:"hidden" }}>
+                            <div style={{ height:"100%", width:`${pct}%`, background:m.color, borderRadius:99, transition:"width 0.6s ease" }}/>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
             </div>
           </div>
         )}
@@ -3069,9 +3117,9 @@ export default function App() {
                 { val:filterPeriod, set:setFilterPeriod, opts:[["daily",L.filterToday],["weekly",L.filterWeek],["monthly",L.filterMonth]] },
                 { val:sortOrder.startsWith("amt")?sortOrder:"amt-desc", set:v=>setSortOrder(v), opts:[["amt-desc",L.sortHighest],["amt-asc",L.sortLowest]] },
                 { val:sortOrder.startsWith("date")?sortOrder:"date-desc", set:v=>setSortOrder(v), opts:[["date-desc",L.sortNewest],["date-asc",L.sortOldest]] },
+                { val:filterPayment, set:setFilterPayment, opts:[["all",L.filterPayment||"Metode"],["cash",L.cash||"Tunai"],["transfer",L.transfer||"Transfer"],["qris",L.qris||"QRIS"]] },
               ].map(({ val, set, opts }, i) => {
-                const label = opts.find(([v])=>v===val)?.[1] ?? opts[0][1];
-                const isActive = i===0 ? true : sortOrder.startsWith(i===1?"amt":"date");
+                const isActive = i===0 ? true : i===1 ? sortOrder.startsWith("amt") : i===2 ? sortOrder.startsWith("date") : filterPayment!=="all";
                 return (
                   <div key={i} style={{ position:"relative", flexShrink:0 }}>
                     <select value={val} onChange={e=>set(e.target.value)}
@@ -3147,7 +3195,13 @@ export default function App() {
                               <div style={{ width:40, height:40, borderRadius:12, background:cat.color+"25", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><CatIcon iconKey={cat.icon} size={22} color={cat.color}/></div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <p style={{ fontSize:14, fontWeight:700, color:T.text }}>{t.description}</p>
-                                <p style={{ fontSize:11, color:T.textSub, marginTop:2 }}>{getCatLabel(cat, lang)}{t.location ? ` · ${t.location}` : ""}{t.note ? ` · ${t.note}` : ""}</p>
+                                <p style={{ fontSize:11, color:T.textSub, marginTop:2 }}>{getCatLabel(cat, lang)}{t.location ? ` · ${t.location}` : ""}{t.note ? ` · ${t.note}` : ""}
+                                  {t.paymentMethod && t.paymentMethod !== "cash" && (
+                                    <span style={{ marginLeft:4, display:"inline-flex", alignItems:"center", gap:2, padding:"1px 6px", borderRadius:99, background: t.paymentMethod==="qris" ? "#8b5cf620" : "#3b82f620", border: `1px solid ${t.paymentMethod==="qris" ? "#8b5cf640" : "#3b82f640"}`, fontSize:9, fontWeight:800, color: t.paymentMethod==="qris" ? "#8b5cf6" : "#3b82f6", verticalAlign:"middle" }}>
+                                      {t.paymentMethod==="qris" ? <><QrCode size={8} strokeWidth={2}/> QRIS</> : <><Landmark size={8} strokeWidth={2}/> Transfer</>}
+                                    </span>
+                                  )}
+                                </p>
                                 {txReceipts[String(t.id)] && (
                                   <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
                                     <span style={{ display:"inline-flex", alignItems:"center", gap:3, padding:"2px 7px", borderRadius:99, background:T.catBg, border:`1px solid ${T.cardBorder}`, fontSize:10, fontWeight:700, color:T.textSub }}><ImagePlus size={8} color={T.textSub} strokeWidth={2}/>{L.receiptPhoto}</span>
@@ -4786,6 +4840,27 @@ export default function App() {
                           cursor:"pointer", transition:"all 0.15s" }}>
                         <CatIcon iconKey={v.icon} size={11} color={isSel ? v.color : T.textSub}/>
                         <span style={{ fontSize:11, fontWeight: isSel ? 700 : 500, color: isSel ? v.color : T.textSub, whiteSpace:"nowrap" }}>{getCatLabel(v, lang)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Metode Bayar */}
+                <div style={{ display:"flex", gap:6 }}>
+                  {[
+                    { key:"cash", label:L.cash||"Tunai", Icon:Coins },
+                    { key:"transfer", label:L.transfer||"Transfer", Icon:Landmark },
+                    { key:"qris", label:L.qris||"QRIS", Icon:QrCode },
+                  ].map(opt => {
+                    const isSel = (form.paymentMethod||"cash") === opt.key;
+                    return (
+                      <button key={opt.key} onClick={() => { haptic("light"); setForm(f => ({ ...f, paymentMethod: opt.key })); }}
+                        style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding:"8px 4px", borderRadius:12,
+                          background: isSel ? themeAccent+"18" : T.catBg,
+                          border: isSel ? `2px solid ${themeAccent}` : `1.5px solid ${T.cardBorder}`,
+                          cursor:"pointer", transition:"all 0.15s", fontFamily:"inherit" }}>
+                        <opt.Icon size={16} color={isSel ? themeAccent : T.textSub} strokeWidth={2}/>
+                        <span style={{ fontSize:10, fontWeight: isSel ? 800 : 600, color: isSel ? themeAccent : T.textSub }}>{opt.label}</span>
                       </button>
                     );
                   })}
