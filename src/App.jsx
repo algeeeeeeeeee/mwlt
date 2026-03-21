@@ -3113,7 +3113,7 @@ export default function App() {
             </div>
 
             <div style={{ display:"flex", gap:6, marginBottom:10, alignItems:"center" }}>
-              {/* Period chip — tetap dropdown */}
+              {/* Period chip */}
               <div style={{ position:"relative", flexShrink:0 }}>
                 <select value={filterPeriod} onChange={e=>setFilterPeriod(e.target.value)}
                   style={{ appearance:"none", WebkitAppearance:"none", border:"none", outline:"none", cursor:"pointer", fontFamily:"inherit",
@@ -3129,38 +3129,56 @@ export default function App() {
 
               <div style={{ flex:1 }}/>
 
-              {/* Sort icon button — tap cycles through sort options */}
+              {/* Sort date icon — tap toggles terbaru/terlama */}
               {(() => {
-                const sortCycle = ["date-desc","date-asc","amt-desc","amt-asc"];
-                const sortIcons = {
-                  "date-desc": <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>,
-                  "date-asc":  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
-                  "amt-desc":  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></svg>,
-                  "amt-asc":   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></svg>,
-                };
-                const nextSort = sortCycle[(sortCycle.indexOf(sortOrder)+1) % sortCycle.length];
-                const isCustomSort = sortOrder !== "date-desc";
+                const isDateSort = sortOrder.startsWith("date");
+                const isDesc = sortOrder === "date-desc";
+                const col = isDateSort ? T.accentText : T.textSub;
                 return (
-                  <button onClick={() => { haptic("light"); setSortOrder(nextSort); }}
-                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isCustomSort ? T.accentText+"60" : T.cardBorder}`, background: isCustomSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color: isCustomSort ? T.accentText : T.textSub }}>
-                    {sortIcons[sortOrder]}
+                  <button onClick={() => { haptic("light"); setSortOrder(isDateSort && isDesc ? "date-asc" : "date-desc"); }}
+                    title={isDesc ? L.sortNewest : L.sortOldest}
+                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isDateSort ? T.accentText+"60" : T.cardBorder}`, background: isDateSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color:col }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      {isDateSort && !isDesc && <polyline points="12 14 12 18 15 18"/>}
+                      {(!isDateSort || isDesc) && <polyline points="15 14 12 14 12 18"/>}
+                    </svg>
                   </button>
                 );
               })()}
 
-              {/* Payment method icon button — cycles cash/transfer/qris/all */}
+              {/* Sort amount icon — tap toggles terbesar/terkecil */}
+              {(() => {
+                const isAmtSort = sortOrder.startsWith("amt");
+                const isDesc = sortOrder === "amt-desc";
+                const col = isAmtSort ? T.accentText : T.textSub;
+                return (
+                  <button onClick={() => { haptic("light"); setSortOrder(isAmtSort && isDesc ? "amt-asc" : "amt-desc"); }}
+                    title={isDesc ? L.sortHighest : L.sortLowest}
+                    style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isAmtSort ? T.accentText+"60" : T.cardBorder}`, background: isAmtSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color:col }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      {isAmtSort && !isDesc
+                        ? <><line x1="4" y1="18" x2="20" y2="18"/><line x1="4" y1="14" x2="16" y2="14"/><line x1="4" y1="10" x2="12" y2="10"/><line x1="4" y1="6" x2="8" y2="6"/></>
+                        : <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="16" y2="10"/><line x1="4" y1="14" x2="12" y2="14"/><line x1="4" y1="18" x2="8" y2="18"/></>
+                      }
+                    </svg>
+                  </button>
+                );
+              })()}
+
+              {/* Payment method icon — tap cycles semua/tunai/transfer/qris */}
               {(() => {
                 const pmCycle = ["all","cash","transfer","qris"];
                 const nextPm = pmCycle[(pmCycle.indexOf(filterPayment)+1) % pmCycle.length];
                 const isFiltered = filterPayment !== "all";
-                const pmIconColor = isFiltered ? T.accentText : T.textSub;
+                const col = isFiltered ? T.accentText : T.textSub;
                 const pmIcon = filterPayment==="cash"
-                  ? <DollarSign size={15} color={pmIconColor} strokeWidth={2.5}/>
+                  ? <DollarSign size={15} color={col} strokeWidth={2.5}/>
                   : filterPayment==="transfer"
-                  ? <Landmark size={15} color={pmIconColor} strokeWidth={2.5}/>
+                  ? <Landmark size={15} color={col} strokeWidth={2.5}/>
                   : filterPayment==="qris"
-                  ? <QrCode size={15} color={pmIconColor} strokeWidth={2.5}/>
-                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={pmIconColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>;
+                  ? <QrCode size={15} color={col} strokeWidth={2.5}/>
+                  : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>;
                 return (
                   <button onClick={() => { haptic("light"); setFilterPayment(nextPm); }}
                     style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isFiltered ? T.accentText+"60" : T.cardBorder}`, background: isFiltered ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0 }}>
