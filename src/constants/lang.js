@@ -112,63 +112,18 @@ export const LANG = {
     reminderNotifTitle:"🐾 Belum catat pengeluaran hari ini!",
     reminderNotifBody:"Jangan lupa input transaksi biar keuanganmu tetap terkontrol 🐱",
 
-    // Split bills / Patungan
     splitBills:"Patungan", splitBillsDesc:"Bagi tagihan bareng teman dengan mudah",
     splitNew:"Split Bill Baru", splitEdit:"Edit Split Bill", splitSaved:"ok:Split bill disimpan",
     splitDeleted:"ok:Dihapus", splitActive:"AKTIF", splitSettled:"LUNAS",
     splitTitle:"Judul (mis. Makan di X)", splitTotal:"Total tagihan (mis. 300.000)",
     splitMembers:"Anggota (pisah koma)", splitPayer:"Siapa yang bayar duluan?",
-    splitPayerPlaceholder:"Nama yang bayar", splitPerPerson:"/ orang",
-    splitPeople:"orang", splitPaidBy:"Dibayar oleh", splitTapMark:"tap untuk tandai yang sudah bayar balik",
-    splitPaidBill:"Yang bayar duluan 💳", splitHasPaid:"Sudah bayar balik ✓", splitNotPaid:"Belum bayar balik",
-    splitAllSettled:"Semua lunas", splitBack:"← Kembali", splitEmpty:"Belum ada split bill",
-    splitMinMembers:"Min 2 orang", splitPaidBack:"sudah bayar balik",
-    splitPerson:"orang", splitOrg:"org", splitPerMonth:"per bulan", splitMonths:"bulan",
-
-    // Recurring income
-    recurringIncome:"PEMASUKAN RUTIN", addRecurringIncome:"Tambah Pemasukan Rutin",
-    addIncome:"Tambah Pemasukan", recurIncomeAdded:"ok:Pemasukan rutin ditambahkan",
-    saveAndAdd:"Simpan & Tambah", saveAndSubtract:"Simpan & Kurangi",
-
-    // Offline indicator
-    offlineTitle:"Kamu sedang offline", offlineDesc:"Tidak ada koneksi internet. Data tetap tersimpan di perangkat.",
-
-    // Discard confirmation
-    discardTitle:"Buang perubahan?", discardDesc:"Data yang sudah diisi akan hilang.",
-    discardConfirm:"Buang", discardCancel:"Lanjut Edit",
-
-    // Financial health
-    financialHealth:"KESEHATAN FINANSIAL", healthExcellent:"Sangat Baik",
-    healthGood:"Baik", healthFair:"Cukup", healthNeedAttention:"Perlu Perhatian",
-
-    // Misc missing
-    back:"← Kembali", recordNow:"Catat Sekarang", addSavings:"Tambah tabungan",
-    addFirstTx:"Catat transaksi pertama", amountAdd:"Jumlah yang ditambah",
-    amountSubtract:"Jumlah yang dikurangi", currentIncome:"Pemasukan saat ini",
-    saveLimitBtn:"Simpan Batas", saveSettings:"Simpan Pengaturan", settingsSaved:"ok:Pengaturan disimpan",
-    budgetRemoved:"Anggaran dihapus", budgetSavedMsg:"ok:Anggaran disimpan!",
-    setBudget:"Atur Anggaran", totalMonthly:"Total Bulanan",
-    totalSpendingCap:"Batas total pengeluaran per bulan",
-    catTrend4m:"Tren Kategori (4 bulan)", weekSummary:"Ringkasan Mingguan",
-    monthPrediction:"PREDIKSI AKHIR BULAN", thisWeekLabel:"MINGGU INI",
-    topCategories:"KATEGORI TERBESAR", totalSpendingLabel:"TOTAL PENGELUARAN",
-    tapOutsideClose:"Tap di luar untuk tutup", imageDownloaded:"ok:Gambar berhasil diunduh!",
-    exportAsImage:"Ekspor sebagai Gambar", downloadImage:"Unduh Gambar",
-    csvDownloaded:"ok:CSV berhasil didownload", incomeDeleted:"Pemasukan dihapus",
-    incomeRecorded:"Pemasukan dicatat", incomeUpdated:"Pemasukan diperbarui",
-    dailyNote:"Catatan Harian", dailyNotePlaceholder:"Bagaimana pengeluaranmu hari ini? Catatan tentang keuanganmu...",
-    streakLabel:"STREAK", keepGoing:"Teruskan!", exceeded:"Terlampaui",
-    nearLimit:"Mendekati batas", setNewLimit:"ATUR BATAS BARU (Rp)", currentLimit:"LIMIT SAAT INI",
-    remaining:"Sisa", estSpending:"Est. pengeluaran: ", mostSpend:"Terbanyak: ",
-    spentLabel:"terpakai", usedLabel:"terpakai", remainingLabel:"sisa",
-    autoLabel:"· Otomatis", instLabel:"Cicilan ke-", dueLabel:"jatuh tempo",
-    perMonthLabel:"per bulan", monthsLabel:"bulan", progressCicilan:"Progress cicilan",
-    vsLastWeek:"vs minggu lalu", onFire:"Konsisten!", startTracking:"Yuk mulai catat pengeluaran hari ini.",
-    changeAnytime:"Bisa diubah kapan saja di Pengaturan.", pushNotifications:"Notifikasi",
-    cameraLabel:"Kamera", uploadLabel:"Unggah", removeLabel:"Hapus",
-    editLabel:"Edit", recordLabel:"Catat", barLabel:"Bar", lineLabel:"Line",
-    paidProgress:"Progress", cancelLabel:"Batal", saveLabel:"Simpan",
-    thisMonthLabel:"Bulan ini", lastMonthLabel:"Bulan lalu",
+    splitPayerPlaceholder:"Nama yang bayar", splitPerson:"orang",
+    splitPeople:"orang", splitOrg:"org", splitPaidBy:"Dibayar oleh",
+    splitTapMark:"tap untuk tandai yang sudah bayar balik",
+    splitPaidBill:"Yang bayar duluan \u{1F4B3}", splitHasPaid:"Sudah bayar balik \u2713",
+    splitNotPaid:"Belum bayar balik", splitAllSettled:"Semua lunas",
+    splitEmpty:"Belum ada patungan", splitMinMembers:"Min 2 orang",
+    splitPaidBack:"sudah bayar balik",
 
   },
 
@@ -299,63 +254,18 @@ export const LANG = {
     reminderNotifTitle:"🐾 No spending recorded today!",
     reminderNotifBody:"Don't forget to log transactions to stay on track 🐱",
 
-    // Split bills
     splitBills:"Split Bills", splitBillsDesc:"Split bills with friends easily",
     splitNew:"New Split Bill", splitEdit:"Edit Split", splitSaved:"ok:Split bill saved",
     splitDeleted:"ok:Deleted", splitActive:"ACTIVE", splitSettled:"SETTLED",
     splitTitle:"Title (e.g. Dinner at X)", splitTotal:"Total bill (e.g. 300.000)",
     splitMembers:"Members (comma-separated)", splitPayer:"Who paid?",
-    splitPayerPlaceholder:"Name of payer", splitPerPerson:"/ person",
-    splitPeople:"people", splitPaidBy:"Paid by", splitTapMark:"tap to mark who has paid back",
-    splitPaidBill:"Paid the bill 💳", splitHasPaid:"Has paid back ✓", splitNotPaid:"Hasn't paid back",
-    splitAllSettled:"All settled", splitBack:"← Back", splitEmpty:"No split bills yet",
-    splitMinMembers:"Min 2 members", splitPaidBack:"paid back",
-    splitPerson:"person", splitOrg:"person", splitPerMonth:"per month", splitMonths:"months",
-
-    // Recurring income
-    recurringIncome:"RECURRING INCOME", addRecurringIncome:"Add Recurring Income",
-    addIncome:"Add Income", recurIncomeAdded:"ok:Recurring income added",
-    saveAndAdd:"Save & Add", saveAndSubtract:"Save & Subtract",
-
-    // Offline indicator
-    offlineTitle:"You're offline", offlineDesc:"No internet connection. Your data is safely stored on this device.",
-
-    // Discard confirmation
-    discardTitle:"Discard changes?", discardDesc:"Any data you've entered will be lost.",
-    discardConfirm:"Discard", discardCancel:"Keep Editing",
-
-    // Financial health
-    financialHealth:"FINANCIAL HEALTH", healthExcellent:"Excellent",
-    healthGood:"Good", healthFair:"Fair", healthNeedAttention:"Need Attention",
-
-    // Misc missing
-    back:"← Back", recordNow:"Record Now", addSavings:"Add savings",
-    addFirstTx:"Add first transaction", amountAdd:"Amount to add",
-    amountSubtract:"Amount to subtract", currentIncome:"Current income",
-    saveLimitBtn:"Save Limit", saveSettings:"Save Settings", settingsSaved:"ok:Settings saved",
-    budgetRemoved:"Budget removed", budgetSavedMsg:"ok:Budget saved!",
-    setBudget:"Set Budget", totalMonthly:"Total Monthly",
-    totalSpendingCap:"Total spending cap per month",
-    catTrend4m:"Category Trend (4 months)", weekSummary:"Weekly Summary",
-    monthPrediction:"MONTH PREDICTION", thisWeekLabel:"THIS WEEK",
-    topCategories:"TOP CATEGORIES", totalSpendingLabel:"TOTAL SPENDING",
-    tapOutsideClose:"Tap outside to close", imageDownloaded:"ok:Image downloaded!",
-    exportAsImage:"Export as Image", downloadImage:"Download Image",
-    csvDownloaded:"ok:CSV downloaded successfully", incomeDeleted:"Income deleted",
-    incomeRecorded:"Income recorded", incomeUpdated:"Income updated",
-    dailyNote:"Daily Note", dailyNotePlaceholder:"How was your spending today? Any notes about your finances...",
-    streakLabel:"STREAK", keepGoing:"Keep going!", exceeded:"Exceeded",
-    nearLimit:"Near limit", setNewLimit:"SET NEW LIMIT (Rp)", currentLimit:"CURRENT LIMIT",
-    remaining:"Remaining", estSpending:"Est. spending: ", mostSpend:"Most: ",
-    spentLabel:"spent", usedLabel:"used", remainingLabel:"remaining",
-    autoLabel:"· Auto", instLabel:"Inst.", dueLabel:"due",
-    perMonthLabel:"per month", monthsLabel:"months", progressCicilan:"Progress",
-    vsLastWeek:"vs last week", onFire:"On fire!", startTracking:"Start tracking your spending today.",
-    changeAnytime:"You can change this anytime.", pushNotifications:"Push Notifications",
-    cameraLabel:"Camera", uploadLabel:"Upload", removeLabel:"Remove",
-    editLabel:"Edit", recordLabel:"Record", barLabel:"Bar", lineLabel:"Line",
-    paidProgress:"Progress", cancelLabel:"Cancel", saveLabel:"Save",
-    thisMonthLabel:"This month", lastMonthLabel:"Last month",
+    splitPayerPlaceholder:"Name of payer", splitPerson:"person",
+    splitPeople:"people", splitOrg:"person", splitPaidBy:"Paid by",
+    splitTapMark:"tap to mark who has paid back",
+    splitPaidBill:"Paid the bill \u{1F4B3}", splitHasPaid:"Has paid back \u2713",
+    splitNotPaid:"Hasn't paid back", splitAllSettled:"All settled",
+    splitEmpty:"No split bills yet", splitMinMembers:"Min 2 members",
+    splitPaidBack:"paid back",
 
   }
 };
