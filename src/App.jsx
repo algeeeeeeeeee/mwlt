@@ -2343,6 +2343,8 @@ export default function App() {
         }}>
 
         {/* FIXED HEADER - only on dashboard */}
+        {/* DEBUG - remove after fix */}
+        {tab === "dashboard" && <div style={{ position:"fixed", bottom:80, right:8, zIndex:99999, background:"rgba(0,0,0,0.7)", color:"white", fontSize:10, padding:"2px 6px", borderRadius:6 }}>h={headerHeight}</div>}
         {tab === "dashboard" && <div ref={headerRef} style={{
           position:"fixed", top:0, left:0, right:0,
           zIndex:50,
