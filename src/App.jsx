@@ -1166,6 +1166,17 @@ export default function App() {
   useEffect(() => { try { localStorage.setItem("gm_reminder_days", JSON.stringify(reminderDays)); } catch {} }, [reminderDays]);
   useEffect(() => { try { localStorage.setItem("gm_reminder_smart", reminderSmart ? "1" : "0"); } catch {} }, [reminderSmart]);
 
+  // Tags
+  const [userTags, setUserTags] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("gm_user_tags") || "[]"); } catch { return []; }
+  });
+  useEffect(() => { try { localStorage.setItem("gm_user_tags", JSON.stringify(userTags)); } catch {} }, [userTags]);
+  const [txTags, setTxTags] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("gm_tx_tags") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => { try { localStorage.setItem("gm_tx_tags", JSON.stringify(txTags)); } catch {} }, [txTags]);
+  const [showTagModal, setShowTagModal] = useState(false);
+
   // Receipts (base64 stored per tx id)
   const [txReceipts, setTxReceipts] = useState(() => {
     try { return JSON.parse(localStorage.getItem("gm_tx_receipts") || "{}"); } catch { return {}; }
@@ -1913,7 +1924,7 @@ export default function App() {
     navbarOffset, setNavbarOffset,
     exportCSV, exportPDFReport,
     ICON_OPTIONS, COLOR_OPTIONS,
-    userTags, txTags, txReceipts,
+    userTags, setUserTags, txTags, setTxTags, txReceipts,
     showTagModal, setShowTagModal,
     setShowOverallBudgetModal,
     setEditingGoal, setGoalForm,
