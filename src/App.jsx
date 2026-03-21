@@ -3212,7 +3212,7 @@ export default function App() {
               </div>
             ) : (
               <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
-                {groupByDate(filtered).map(([date, txns], groupIdx) => (
+                {groupByDate(filtered, sortOrder === "date-asc").map(([date, txns], groupIdx) => (
                   <div key={date}>
                     {/* Date group header */}
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, marginTop: groupIdx > 0 ? 16 : 0 }}>
