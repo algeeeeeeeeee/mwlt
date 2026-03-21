@@ -3135,7 +3135,7 @@ export default function App() {
                 const isDesc = sortOrder === "date-desc";
                 const col = isDateSort ? T.accentText : T.textSub;
                 return (
-                  <button onClick={() => { haptic("light"); setSortOrder(isDateSort && isDesc ? "date-asc" : "date-desc"); }}
+                  <button onClick={() => { haptic("light"); setSortOrder(!isDateSort ? "date-desc" : isDesc ? "date-asc" : "date-desc"); }}
                     title={isDesc ? L.sortNewest : L.sortOldest}
                     style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isDateSort ? T.accentText+"60" : T.cardBorder}`, background: isDateSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color:col }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3153,7 +3153,7 @@ export default function App() {
                 const isDesc = sortOrder === "amt-desc";
                 const col = isAmtSort ? T.accentText : T.textSub;
                 return (
-                  <button onClick={() => { haptic("light"); setSortOrder(isAmtSort && isDesc ? "amt-asc" : "amt-desc"); }}
+                  <button onClick={() => { haptic("light"); setSortOrder(!isAmtSort ? "amt-desc" : isDesc ? "amt-asc" : "amt-desc"); }}
                     title={isDesc ? L.sortHighest : L.sortLowest}
                     style={{ width:32, height:32, borderRadius:99, border:`1.5px solid ${isAmtSort ? T.accentText+"60" : T.cardBorder}`, background: isAmtSort ? T.accentText+"15" : dark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, color:col }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
