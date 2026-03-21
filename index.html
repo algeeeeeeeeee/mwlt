@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" style="background:#0a0a0a">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" />
@@ -32,9 +32,11 @@
         -moz-osx-font-smoothing: grayscale;
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
         background: #0a0a0a;
+        overflow: hidden; /* lock during splash — released by __hideSplash */
       }
       @media (prefers-color-scheme: light) { html, body { background: #f5f4f0 !important; } }
-      #root { width: 100%; min-height: 100dvh; overflow-x: hidden; position: relative; }
+      /* Root hidden until splash done — no min-height so it can't leak below splash */
+      #root { width: 100%; height: 100%; overflow-x: hidden; position: relative; }
       #splash {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -43,11 +45,14 @@
         transition: opacity 0.4s ease;
         will-change: opacity;
         overflow: hidden;
+        /* ensure splash covers safe-area on notch/home-indicator devices */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
       }
       @media (prefers-color-scheme: light) {
         #splash { background: #f5f4f0; }
         #splash-text { color: #1a1a1a !important; }
-        #splash-sub { color: #888 !important; }
+        #splash-sub { color: #555 !important; }
       }
       #splash-inner {
         position: absolute;
@@ -78,6 +83,12 @@
       </div>
     </div>
     <script>
+      // Apply correct background before paint to avoid flash
+      (function(){
+        var isDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : true;
+        document.documentElement.style.background = isDark ? '#0a0a0a' : '#f5f4f0';
+        document.body && (document.body.style.background = isDark ? '#0a0a0a' : '#f5f4f0');
+      })();
       // JS centering — pakai window.innerHeight biar akurat di iOS PWA
       function centerSplash() {
         var inner = document.getElementById('splash-inner');
@@ -107,8 +118,8 @@
       window.__hideSplash=function(){
         var s=document.getElementById('splash');
         var r=document.getElementById('root');
-        if(r){r.style.visibility='visible';r.style.opacity='1';}
-        if(s){s.style.opacity='0';setTimeout(function(){s.remove();document.body.style.overflow='';},400);}
+        if(r){r.style.visibility='visible';r.style.opacity='1';r.style.minHeight='100dvh';}
+        if(s){s.style.opacity='0';setTimeout(function(){s.remove();document.documentElement.style.overflow='';document.body.style.overflow='';},400);}
       };
     </script>
     <div id="root" style="visibility:hidden;opacity:0;transition:opacity 0.3s ease;"></div>
