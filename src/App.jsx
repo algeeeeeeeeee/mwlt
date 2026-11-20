@@ -2042,7 +2042,7 @@ export default function App() {
                 <p style={{ fontSize:26, fontWeight:900, color:T.text, margin:"0 0 4px", lineHeight:1.15 }}>{lang==="en" ? "What's your\nname?" : "Siapa\nnamamu?"}</p>
                 <p style={{ fontSize:13, color:T.textSub, margin:"0 0 16px" }}>{lang==="en" ? "So greetings feel more personal." : "Biar sapaan lebih personal."}</p>
                 <input value={onboardName} onChange={e => setOnboardName(e.target.value)}
-                  placeholder="Pickles..." autoFocus
+                  placeholder={lang==="en" ? "e.g. Pickles..." : "Contoh: Pickles..."} autoFocus
                   onFocus={() => { setTimeout(() => { if(window.visualViewport){ const kb=window.innerHeight-window.visualViewport.height-window.visualViewport.offsetTop; setKbHeight(kb>50?Math.round(kb):0); }},150); }}
                   style={{ width:"100%", background:T.card, border:`2px solid ${onboardName?themeAccent:T.cardBorder}`, borderRadius:14, padding:"14px 18px", color:T.text, fontSize:16, fontFamily:"inherit", outline:"none", marginBottom:12, transition:"border 0.2s", boxSizing:"border-box" }}/>
                 <button onClick={() => { haptic(); goToStep(2); }} style={{ width:"100%", padding:15, borderRadius:14, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14, fontWeight:800, background:`linear-gradient(135deg,${themeAccent},${themePrimary})`, color:"white", marginBottom:8 }}>
