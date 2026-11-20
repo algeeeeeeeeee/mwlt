@@ -1066,7 +1066,22 @@ export default function App() {
     try { localStorage.setItem("gm_custom_accent", customAccent); } catch {}
   }, [customAccent]);
   const [userName, setUserName] = useState(() => {
-    try { return localStorage.getItem("gm_username") || ""; } catch { return ""; }
+    try {
+      const savedName = localStorage.getItem("gm_username") || "";
+      // Match only the five requested legacy profile values without keeping their names in the source.
+      const normalized = String(savedName).trim().toLowerCase().replace(/\s+/g, " ");
+      let hash = 2166136261;
+      for (let i = 0; i < normalized.length; i++) {
+        hash ^= normalized.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      const legacyNameHashes = new Set([1395557121, 1266443370, 3755048273, 906015118, 4265857141]);
+      if (legacyNameHashes.has(hash >>> 0)) {
+        localStorage.removeItem("gm_username");
+        return "";
+      }
+      return savedName;
+    } catch { return ""; }
   });
   useEffect(() => {
     try { localStorage.setItem("gm_username", userName); } catch {}
@@ -2027,7 +2042,7 @@ export default function App() {
                 <p style={{ fontSize:26, fontWeight:900, color:T.text, margin:"0 0 4px", lineHeight:1.15 }}>{lang==="en" ? "What's your\nname?" : "Siapa\nnamamu?"}</p>
                 <p style={{ fontSize:13, color:T.textSub, margin:"0 0 16px" }}>{lang==="en" ? "So greetings feel more personal." : "Biar sapaan lebih personal."}</p>
                 <input value={onboardName} onChange={e => setOnboardName(e.target.value)}
-                  placeholder={lang==="en" ? "e.g. Virgie..." : "Contoh: Virgie..."} autoFocus
+                  placeholder="Pickles..." autoFocus
                   onFocus={() => { setTimeout(() => { if(window.visualViewport){ const kb=window.innerHeight-window.visualViewport.height-window.visualViewport.offsetTop; setKbHeight(kb>50?Math.round(kb):0); }},150); }}
                   style={{ width:"100%", background:T.card, border:`2px solid ${onboardName?themeAccent:T.cardBorder}`, borderRadius:14, padding:"14px 18px", color:T.text, fontSize:16, fontFamily:"inherit", outline:"none", marginBottom:12, transition:"border 0.2s", boxSizing:"border-box" }}/>
                 <button onClick={() => { haptic(); goToStep(2); }} style={{ width:"100%", padding:15, borderRadius:14, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:14, fontWeight:800, background:`linear-gradient(135deg,${themeAccent},${themePrimary})`, color:"white", marginBottom:8 }}>
