@@ -251,7 +251,9 @@ private struct AmountCalculatorSheet: View {
     let initialValue: Int64
     let onApply: (Int64) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var display = ""
+    private var dark: Bool { colorScheme == .dark }
     @State private var stored: Double = 0
     @State private var operation: String?
     @State private var fresh = true
