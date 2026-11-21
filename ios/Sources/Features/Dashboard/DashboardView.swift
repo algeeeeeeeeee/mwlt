@@ -378,12 +378,12 @@ struct DashboardView: View {
                             showIcon: false
                         )
                     }
-                    ForEach(entries.prefix(4), id: \.0) { key, limit in
+                    ForEach(Array(entries.prefix(4).enumerated()), id: \.offset) { _, entry in
                         budgetProgressRow(
-                            title: MeowlettCategory.name(for: key, language: language),
-                            spent: monthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount },
-                            limit: limit,
-                            color: MeowlettCategory.color(for: key),
+                            title: MeowlettCategory.name(for: entry.0, language: language),
+                            spent: monthTransactions.filter { $0.category == entry.0 }.reduce(Int64(0)) { $0 + $1.amount },
+                            limit: entry.1,
+                            color: MeowlettCategory.color(for: entry.0),
                             showIcon: true
                         )
                     }
