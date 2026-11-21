@@ -8,6 +8,7 @@ struct ReportsView: View {
     @AppStorage("gm_income") private var incomeRaw = "5000000"
     @AppStorage("gm_budgets") private var budgetsRaw = "{}"
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.openURL) private var openURL
 
     @State private var reportDate = Date.now
     @State private var trendMode = "bar"
@@ -387,6 +388,23 @@ struct ReportsView: View {
                     .padding(.vertical, 12)
                     .background(LinearGradient(colors: [accent, primary], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 13))
             }
+            Button {
+                var components = URLComponents()
+                components.scheme = "https"
+                components.host = "wa.me"
+                components.path = "/"
+                components.queryItems = [URLQueryItem(name: "text", value: reportSummary)]
+                if let url = components.url { openURL(url) }
+            } label: {
+                Label(isEnglish ? "Share to WhatsApp" : "Bagikan ke WhatsApp", systemImage: "message.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(accent)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(accent.opacity(0.25), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
         }
         .padding(13)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
@@ -482,14 +500,13 @@ struct ReportsView: View {
     }
 
     private var reportCSV: String {
-        var output = "Date,Description,Category,Location,Note,Amount\n"
-        for item in store.transactions.sorted(by: { $0.date < $1.date }) {
+        var output = "Tanggal,Keterangan,Kategori,Lokasi,Jumlah\n"
+        for item in store.transactions.sorted(by: { $0.date > $1.date }) {
             let fields = [
                 item.date.formatted(.iso8601.year().month().day()),
                 item.description,
                 MeowlettCategory.name(for: item.category, language: language),
                 item.location,
-                item.note,
                 String(item.amount)
             ]
             output += fields.map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }.joined(separator: ",") + "\n"
@@ -552,7 +569,15 @@ struct ReportsView: View {
     }
 
     private var reportSummary: String {
-        "\(isEnglish ? "Meowlett report" : "Laporan Meowlett") · \(currentMonthLabel)\n\(isEnglish ? "Income" : "Pemasukan"): \(rupiah(income))\n\(isEnglish ? "Expenses" : "Pengeluaran"): \(rupiah(currentMonthTotal))\n\(isEnglish ? "Remaining" : "Sisa"): \(rupiah(income - currentMonthTotal))"
+        let topCategory = Dictionary(grouping: currentMonthTransactions, by: \.category)
+            .map { key, values in (key, values.reduce(Int64(0)) { $0 + $1.amount }) }
+            .max { $0.1 < $1.1 }
+        let topLabel = topCategory.map { MeowlettCategory.name(for: $0.0, language: language) } ?? "-"
+        let month = Date.now.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: isEnglish ? "en_GB" : "id_ID")))
+        if isEnglish {
+            return "*Finance Report — \(month)*\n\nExpenses: \(rupiah(currentMonthTotal))\nIncome: \(rupiah(income))\nRemaining: \(rupiah(max(0, income - currentMonthTotal)))\n\nBiggest: \(topLabel)\(topCategory.map { " (\(rupiah($0.1)))" } ?? "")\n\n_Made with Meowlett_"
+        }
+        return "*Laporan Keuangan — \(month)*\n\nPengeluaran: \(rupiah(currentMonthTotal))\nPemasukan: \(rupiah(income))\nSisa: \(rupiah(max(0, income - currentMonthTotal)))\n\nTerbesar: \(topLabel)\(topCategory.map { " (\(rupiah($0.1)))" } ?? "")\n\n_Dibuat dengan Meowlett_"
     }
 
     private func sectionHeading(_ title: String, symbol: String) -> some View {

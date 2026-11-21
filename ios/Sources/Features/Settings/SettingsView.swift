@@ -415,37 +415,145 @@ private struct SettingsNotificationsSheet: View {
     @Binding var day: String
     let isEnglish: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var permissionError = ""
 
+    private var isDark: Bool { colorScheme == .dark }
+    private var primary: Color { AppAppearance.primary }
+    private var accent: Color { AppAppearance.accent }
+    private var dayLabels: [String] {
+        isEnglish ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"]
+    }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    Toggle(isEnglish ? "Daily reminder" : "Pengingat harian", isOn: Binding(
-                        get: { enabled },
-                        set: { value in Task { await updateDailyReminder(value) } }
-                    ))
-                    Toggle(isEnglish ? "Weekly summary" : "Ringkasan Mingguan", isOn: $weekly)
-                    Picker(isEnglish ? "Summary day" : "Hari ringkasan", selection: $day) {
-                        ForEach(Array((isEnglish ? ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] : ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"]).enumerated()), id: \.offset) { index, label in
-                            Text(label).tag(String(index))
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.28))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+                .padding(.bottom, 14)
+
+            HStack(spacing: 10) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(AppAppearance.card2(dark: isDark))
+                    .frame(width: 38, height: 38)
+                    .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(accent))
+                Text(isEnglish ? "Notifications" : "Notifikasi")
+                    .font(.system(size: 17, weight: .black))
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .background(AppAppearance.card2(dark: isDark), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 10)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(AppAppearance.card2(dark: isDark))
+                            .frame(width: 36, height: 36)
+                            .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(accent))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isEnglish ? "Daily reminder" : "Pengingat harian")
+                                .font(.system(size: 14, weight: .bold))
+                            Text(enabled
+                                 ? (isEnglish ? "Notifications active" : "Notifikasi aktif")
+                                 : (isEnglish ? "Notifications off" : "Notifikasi nonaktif"))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        switchControl(isOn: enabled) {
+                            Task { await updateDailyReminder(!enabled) }
                         }
                     }
-                    .disabled(!weekly)
-                    if !permissionError.isEmpty {
-                        Text(permissionError).font(.footnote).foregroundStyle(.red)
+                    .padding(.vertical, 14)
+
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
+                    VStack(spacing: 10) {
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(AppAppearance.card2(dark: isDark))
+                                .frame(width: 36, height: 36)
+                                .overlay(Image(systemName: "chart.bar.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(weekly ? accent : .secondary))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(isEnglish ? "Weekly summary" : "Ringkasan Mingguan")
+                                    .font(.system(size: 14, weight: .bold))
+                                Text(weekly ? (isEnglish ? "Every \(dayLabels[Int(day) ?? 0])" : "\(dayLabels[Int(day) ?? 0]) tiap minggu") : (isEnglish ? "Off" : "Nonaktif"))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            switchControl(isOn: weekly) { weekly.toggle() }
+                        }
+                        if weekly {
+                            HStack(spacing: 6) {
+                                ForEach(Array(dayLabels.enumerated()), id: \.offset) { index, title in
+                                    let selected = day == String(index)
+                                    Button { day = String(index) } label: {
+                                        Text(title)
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundStyle(selected ? .white : Color.secondary)
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 8)
+                                            .background(selected ? primary : AppAppearance.card2(dark: isDark), in: Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.top, 3)
+                        }
                     }
-                } footer: {
-                    Text(isEnglish ? "Notifications are scheduled locally on this device." : "Notifikasi dijadwalkan lokal di perangkat ini.")
+                    .padding(.vertical, 14)
+
+                    if !permissionError.isEmpty {
+                        Text(permissionError)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color(hex: "#ef4444"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 6)
+                    }
                 }
-            }
-            .navigationTitle(isEnglish ? "Notifications" : "Notifikasi")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button(isEnglish ? "Done" : "Selesai") { dismiss() } }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
             }
         }
+        .background(AppAppearance.modal(dark: isDark))
         .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(28)
+    }
+
+    private func switchControl(isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Capsule()
+                .fill(isOn ? primary : Color.secondary.opacity(isDark ? 0.25 : 0.20))
+                .frame(width: 48, height: 28)
+                .overlay(alignment: isOn ? .trailing : .leading) {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 20, height: 20)
+                        .shadow(color: .black.opacity(0.16), radius: 3, x: 0, y: 1)
+                        .padding(4)
+                }
+                .animation(.easeInOut(duration: 0.18), value: isOn)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isOn ? (isEnglish ? "On" : "Aktif") : (isEnglish ? "Off" : "Nonaktif"))
     }
 
     @MainActor
@@ -461,92 +569,8 @@ private struct SettingsNotificationsSheet: View {
             }
         } else {
             enabled = false
+            permissionError = ""
         }
-    }
-}
-
-private struct SettingsBudgetSheet: View {
-    @AppStorage("gm_categories") private var categoriesJSON = ""
-    @AppStorage("gm_budgets") private var budgetsRaw = "{}"
-    let isEnglish: Bool
-    @State private var budgets: [String: Int64] = [:]
-    @State private var loaded = false
-    @EnvironmentObject private var store: FinanceStore
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-    private var isDark: Bool { colorScheme == .dark }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 10) {
-                    ForEach(MeowlettCategory.all, id: \.id) { category in
-                        let spent = store.transactions.filter { $0.category == category.id && Calendar.current.isDate($0.date, equalTo: .now, toGranularity: .month) }.reduce(Int64(0)) { $0 + $1.amount }
-                        let limit = budgets[category.id] ?? 0
-                        VStack(spacing: 8) {
-                            HStack(spacing: 10) {
-                                RoundedRectangle(cornerRadius: 11).fill(Color(hex: category.color).opacity(0.15)).frame(width: 36, height: 36)
-                                    .overlay(Image(systemName: category.icon).foregroundStyle(Color(hex: category.color)))
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(isEnglish ? category.enName : category.idName).font(.system(size: 13, weight: .bold))
-                                    if limit > 0 {
-                                        Text("\(rupiah(spent)) / \(rupiah(limit))").font(.system(size: 10)).foregroundStyle(.secondary)
-                                    }
-                                }
-                                Spacer()
-                                TextField(isEnglish ? "Set limit" : "Atur limit", text: Binding(
-                                    get: { limit > 0 ? String(limit) : "" },
-                                    set: { value in budgets[category.id] = Int64(value.filter(\.isNumber)) ?? 0 }
-                                ))
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(width: 104)
-                                .font(.system(size: 13, weight: .bold))
-                                .padding(9)
-                                .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 11))
-                            }
-                            if limit > 0 {
-                                GeometryReader { proxy in
-                                    Capsule().fill(Color.primary.opacity(0.06)).overlay(alignment: .leading) {
-                                        Capsule().fill(Color(hex: category.color)) .frame(width: proxy.size.width * CGFloat(min(100, limit > 0 ? Double(spent) / Double(limit) * 100 : 0)) / 100)
-                                    }
-                                }
-                                .frame(height: 5)
-                            }
-                        }
-                        .padding(13)
-                        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 15))
-                    }
-                }
-                .padding(16)
-            }
-            .navigationTitle(isEnglish ? "Per-category limits" : "Limit per Kategori")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(isEnglish ? "Cancel" : "Batal") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(isEnglish ? "Save" : "Simpan") { save(); dismiss() }
-                }
-            }
-        }
-        .onAppear {
-            if let data = budgetsRaw.data(using: .utf8),
-               let decoded = try? JSONDecoder().decode([String: Int64].self, from: data) {
-                budgets = decoded
-            }
-            loaded = true
-        }
-        .onChange(of: budgets) { _, value in if loaded { save() } }
-        .presentationDetents([.large])
-    }
-
-    private func save() {
-        guard let data = try? JSONEncoder().encode(budgets), let value = String(data: data, encoding: .utf8) else { return }
-        budgetsRaw = value
-    }
-    private func rupiah(_ amount: Int64) -> String {
-        let nf = NumberFormatter(); nf.locale = Locale(identifier: "id_ID"); nf.numberStyle = .decimal
-        return "Rp" + (nf.string(from: NSNumber(value: amount)) ?? String(amount))
     }
 }
 
