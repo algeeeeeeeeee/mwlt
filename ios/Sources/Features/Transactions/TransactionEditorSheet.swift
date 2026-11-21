@@ -87,7 +87,7 @@ struct TransactionEditorSheet: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(AppAppearance.modal(dark: dark))
-        .presentationDetents([.fraction(0.88)])
+        .presentationDetents([.height(560)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
         .presentationBackground(AppAppearance.modal(dark: dark))
