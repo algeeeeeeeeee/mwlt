@@ -460,6 +460,7 @@ private struct SettingsNotificationsSheet: View {
 }
 
 private struct SettingsBudgetSheet: View {
+    @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_budgets") private var budgetsRaw = "{}"
     let isEnglish: Bool
     @State private var budgets: [String: Int64] = [:]
