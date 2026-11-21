@@ -32,8 +32,7 @@ struct MeowlettTransaction: Identifiable, Codable, Equatable {
     }
 }
 
-struct MeowlettCategoryDefinition: Codable, Identifiable, Equatable {
-    var id: String
+struct MeowlettCategoryDefinition: Codable, Equatable {
     var label: String
     var labelId: String?
     var icon: String
