@@ -66,6 +66,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle(isEnglish ? "Settings" : "Pengaturan")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
