@@ -1,7 +1,8 @@
 import SwiftUI
 
 private struct DateWishlistItem: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
+    // PWA stores Date.now() as a numeric ID; keep the same JSON shape for migration compatibility.
+    var id: Int64
     var label: String
     var done: Bool = false
 }
@@ -389,7 +390,7 @@ struct DateTabView: View {
     private func addWishlist() {
         let value = wishlistInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
-        wishlist.append(DateWishlistItem(label: value))
+        wishlist.append(DateWishlistItem(id: Int64(Date().timeIntervalSince1970 * 1000), label: value))
         wishlistInput = ""
         showWishlistForm = false
     }
