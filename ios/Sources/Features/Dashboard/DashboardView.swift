@@ -720,8 +720,10 @@ private struct NativeMoneyEntrySheet: View {
     let accent: Color
     let onSave: (Int64) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("gm_lang") private var language = "id"
     @State private var amountText = ""
+    private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -759,7 +761,7 @@ private struct NativeMoneyEntrySheet: View {
             }
         }
         .padding(20)
-        .background(Color(uiColor: .systemBackground))
+        .background(AppAppearance.modal(dark: isDark))
         .presentationDetents([.height(250)])
         .presentationDragIndicator(.visible)
         .onAppear {
@@ -775,8 +777,10 @@ private struct DashboardGoalEditorSheet: View {
     let goal: DashboardSavingsGoal?
     let onSave: (DashboardSavingsGoal) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("gm_lang") private var language = "id"
     @State private var label = ""
+    private var isDark: Bool { colorScheme == .dark }
     @State private var target = ""
     @State private var saved = ""
     @State private var color = "#60a5fa"
