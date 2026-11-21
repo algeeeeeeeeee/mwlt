@@ -31,6 +31,18 @@ enum AppAppearance {
 
     static var accent: Color { Color(hex: accentHex) }
     static var primary: Color { Color(hex: primaryHex) }
+
+    // Exact neutral palette used by buildTheme() in src/utils/theme.js.
+    static func background(dark: Bool) -> Color { Color(hex: dark ? "#0a0a0a" : "#f4f4f4") }
+    static func card(dark: Bool) -> Color { Color(hex: dark ? "#141414" : "#ffffff") }
+    static func card2(dark: Bool) -> Color { Color(hex: dark ? "#1c1c1c" : "#f9f9f9") }
+    static func border(dark: Bool) -> Color { Color(hex: dark ? "#272727" : "#e8e8e8") }
+    static func input(dark: Bool) -> Color { Color(hex: dark ? "#1a1a1a" : "#f4f4f4") }
+    static func inputBorder(dark: Bool) -> Color { Color(hex: dark ? "#303030" : "#e0e0e0") }
+    static func text(dark: Bool) -> Color { Color(hex: dark ? "#ffffff" : "#111111") }
+    static func textSub(dark: Bool) -> Color { Color(hex: dark ? "#9ca3af" : "#6b7280") }
+    static func textMuted(dark: Bool) -> Color { Color(hex: dark ? "#6b7280" : "#9ca3af") }
+    static func modal(dark: Bool) -> Color { Color(hex: dark ? "#111111" : "#ffffff") }
 }
 
 extension Color {
