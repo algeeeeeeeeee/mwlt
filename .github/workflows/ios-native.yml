@@ -58,11 +58,12 @@ jobs:
       - name: Capture native app previews
         run: |
           set -euo pipefail
-          DEVICE_ID="$(xcrun simctl list devices available | sed -nE 's/.*\\(([0-9A-F-]{36})\\) \\(Shutdown\\).*/\\1/p' | head -n1)"
+          DEVICE_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); devices=[x for group in d["devices"].values() for x in group if x.get("isAvailable") and x.get("name","").startswith("iPhone")]; booted=next((x for x in devices if x.get("state")=="Booted"),None); chosen=booted or next((x for x in devices if x.get("state")=="Shutdown"),None); print(chosen["udid"] if chosen else "")')"
           if [ -z "$DEVICE_ID" ]; then
-            DEVICE_ID="$(xcrun simctl list devices available | sed -nE 's/.*\\(([0-9A-F-]{36})\\) \\(Booted\\).*/\\1/p' | head -n1)"
+            echo "No available iPhone Simulator found."
+            xcrun simctl list devices available
+            exit 1
           fi
-          test -n "$DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
           xcrun simctl bootstatus "$DEVICE_ID" -b
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
