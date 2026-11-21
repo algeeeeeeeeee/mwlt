@@ -47,7 +47,7 @@ struct OnboardingView: View {
                         }
                         Spacer()
                         Text("MEOWLETT")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .font(MeowlettTypography.font(size: 10, weight: .black))
                             .tracking(1.5)
                             .foregroundStyle(accent)
                     }
@@ -88,14 +88,14 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 18) {
             stepLabel(1)
             Text(isEnglish ? "Welcome to\nMeowlett" : "Selamat datang\ndi Meowlett")
-                .font(.system(size: 31, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 31, weight: .black))
                 .lineSpacing(1)
                 .foregroundStyle(.primary)
 
             Text(isEnglish
                  ? "Track expenses, monitor your budget, and reach your financial goals."
                  : "Catat pengeluaran, pantau budget,\ndan capai tujuan finansialmu.")
-                .font(.system(size: 15))
+                .font(MeowlettTypography.font(size: 15, weight: .regular))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -115,11 +115,11 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 15) {
             stepLabel(2)
             Text(isEnglish ? "What's your\nname?" : "Siapa\nnamamu?")
-                .font(.system(size: 30, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 30, weight: .black))
                 .foregroundStyle(.primary)
 
             Text(isEnglish ? "So greetings feel more personal." : "Biar sapaan lebih personal.")
-                .font(.system(size: 14))
+                .font(MeowlettTypography.font(size: 14, weight: .regular))
                 .foregroundStyle(.secondary)
 
             TextField(isEnglish ? "e.g. Pickles..." : "Contoh: Pickles...", text: $name)
@@ -143,20 +143,20 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 15) {
             stepLabel(3)
             Text(isEnglish ? "Monthly\nincome?" : "Pemasukan\nbulan ini?")
-                .font(.system(size: 30, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 30, weight: .black))
                 .foregroundStyle(.primary)
 
             Text(isEnglish ? "You can change this anytime." : "Bisa diubah kapan saja di Pengaturan.")
-                .font(.system(size: 14))
+                .font(MeowlettTypography.font(size: 14, weight: .regular))
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 8) {
                 Text("Rp")
-                    .font(.system(size: 15, weight: .bold))
+                    .font(MeowlettTypography.font(size: 15, weight: .bold))
                     .foregroundStyle(.secondary)
                 TextField("5.000.000", text: $income)
                     .keyboardType(.numberPad)
-                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                    .font(MeowlettTypography.font(size: 19, weight: .semibold))
             }
             .padding(16)
             .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
@@ -164,7 +164,7 @@ struct OnboardingView: View {
 
             if let value = parsedIncome, value > 0 {
                 Text("= \(rupiah(value))")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(accent)
             }
 
@@ -182,15 +182,15 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 15) {
             stepLabel(4)
             Text(isEnglish ? "Choose your\nlook" : "Pilih\ntampilan")
-                .font(.system(size: 30, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 30, weight: .black))
                 .foregroundStyle(.primary)
 
             Text(isEnglish ? "You can change this anytime in Settings." : "Bisa diganti kapan saja di Pengaturan.")
-                .font(.system(size: 14))
+                .font(MeowlettTypography.font(size: 14, weight: .regular))
                 .foregroundStyle(.secondary)
 
             Text(isEnglish ? "DISPLAY MODE" : "MODE TAMPILAN")
-                .font(.system(size: 10, weight: .black))
+                .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(1)
                 .foregroundStyle(.secondary)
 
@@ -200,7 +200,7 @@ struct OnboardingView: View {
             }
 
             Text(isEnglish ? "COLOR THEME" : "TEMA WARNA")
-                .font(.system(size: 10, weight: .black))
+                .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(1)
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
@@ -261,7 +261,7 @@ struct OnboardingView: View {
 
     private func stepLabel(_ number: Int) -> some View {
         Text(isEnglish ? "STEP \(number) / 4" : "LANGKAH \(number) / 4")
-            .font(.system(size: 11, weight: .black))
+            .font(MeowlettTypography.font(size: 11, weight: .black))
             .tracking(1)
             .foregroundStyle(accent)
     }
@@ -310,7 +310,7 @@ struct OnboardingView: View {
     private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 15, weight: .black))
+                .font(MeowlettTypography.font(size: 15, weight: .black))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -322,7 +322,7 @@ struct OnboardingView: View {
     private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(MeowlettTypography.font(size: 13, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)

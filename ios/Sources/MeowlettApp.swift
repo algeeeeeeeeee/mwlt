@@ -2,6 +2,10 @@ import SwiftUI
 
 @main
 struct MeowlettApp: App {
+    init() {
+        MeowlettTypography.registerBundledFonts()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

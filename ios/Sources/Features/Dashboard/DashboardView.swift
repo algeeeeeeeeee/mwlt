@@ -233,7 +233,7 @@ struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 4) {
                             Text(isEnglish ? "INCOME" : "PEMASUKAN")
-                                .font(.system(size: 7, weight: .bold))
+                                .font(MeowlettTypography.font(size: 7, weight: .bold))
                                 .tracking(1)
                                 .foregroundStyle(.white.opacity(0.42))
                             Image(systemName: "pencil")
@@ -241,7 +241,7 @@ struct DashboardView: View {
                                 .foregroundStyle(.white.opacity(0.42))
                         }
                         Text(rupiah(income))
-                            .font(.system(size: 13, weight: .black))
+                            .font(MeowlettTypography.font(size: 13, weight: .black))
                             .foregroundStyle(.white.opacity(0.9))
                     }
                 }
@@ -249,22 +249,22 @@ struct DashboardView: View {
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(currentMonthLabel.uppercased())
-                        .font(.system(size: 7, weight: .bold))
+                        .font(MeowlettTypography.font(size: 7, weight: .bold))
                         .tracking(1)
                         .foregroundStyle(.white.opacity(0.4))
                     Text(Date.now.formatted(.dateTime.day()))
-                        .font(.system(size: 22, weight: .black))
+                        .font(MeowlettTypography.font(size: 22, weight: .black))
                         .foregroundStyle(.white.opacity(0.72))
                 }
             }
             .padding(.bottom, 20)
 
             Text(isEnglish ? "MONTHLY EXPENSE" : "PENGELUARAN BULAN INI")
-                .font(.system(size: 8, weight: .semibold))
+                .font(MeowlettTypography.font(size: 8, weight: .semibold))
                 .tracking(1.2)
                 .foregroundStyle(.white.opacity(0.45))
             Text(rupiah(spent))
-                .font(.system(size: 32, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 32, weight: .black))
                 .tracking(-1.5)
                 .foregroundStyle(.white)
                 .lineLimit(1)
@@ -277,7 +277,7 @@ struct DashboardView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.white.opacity(0.72))
             }
-            .font(.system(size: 10))
+            .font(MeowlettTypography.font(size: 10, weight: .regular))
             .padding(.top, 4)
             .padding(.bottom, 20)
 
@@ -306,10 +306,10 @@ struct DashboardView: View {
                     .fontWeight(.bold)
                     .foregroundStyle(progressColor)
             }
-            .font(.system(size: 10))
+            .font(MeowlettTypography.font(size: 10, weight: .regular))
             if remaining < 0 {
                 Text(isEnglish ? "You have exceeded your income" : "Pengeluaran sudah melebihi pemasukan")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .foregroundStyle(Color(hex: "#fecaca"))
                     .padding(.top, 12)
             }
@@ -360,9 +360,9 @@ struct DashboardView: View {
                 Image(systemName: "flame.fill").foregroundStyle(Color(hex: "#fb923c"))
                 Text("STREAK").foregroundStyle(.secondary)
             }
-            .font(.system(size: 9, weight: .heavy))
+            .font(MeowlettTypography.font(size: 9, weight: .heavy))
             Text("\(currentStreak) " + (isEnglish ? "days" : "hari"))
-                .font(.system(size: 26, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 26, weight: .black))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             HStack(spacing: 4) {
@@ -370,11 +370,11 @@ struct DashboardView: View {
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(currentStreak >= 7 ? Color(hex: "#fb923c") : Color(hex: "#4ade80"))
                 Text(currentStreak >= 7 ? (isEnglish ? "On fire!" : "Konsisten!") : currentStreak >= 3 ? (isEnglish ? "Keep going!" : "Teruskan!") : (isEnglish ? "Open daily" : "Buka tiap hari"))
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(MeowlettTypography.font(size: 9, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             Text("“\(fact)”")
-                .font(.system(size: 8, weight: .medium))
+                .font(MeowlettTypography.font(size: 8, weight: .medium))
                 .italic()
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
@@ -392,25 +392,25 @@ struct DashboardView: View {
                 Image(systemName: "bolt.fill").foregroundStyle(Color(hex: AppAppearance.accentHex))
                 Text(isEnglish ? "THIS WEEK" : "MINGGU INI").foregroundStyle(.secondary)
             }
-            .font(.system(size: 9, weight: .heavy))
+            .font(MeowlettTypography.font(size: 9, weight: .heavy))
             if thisWeekSpent == 0 {
                 Text(isEnglish ? "No spending this week yet." : "Belum ada transaksi minggu ini.")
-                    .font(.system(size: 11))
+                    .font(MeowlettTypography.font(size: 11, weight: .regular))
                     .foregroundStyle(.secondary)
             } else {
                 Text(rupiah(thisWeekSpent))
-                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .font(MeowlettTypography.font(size: 17, weight: .black))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 if lastWeekSpent > 0 && thisWeekSpent != lastWeekSpent {
                     let difference = thisWeekSpent - lastWeekSpent
                     Text("\(difference > 0 ? "▲" : "▼") \(rupiah(abs(difference))) " + (isEnglish ? "vs last week" : "vs minggu lalu"))
-                        .font(.system(size: 10, weight: .bold))
+                        .font(MeowlettTypography.font(size: 10, weight: .bold))
                         .foregroundStyle(difference > 0 ? Color(hex: "#f87171") : Color(hex: "#4ade80"))
                 }
                 if let topWeeklyCategory {
                     Text((isEnglish ? "Most: " : "Terbanyak: ") + MeowlettCategory.name(for: topWeeklyCategory, language: language))
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
                         .foregroundStyle(MeowlettCategory.color(for: topWeeklyCategory))
                         .lineLimit(1)
                 }
@@ -437,11 +437,11 @@ struct DashboardView: View {
                     .background((predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex)).opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(isEnglish ? "MONTH PREDICTION" : "PREDIKSI AKHIR BULAN")
-                        .font(.system(size: 10, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 10, weight: .heavy))
                         .tracking(0.5)
                         .foregroundStyle(.secondary)
                     Text((isEnglish ? "Est. spending: " : "Est. pengeluaran: ") + rupiah(predicted))
-                        .font(.system(size: 12, weight: .bold))
+                        .font(MeowlettTypography.font(size: 12, weight: .bold))
                         .foregroundStyle(predicted > income ? Color(hex: "#f87171") : .primary)
                     Label(
                         predicted > income
@@ -471,17 +471,17 @@ struct DashboardView: View {
                         .frame(width: 28, height: 28)
                         .background(score.color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
                     Text(isEnglish ? "FINANCIAL HEALTH" : "KESEHATAN FINANSIAL")
-                        .font(.system(size: 11, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
                         .tracking(0.5)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text("\(score.score)")
-                        .font(.system(size: 25, weight: .black, design: .rounded))
+                        .font(MeowlettTypography.font(size: 25, weight: .black))
                         .foregroundStyle(score.color)
                     Text("/100")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -496,11 +496,11 @@ struct DashboardView: View {
             .frame(height: 8)
             HStack(alignment: .center, spacing: 8) {
                 Text(score.label)
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
                     .foregroundStyle(score.color)
                 Spacer(minLength: 3)
                 Text(dailyHealthTip)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(MeowlettTypography.font(size: 9, weight: .bold))
                     .foregroundStyle(score.color)
                     .multilineTextAlignment(.trailing)
                     .lineLimit(2)
@@ -529,7 +529,7 @@ struct DashboardView: View {
                     .frame(width: 28, height: 28)
                     .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
                 Text(isEnglish ? "Monthly budget" : "Budget Bulanan")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
                 Spacer()
                 Button { showOverallBudgetEditor = true } label: {
                     Image(systemName: "pencil")
@@ -549,14 +549,14 @@ struct DashboardView: View {
                         .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(isEnglish ? "No limits set" : "Belum ada limit")
-                            .font(.system(size: 13, weight: .heavy))
+                            .font(MeowlettTypography.font(size: 13, weight: .heavy))
                         Text(isEnglish ? "Set one to stay on track." : "Atur budget supaya pengeluaran terkontrol.")
-                            .font(.system(size: 11))
+                            .font(MeowlettTypography.font(size: 11, weight: .regular))
                             .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 2)
                     Button(isEnglish ? "Set budget" : "Atur") { showOverallBudgetEditor = true }
-                        .font(.system(size: 11, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
                         .foregroundStyle(Color(hex: AppAppearance.primaryHex))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -597,7 +597,7 @@ struct DashboardView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(color)
                 Text(MeowlettCategory.name(for: key, language: language))
-                    .font(.system(size: 12, weight: .bold))
+                    .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(.primary)
                 Spacer(minLength: 4)
                 Button { budgets[key] = nil } label: {
@@ -610,7 +610,7 @@ struct DashboardView: View {
                 Button { budgets[key] = (budgets[key] ?? limit) + 50_000 } label: {
                     HStack(spacing: 3) {
                         Text("\(percentage)%")
-                            .font(.system(size: 11, weight: .heavy))
+                            .font(MeowlettTypography.font(size: 11, weight: .heavy))
                         Image(systemName: "plus")
                             .font(.system(size: 8, weight: .black))
                     }
@@ -629,7 +629,7 @@ struct DashboardView: View {
             }
             .frame(height: 6)
             Text("\(rupiah(spent)) / \(rupiah(limit))")
-                .font(.system(size: 10, weight: .medium))
+                .font(MeowlettTypography.font(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -645,11 +645,11 @@ struct DashboardView: View {
                     Circle().fill(color).frame(width: 7, height: 7)
                 }
                 Text(title)
-                    .font(.system(size: 12, weight: .bold))
+                    .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(.primary)
                 Spacer()
                 Text("\\(percentage)%")
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
                     .foregroundStyle(barColor)
             }
             GeometryReader { proxy in
@@ -661,7 +661,7 @@ struct DashboardView: View {
             }
             .frame(height: 6)
             Text("\\(rupiah(spent)) / \\(rupiah(limit))")
-                .font(.system(size: 10, weight: .medium))
+                .font(MeowlettTypography.font(size: 10, weight: .medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -675,7 +675,7 @@ struct DashboardView: View {
                     .frame(width: 28, height: 28)
                     .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
                 Text(isEnglish ? "Savings goals" : "Target Tabungan")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
                 Spacer()
                 if !savingsGoals.isEmpty {
                     Button {
@@ -699,9 +699,9 @@ struct DashboardView: View {
                         .background(Color(hex: AppAppearance.accentHex).opacity(0.12), in: Circle())
                         .overlay(Circle().stroke(Color(hex: AppAppearance.accentHex).opacity(0.2), lineWidth: 1.5))
                     Text(isEnglish ? "No savings goals yet" : "Belum ada target tabungan")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(MeowlettTypography.font(size: 14, weight: .bold))
                     Text(isEnglish ? "Create your first target." : "Yuk, buat target pertamamu!")
-                        .font(.system(size: 12))
+                        .font(MeowlettTypography.font(size: 12, weight: .regular))
                         .foregroundStyle(.secondary)
                     Button {
                         editingGoal = nil
@@ -743,14 +743,14 @@ struct DashboardView: View {
                     .frame(width: 28, height: 28)
                     .background(color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(goal.label).font(.system(size: 13, weight: .bold))
+                    Text(goal.label).font(MeowlettTypography.font(size: 13, weight: .bold))
                     Text("\\(rupiah(goal.saved)) / \\(rupiah(goal.target))")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
                 Text("\\(percentage)%")
-                    .font(.system(size: 13, weight: .black))
+                    .font(MeowlettTypography.font(size: 13, weight: .black))
                     .foregroundStyle(percentage >= 100 ? Color(hex: "#4ade80") : color)
                 Button {
                     editingGoal = goal
@@ -777,7 +777,7 @@ struct DashboardView: View {
             if remaining > 0 {
                 HStack(spacing: 4) {
                     Text((isEnglish ? "Remaining " : "Sisa ") + rupiah(remaining))
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                     if let deadline = goal.deadline, let date = dateFromISO(deadline) {
                         let days = Calendar.current.dateComponents(
@@ -791,7 +791,7 @@ struct DashboardView: View {
                              : days <= 7
                                 ? "\(days) " + (isEnglish ? "days left" : "hari lagi")
                                 : date.formatted(.dateTime.day().month(.abbreviated).year()))
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(MeowlettTypography.font(size: 10, weight: .semibold))
                             .foregroundStyle(days < 0 ? Color(hex: "#f87171") : days <= 7 ? Color(hex: "#f59e0b") : Color.secondary)
                     }
                 }
@@ -812,7 +812,7 @@ struct DashboardView: View {
                         : "\(years)th\(extraMonths > 0 ? " \(extraMonths)bl" : "") lagi"
                 }()
                 Text("Est. " + estimate)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(MeowlettTypography.font(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
             if percentage < 100 {
@@ -820,7 +820,7 @@ struct DashboardView: View {
                     HStack(spacing: 6) {
                         TextField(isEnglish ? "Savings amount" : "Nominal tabungan", text: $quickAddAmount)
                             .keyboardType(.numberPad)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(MeowlettTypography.font(size: 13, weight: .semibold))
                             .padding(.horizontal, 12)
                             .frame(height: 38)
                             .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
@@ -940,18 +940,18 @@ struct DashboardView: View {
                             Image(systemName: symbol)
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(color)
-                            Text(title).font(.system(size: 12, weight: .bold))
+                            Text(title).font(MeowlettTypography.font(size: 12, weight: .bold))
                             Text("\(values.count)x")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(MeowlettTypography.font(size: 10, weight: .semibold))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 1) {
                             Text("-\(rupiah(amount))")
-                                .font(.system(size: 12, weight: .heavy))
+                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
                                 .foregroundStyle(Color(hex: "#f87171"))
                             Text("\(percentage)%")
-                                .font(.system(size: 9, weight: .semibold))
+                                .font(MeowlettTypography.font(size: 9, weight: .semibold))
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -976,9 +976,9 @@ struct DashboardView: View {
             if categoryTotals.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "chart.pie").font(.system(size: 28)).foregroundStyle(Color(hex: AppAppearance.accentHex))
-                    Text(isEnglish ? "No data yet" : "Belum ada data").font(.system(size: 15, weight: .bold))
+                    Text(isEnglish ? "No data yet" : "Belum ada data").font(MeowlettTypography.font(size: 15, weight: .bold))
                     Text(isEnglish ? "Add transactions to see your breakdown." : "Tambahkan transaksi untuk melihat rinciannya.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
@@ -991,11 +991,11 @@ struct DashboardView: View {
                             HStack(spacing: 6) {
                                 Circle().fill(MeowlettCategory.color(for: item.category)).frame(width: 7, height: 7)
                                 Text(MeowlettCategory.name(for: item.category, language: language))
-                                    .font(.system(size: 10, weight: .semibold))
+                                    .font(MeowlettTypography.font(size: 10, weight: .semibold))
                                     .lineLimit(1)
                                 Spacer(minLength: 2)
                                 Text(rupiah(item.amount))
-                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .font(MeowlettTypography.font(size: 10, weight: .bold))
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
                             }
@@ -1015,12 +1015,12 @@ struct DashboardView: View {
                 sectionHeading(isEnglish ? "Recent transactions" : "Transaksi Terbaru", icon: "clock.arrow.circlepath")
                 Spacer()
                 Text("\(store.transactions.count)")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .foregroundStyle(.secondary)
             }
             if store.transactions.isEmpty {
                 Text(isEnglish ? "Your recent transactions will appear here." : "Transaksi terbarumu akan muncul di sini.")
-                    .font(.system(size: 12))
+                    .font(MeowlettTypography.font(size: 12, weight: .regular))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 24)
@@ -1053,7 +1053,7 @@ struct DashboardView: View {
                 .foregroundStyle(Color(hex: AppAppearance.accentHex))
                 .frame(width: 28, height: 28)
                 .background(Color(hex: AppAppearance.accentHex).opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
-            Text(title).font(.system(size: 14, weight: .heavy))
+            Text(title).font(MeowlettTypography.font(size: 14, weight: .heavy))
         }
     }
 
@@ -1116,14 +1116,14 @@ private struct NativeMoneyEntrySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title).font(.system(size: 17, weight: .black))
+            Text(title).font(MeowlettTypography.font(size: 17, weight: .black))
             Text(language == "en" ? "Enter an amount in Indonesian rupiah." : "Masukkan nominal dalam Rupiah.")
-                .font(.system(size: 12)).foregroundStyle(.secondary)
+                .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary)
             HStack(spacing: 8) {
-                Text("Rp").font(.system(size: 15, weight: .bold)).foregroundStyle(.secondary)
+                Text("Rp").font(MeowlettTypography.font(size: 15, weight: .bold)).foregroundStyle(.secondary)
                 TextField("0", text: $amountText)
                     .keyboardType(.numberPad)
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(MeowlettTypography.font(size: 21, weight: .black))
                     .onChange(of: amountText) { _, value in
                         let digits = String(value.filter(\.isNumber))
                         if digits != value {
@@ -1298,8 +1298,8 @@ private struct DonutBreakdown: View {
                     .rotationEffect(.degrees(-90))
             }
             VStack(spacing: 1) {
-                Text("TOTAL").font(.system(size: 7, weight: .heavy)).foregroundStyle(.secondary)
-                Text("\(values.count)").font(.system(size: 19, weight: .black, design: .rounded))
+                Text("TOTAL").font(MeowlettTypography.font(size: 7, weight: .heavy)).foregroundStyle(.secondary)
+                Text("\(values.count)").font(MeowlettTypography.font(size: 19, weight: .black))
             }
         }
     }

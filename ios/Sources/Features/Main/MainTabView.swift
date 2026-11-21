@@ -125,16 +125,16 @@ struct MainTabView: View {
             VStack(alignment: .leading, spacing: 1) {
                 if selected == .dashboard {
                     Text(greeting)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 12, weight: .semibold))
                         .foregroundStyle(.secondary)
                     Text(userName.isEmpty ? (isEnglish ? "Set your name" : "Isi namamu") : userName)
-                        .font(.system(size: 20, weight: .black))
+                        .font(MeowlettTypography.font(size: 20, weight: .black))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                 } else {
                     HStack(spacing: 7) {
                         Text(isEnglish ? selected.titleEN : selected.titleID)
-                            .font(.system(size: 20, weight: .black))
+                            .font(MeowlettTypography.font(size: 20, weight: .black))
                         if selected == .date {
                             Image(systemName: "heart")
                                 .font(.system(size: 18, weight: .regular))
@@ -254,7 +254,7 @@ struct MainTabView: View {
                                 .frame(width: 22, height: 22)
                             if active {
                                 Text(isEnglish ? tab.titleEN : tab.titleID)
-                                    .font(.system(size: 12, weight: .heavy))
+                                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
                                     .lineLimit(1)
                                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                             }
