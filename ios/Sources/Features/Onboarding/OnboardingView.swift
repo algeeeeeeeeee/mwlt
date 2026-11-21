@@ -73,6 +73,7 @@ struct OnboardingView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .tint(accent)
         .animation(.easeInOut(duration: 0.2), value: step)
         .onAppear {
