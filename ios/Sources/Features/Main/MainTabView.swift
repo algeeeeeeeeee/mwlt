@@ -235,7 +235,7 @@ struct MainTabView: View {
                 followSystem = "0"
                 darkOverride = colorSchemeIsDark ? "false" : "true"
             } label: {
-                Image(systemName: colorSchemeIsDark ? "moon.fill" : "sun.max.fill")
+                Image(systemName: colorSchemeIsDark ? "moon" : "sun.max")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(tint)
                     .frame(width: 34, height: 34)
@@ -248,7 +248,7 @@ struct MainTabView: View {
                 }
             } label: {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: "gearshape.fill")
+                    Image(systemName: "gearshape")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(primary)
                         .frame(width: 34, height: 34)
@@ -279,7 +279,7 @@ struct MainTabView: View {
                         }
                         .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
                     Circle().fill(tint).frame(width: 11, height: 11)
-                        .overlay(Image(systemName: "camera.fill").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
+                        .overlay(Image(systemName: "camera").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
                 }
             }
@@ -298,9 +298,17 @@ struct MainTabView: View {
     }
 
     private var profileUIImage: UIImage? {
-        guard !profilePhoto.isEmpty else { return nil }
-        let encoded = profilePhoto.components(separatedBy: ",").last ?? profilePhoto
-        guard let data = Data(base64Encoded: encoded) else { return nil }
+        if !profilePhoto.isEmpty {
+            let encoded = profilePhoto.components(separatedBy: ",").last ?? profilePhoto
+            if let data = Data(base64Encoded: encoded), let image = UIImage(data: data) {
+                return image
+            }
+        }
+        guard let url = Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64"),
+              let encoded = try? String(contentsOf: url, encoding: .utf8),
+              let data = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) else {
+            return nil
+        }
         return UIImage(data: data)
     }
 
