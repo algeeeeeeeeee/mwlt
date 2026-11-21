@@ -36,6 +36,62 @@ private enum MeowlettTab: String, CaseIterable {
     }
 }
 
+private struct MeowlettTabSymbol: View {
+    let tab: MeowlettTab
+    let size: CGFloat
+    let color: Color
+
+    var body: some View {
+        if tab == .dashboard {
+            Image(systemName: "cat")
+                .font(.system(size: size, weight: .regular))
+                .foregroundStyle(color)
+        } else {
+            MeowlettTabShape(tab: tab)
+                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                .frame(width: size, height: size)
+        }
+    }
+}
+
+private struct MeowlettTabShape: Shape {
+    let tab: MeowlettTab
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let sx = rect.width / 24
+        let sy = rect.height / 24
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: x * sx, y: y * sy)
+        }
+
+        switch tab {
+        case .transactions:
+            path.move(to: point(3, 6)); path.addLine(to: point(21, 6))
+            path.move(to: point(3, 12)); path.addLine(to: point(17, 12))
+            path.move(to: point(3, 18)); path.addLine(to: point(13, 18))
+        case .report:
+            path.move(to: point(3, 6)); path.addLine(to: point(21, 6))
+            path.move(to: point(3, 12)); path.addLine(to: point(21, 12))
+            path.move(to: point(3, 18)); path.addLine(to: point(21, 18))
+        case .date:
+            path.move(to: point(12, 21))
+            path.addCurve(to: point(3, 8.5), control1: point(12, 21), control2: point(3, 15))
+            path.addCurve(to: point(8.5, 3), control1: point(3, 5.46), control2: point(5.46, 3))
+            path.addCurve(to: point(12, 5), control1: point(10.2, 3), control2: point(11.72, 3.88))
+            path.addCurve(to: point(15.5, 3), control1: point(12.28, 3.88), control2: point(13.8, 3))
+            path.addCurve(to: point(21, 8.5), control1: point(18.54, 3), control2: point(21, 5.46))
+            path.addCurve(to: point(12, 21), control1: point(21, 15), control2: point(12, 21))
+            path.closeSubpath()
+        case .dashboard, .settings:
+            path.move(to: point(3, 6)); path.addLine(to: point(21, 6))
+            path.move(to: point(3, 12)); path.addLine(to: point(21, 12))
+            path.move(to: point(3, 18)); path.addLine(to: point(21, 18))
+        }
+        return path
+    }
+}
+
 struct MainTabView: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
@@ -249,9 +305,12 @@ struct MainTabView: View {
                         }
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: tab.symbol)
-                                .font(.system(size: active ? 18 : 22, weight: .regular))
-                                .frame(width: 22, height: 22)
+                            MeowlettTabSymbol(
+                                tab: tab,
+                                size: active ? 18 : 22,
+                                color: active ? activeColor : (isDate ? Color(hex: "#f9a8d4") : Color.secondary.opacity(0.65))
+                            )
+                            .frame(width: 22, height: 22)
                             if active {
                                 Text(isEnglish ? tab.titleEN : tab.titleID)
                                     .font(MeowlettTypography.font(size: 12, weight: .heavy))

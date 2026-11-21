@@ -70,17 +70,28 @@ jobs:
           SIM_SELECTION="$(xcrun simctl list devices available -j | python3 -c '
           import json,sys
           data=json.load(sys.stdin)
+          fallback=None
+          preferred=None
           for runtime, devices in data.get("devices",{}).items():
-              chosen=next((device for device in devices
-                           if device.get("isAvailable")
-                           and device.get("name","").startswith("iPhone")
-                           and device.get("deviceTypeIdentifier")),None)
-              if chosen:
-                  print(chosen["deviceTypeIdentifier"] + "|" + runtime)
+              for device in devices:
+                  if not device.get("isAvailable") or not device.get("deviceTypeIdentifier"):
+                      continue
+                  name=device.get("name","")
+                  entry=(device["deviceTypeIdentifier"],runtime,name)
+                  if fallback is None and name.startswith("iPhone"):
+                      fallback=entry
+                  if name == "iPhone XR":
+                      preferred=entry
+              if preferred:
                   break
+          chosen=preferred or fallback
+          if chosen:
+              print("|".join(chosen))
           ')"
           DEVICE_TYPE_ID="${SIM_SELECTION%%|*}"
-          RUNTIME_ID="${SIM_SELECTION#*|}"
+          SIM_REST="${SIM_SELECTION#*|}"
+          RUNTIME_ID="${SIM_REST%%|*}"
+          DEVICE_NAME="${SIM_REST#*|}"
           if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
             echo "Could not find a standard iPhone simulator device type and iOS runtime."
             xcrun simctl list devicetypes available
@@ -102,7 +113,7 @@ jobs:
           WATCHDOG_PID=$!
           trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
 
-          echo "Fresh simulator: $DEVICE_ID ($DEVICE_TYPE_ID / $RUNTIME_ID)"
+          echo "Fresh simulator: $DEVICE_ID ($DEVICE_NAME / $DEVICE_TYPE_ID / $RUNTIME_ID)"
           perl -e 'alarm shift; exec @ARGV' 90 xcrun simctl boot "$DEVICE_ID"
           echo "Waiting for fresh Simulator boot (maximum 4 minutes)..."
           if ! perl -e 'alarm shift; exec @ARGV' 240 xcrun simctl bootstatus "$DEVICE_ID" -b; then

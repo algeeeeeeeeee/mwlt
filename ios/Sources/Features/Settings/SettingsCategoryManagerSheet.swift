@@ -47,7 +47,7 @@ struct SettingsCategoryManagerSheet: View {
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(AppAppearance.accent)
                 Text(isEnglish ? "Manage categories" : "Kelola Kategori")
-                    .font(.system(size: 16, weight: .black))
+                    .font(MeowlettTypography.font(size: 16, weight: .black))
                 Spacer()
                 if editingKey == nil {
                     Button {
@@ -81,7 +81,7 @@ struct SettingsCategoryManagerSheet: View {
                     } else {
                         VStack(alignment: .leading, spacing: 10) {
                             Text(isEnglish ? "ACTIVE CATEGORIES (\(categories.count))" : "KATEGORI AKTIF (\(categories.count))")
-                                .font(.system(size: 10, weight: .heavy)).tracking(0.6).foregroundStyle(.secondary)
+                                .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(0.6).foregroundStyle(.secondary)
                                 .padding(.horizontal, 3)
                             ForEach(orderedKeys, id: \.self) { key in
                                 categoryRow(key)
@@ -118,9 +118,9 @@ struct SettingsCategoryManagerSheet: View {
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(catColor))
             VStack(alignment: .leading, spacing: 2) {
                 Text(isEnglish ? item.label : (item.labelId ?? item.label))
-                    .font(.system(size: 13, weight: .bold))
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
                 Text("\(key) · \(isDefault ? (isEnglish ? "Default category" : "Kategori bawaan") : (isEnglish ? "Custom category" : "Kategori kustom"))")
-                    .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                    .font(MeowlettTypography.font(size: 10, weight: .medium)).foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 2)
@@ -163,22 +163,22 @@ struct SettingsCategoryManagerSheet: View {
                 Text(existingKey == nil
                      ? (isEnglish ? "Add category" : "Tambah Kategori")
                      : (isEnglish ? "Edit category" : "Edit Kategori"))
-                    .font(.system(size: 14, weight: .black))
+                    .font(MeowlettTypography.font(size: 14, weight: .black))
                 Spacer()
                 Button(isEnglish ? "Back" : "Kembali") {
                     editingKey = nil
                 }
-                .font(.system(size: 12, weight: .bold))
+                .font(MeowlettTypography.font(size: 12, weight: .bold))
                 .foregroundStyle(.secondary)
             }
             TextField(isEnglish ? "Category name" : "Nama kategori", text: $label)
-                .font(.system(size: 14))
+                .font(MeowlettTypography.font(size: 14, weight: .regular))
                 .padding(13)
                 .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
                 .overlay(RoundedRectangle(cornerRadius: 13).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
 
             Text(isEnglish ? "PICK ICON" : "PILIH IKON")
-                .font(.system(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
+                .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 7) {
                 ForEach(Array(icons.enumerated()), id: \.offset) { _, item in
                     let selected = icon == item.0
@@ -195,7 +195,7 @@ struct SettingsCategoryManagerSheet: View {
             }
 
             Text(isEnglish ? "PICK COLOR" : "PILIH WARNA")
-                .font(.system(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
+                .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 9), count: 8), spacing: 10) {
                 ForEach(colors, id: \.self) { value in
                     Circle()
@@ -217,7 +217,7 @@ struct SettingsCategoryManagerSheet: View {
                     Image(systemName: icons.first(where: { $0.0 == icon })?.1 ?? "shippingbox.fill")
                         .font(.system(size: 14, weight: .semibold))
                     Text(label.isEmpty ? (isEnglish ? "Preview" : "Pratinjau") : label)
-                        .font(.system(size: 12, weight: .bold))
+                        .font(MeowlettTypography.font(size: 12, weight: .bold))
                         .lineLimit(1)
                 }
                 .foregroundStyle(Color(hex: color))
@@ -230,7 +230,7 @@ struct SettingsCategoryManagerSheet: View {
                 Button(isEnglish ? "Save" : "Simpan") {
                     saveCategory(existingKey: existingKey)
                 }
-                .font(.system(size: 13, weight: .heavy))
+                .font(MeowlettTypography.font(size: 13, weight: .heavy))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity).frame(height: 44)
                 .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 13))

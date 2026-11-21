@@ -69,11 +69,11 @@ struct DateTabView: View {
     private var dateBudgetCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(isEnglish ? "DATE BUDGET THIS MONTH" : "BUDGET DATE BULAN INI")
-                .font(.system(size: 11, weight: .bold))
+                .font(MeowlettTypography.font(size: 11, weight: .bold))
                 .tracking(1)
                 .foregroundStyle(isDark ? Color(hex: "#f9a8d4") : Color(hex: "#9d174d"))
             Text(rupiah(dateExpense))
-                .font(.system(size: 32, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 32, weight: .black))
                 .tracking(-0.6)
                 .foregroundStyle(isDark ? Color(hex: "#f472b6") : datePrimary)
                 .padding(.vertical, 6)
@@ -81,7 +81,7 @@ struct DateTabView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
             Text("\(monthTransactions.count) \(isEnglish ? "date activities" : "aktivitas date")")
-                .font(.system(size: 12, weight: .medium))
+                .font(MeowlettTypography.font(size: 12, weight: .medium))
                 .foregroundStyle(isDark ? Color(hex: "#f9a8d4") : Color(hex: "#9d174d"))
                 .opacity(0.82)
         }
@@ -105,7 +105,7 @@ struct DateTabView: View {
             HStack(spacing: 7) {
                 iconTile(symbol: "heart", pink: true)
                 Text(isEnglish ? "Date Wishlist" : "Wishlist Date")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button {
@@ -114,7 +114,7 @@ struct DateTabView: View {
                 } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "plus").font(.system(size: 13, weight: .bold))
-                        Text(isEnglish ? "Add" : "Tambah").font(.system(size: 12, weight: .bold))
+                        Text(isEnglish ? "Add" : "Tambah").font(MeowlettTypography.font(size: 12, weight: .bold))
                     }
                     .foregroundStyle(datePink)
                 }
@@ -127,10 +127,10 @@ struct DateTabView: View {
                         .font(.system(size: 28, weight: .light))
                         .foregroundStyle(datePink.opacity(0.42))
                     Text(isEnglish ? "No wishlist yet" : "Belum ada wishlist")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(MeowlettTypography.font(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
                     Text(isEnglish ? "Add places or activities you want to do together." : "Tambahkan tempat atau aktivitas yang ingin dilakukan.")
-                        .font(.system(size: 11))
+                        .font(MeowlettTypography.font(size: 11, weight: .regular))
                         .foregroundStyle(Color.secondary.opacity(0.72))
                         .multilineTextAlignment(.center)
                 }
@@ -155,7 +155,7 @@ struct DateTabView: View {
                             }
                             .buttonStyle(.plain)
                             Text(item.label)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(MeowlettTypography.font(size: 13, weight: .semibold))
                                 .foregroundStyle(item.done ? Color.secondary : Color.primary)
                                 .strikethrough(item.done)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,7 +187,7 @@ struct DateTabView: View {
             HStack(spacing: 7) {
                 iconTile(symbol: "pencil", pink: true)
                 Text(isEnglish ? "Date Expenses" : "Catat Pengeluaran Date")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button {
@@ -196,7 +196,7 @@ struct DateTabView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .black))
-                        Text(isEnglish ? "Add Date" : "Tambah Date").font(.system(size: 12, weight: .heavy))
+                        Text(isEnglish ? "Add Date" : "Tambah Date").font(MeowlettTypography.font(size: 12, weight: .heavy))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14)
@@ -212,7 +212,7 @@ struct DateTabView: View {
                         .font(.system(size: 36, weight: .light))
                         .foregroundStyle(Color(hex: "#f9a8d4"))
                     Text(isEnglish ? "No date expenses yet" : "Belum ada pengeluaran date")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(MeowlettTypography.font(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -247,18 +247,18 @@ struct DateTabView: View {
                         .overlay(Image(systemName: "heart").font(.system(size: 16, weight: .medium)).foregroundStyle(datePink))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(transaction.description)
-                            .font(.system(size: 13, weight: .bold))
+                            .font(MeowlettTypography.font(size: 13, weight: .bold))
                             .foregroundStyle(isDark ? datePink : datePrimary)
                             .lineLimit(1)
                         Text(dateLine(transaction))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(MeowlettTypography.font(size: 11, weight: .medium))
                             .foregroundStyle(isDark ? Color(hex: "#f9a8d4") : datePrimary)
                             .opacity(0.82)
                             .lineLimit(1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     Text("-\(rupiah(transaction.amount))")
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 13, weight: .heavy))
                         .foregroundStyle(isDark ? datePink : datePrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -318,7 +318,7 @@ struct DateTabView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text(isEnglish ? "Add to Wishlist" : "Tambah Wishlist")
-                    .font(.system(size: 16, weight: .black))
+                    .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button { showWishlistForm = false } label: {
@@ -335,7 +335,7 @@ struct DateTabView: View {
                 .onSubmit(addWishlist)
             Button(action: addWishlist) {
                 Text(isEnglish ? "Save" : "Simpan")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 46)

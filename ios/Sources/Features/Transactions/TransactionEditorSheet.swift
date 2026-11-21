@@ -62,7 +62,7 @@ struct TransactionEditorSheet: View {
                     HStack(spacing: 8) {
                         Button(action: save) {
                             Text(transaction == nil ? (isEnglish ? "+ Add" : "+ Tambah") : (isEnglish ? "Save" : "Simpan"))
-                                .font(.system(size: 13, weight: .heavy))
+                                .font(MeowlettTypography.font(size: 13, weight: .heavy))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 46)
@@ -118,7 +118,7 @@ struct TransactionEditorSheet: View {
     private var header: some View {
         HStack {
             Text(transaction == nil ? (isEnglish ? "New transaction" : "Transaksi baru") : (isEnglish ? "Edit transaction" : "Edit transaksi"))
-                .font(.system(size: 14, weight: .black))
+                .font(MeowlettTypography.font(size: 14, weight: .black))
                 .foregroundStyle(.white)
             Spacer()
             Button { dismiss() } label: {
@@ -139,11 +139,11 @@ struct TransactionEditorSheet: View {
         HStack(spacing: 8) {
             HStack(spacing: 5) {
                 Text("Rp.")
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
                     .foregroundStyle(.secondary)
                 TextField("0", text: $amountText)
                     .keyboardType(.numberPad)
-                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .font(MeowlettTypography.font(size: 22, weight: .black))
                     .foregroundStyle(.primary)
                     .onChange(of: amountText) { _, value in
                         let digits = String(value.filter(\.isNumber))
@@ -176,7 +176,7 @@ struct TransactionEditorSheet: View {
                 .labelsHidden()
             Spacer()
             Text(date.formatted(date: .abbreviated, time: .omitted))
-                .font(.system(size: 12, weight: .semibold))
+                .font(MeowlettTypography.font(size: 12, weight: .semibold))
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
@@ -196,7 +196,7 @@ struct TransactionEditorSheet: View {
                             Image(systemName: item.icon)
                                 .font(.system(size: 11, weight: .semibold))
                             Text(language == "en" ? item.enName : item.idName)
-                                .font(.system(size: 11, weight: selected ? .bold : .medium))
+                                .font(MeowlettTypography.font(size: 11, weight: selected ? .bold : .medium))
                                 .fixedSize()
                         }
                         .foregroundStyle(selected ? color : Color.secondary)
@@ -224,7 +224,7 @@ struct TransactionEditorSheet: View {
         return Button { paymentMethod = value } label: {
             VStack(spacing: 3) {
                 Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
-                Text(title).font(.system(size: 10, weight: selected ? .heavy : .semibold))
+                Text(title).font(MeowlettTypography.font(size: 10, weight: selected ? .heavy : .semibold))
             }
             .foregroundStyle(selected ? accent : Color.secondary)
             .frame(maxWidth: .infinity)
@@ -384,7 +384,7 @@ private struct AmountCalculatorSheet: View {
     var body: some View {
         VStack(spacing: 14) {
             Text(display.isEmpty ? String(initialValue) : display)
-                .font(.system(size: 32, weight: .black, design: .rounded))
+                .font(MeowlettTypography.font(size: 32, weight: .black))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(18)
                 .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 14))
@@ -392,7 +392,7 @@ private struct AmountCalculatorSheet: View {
                 HStack(spacing: 10) {
                     ForEach(keys[row], id: \.self) { key in
                         Button(key) { tap(key) }
-                            .font(.system(size: 20, weight: .bold))
+                            .font(MeowlettTypography.font(size: 20, weight: .bold))
                             .foregroundStyle(["÷","×","−","+"].contains(key) ? AppAppearance.accent : .primary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)

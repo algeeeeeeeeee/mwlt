@@ -23,11 +23,11 @@ struct SettingsBudgetSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text(isEnglish ? "Spending Limits" : "Batas Pengeluaran")
-                    .font(.system(size: 16, weight: .black))
+                    .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
-                    .font(.system(size: 13, weight: .bold))
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
@@ -40,7 +40,7 @@ struct SettingsBudgetSheet: View {
             Text(isEnglish
                  ? "Set a monthly spending limit for each category."
                  : "Atur batas pengeluaran bulanan untuk setiap kategori.")
-                .font(.system(size: 12, weight: .medium))
+                .font(MeowlettTypography.font(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
@@ -90,12 +90,12 @@ struct SettingsBudgetSheet: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(isEnglish ? category.enName : category.idName)
-                        .font(.system(size: 13, weight: .bold))
+                        .font(MeowlettTypography.font(size: 13, weight: .bold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if limit > 0 {
                         Text("\(rupiah(spent)) / \(rupiah(limit)) · \(percent)%")
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(MeowlettTypography.font(size: 10, weight: .semibold))
                             .foregroundStyle(over ? Color(hex: "#ef4444") : Color.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)

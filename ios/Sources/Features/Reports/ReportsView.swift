@@ -158,15 +158,15 @@ struct ReportsView: View {
                         .overlay(Image(systemName: category?.icon ?? "tag").font(.system(size: 15)).foregroundStyle(Color(hex: category?.color ?? "#94a3b8")))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(over ? (isEnglish ? "Exceeded" : "Terlampaui") : (isEnglish ? "Near limit" : "Mendekati limit")): \(MeowlettCategory.name(for: warning.0, language: language))")
-                            .font(.system(size: 12, weight: .bold))
+                            .font(MeowlettTypography.font(size: 12, weight: .bold))
                             .foregroundStyle(color)
                         Text("\(rupiah(warning.1)) / \(rupiah(warning.2))")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(MeowlettTypography.font(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     Text("\(min(100, Int((Double(warning.1) / Double(warning.2) * 100).rounded())))%")
-                        .font(.system(size: 12, weight: .black))
+                        .font(MeowlettTypography.font(size: 12, weight: .black))
                         .foregroundStyle(color)
                 }
                 .padding(10)
@@ -184,7 +184,7 @@ struct ReportsView: View {
                 Spacer()
                 Text(previousMonthLabel)
             }
-            .font(.system(size: 10, weight: .bold))
+            .font(MeowlettTypography.font(size: 10, weight: .bold))
             .foregroundStyle(.secondary)
             if categoryComparisons.isEmpty {
                 emptyMessage(isEnglish ? "No spending data yet." : "Belum ada data pengeluaran.")
@@ -197,13 +197,13 @@ struct ReportsView: View {
                         HStack(spacing: 6) {
                             Circle().fill(MeowlettCategory.color(for: item.0)).frame(width: 7, height: 7)
                             Text(MeowlettCategory.name(for: item.0, language: language))
-                                .font(.system(size: 12, weight: .bold))
+                                .font(MeowlettTypography.font(size: 12, weight: .bold))
                             Spacer()
                             Text(rupiah(current))
-                                .font(.system(size: 10, weight: .bold))
+                                .font(MeowlettTypography.font(size: 10, weight: .bold))
                                 .foregroundStyle(.primary)
                             Text(rupiah(previous))
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(MeowlettTypography.font(size: 10, weight: .semibold))
                                 .foregroundStyle(.secondary.opacity(0.7))
                         }
                         GeometryReader { proxy in
@@ -236,7 +236,7 @@ struct ReportsView: View {
                         .frame(width: 28, height: 28)
                         .background((up ? Color(hex: "#f87171") : Color(hex: "#16a34a")).opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
                     Text("\(MeowlettCategory.name(for: insight.0, language: language)) \(up ? (isEnglish ? "increased" : "naik") : (isEnglish ? "decreased" : "turun")) \(abs(insight.1))% \(isEnglish ? "compared with last month" : "dibanding bulan lalu")")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(MeowlettTypography.font(size: 12, weight: .medium))
                         .foregroundStyle(isDark ? Color(hex: "#d1fae5") : Color(hex: "#166534"))
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -252,7 +252,7 @@ struct ReportsView: View {
             sectionHeading(isEnglish ? "Category Trend (4 months)" : "Tren Kategori (4 bulan)", symbol: "chart.bar.xaxis")
             HStack(spacing: 4) {
                 Text(isEnglish ? "Bar" : "Batang")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .foregroundStyle(trendMode == "bar" ? accent : Color.secondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -261,7 +261,7 @@ struct ReportsView: View {
                     .contentShape(Capsule())
                     .onTapGesture { trendMode = "bar" }
                 Text(isEnglish ? "Line" : "Garis")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .foregroundStyle(trendMode == "line" ? accent : Color.secondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
@@ -274,7 +274,7 @@ struct ReportsView: View {
             HStack {
                 ForEach(Array(categoryTrendMonths.enumerated()), id: \.offset) { _, month in
                     Text(month.formatted(.dateTime.month(.abbreviated).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))))
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
@@ -286,7 +286,7 @@ struct ReportsView: View {
                     HStack(spacing: 5) {
                         Circle().fill(item.color).frame(width: 8, height: 8)
                         Text(MeowlettCategory.name(for: item.id, language: language))
-                            .font(.system(size: 10, weight: .semibold))
+                            .font(MeowlettTypography.font(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -310,7 +310,7 @@ struct ReportsView: View {
                 ForEach(Array(weeklyTrend.enumerated()), id: \.offset) { index, item in
                     if index == 0 || index == 3 || index == 7 {
                         Text(item.0.formatted(.dateTime.day().month(.abbreviated).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))))
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(MeowlettTypography.font(size: 9, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                     } else {
@@ -337,15 +337,15 @@ struct ReportsView: View {
                     .background(primary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 3) {
                     Text((isEnglish ? "This week: " : "Minggu ini: ") + rupiah(thisWeek))
-                        .font(.system(size: 13, weight: .bold))
+                        .font(MeowlettTypography.font(size: 13, weight: .bold))
                     if lastWeek > 0 {
                         Text("\(change >= 0 ? (isEnglish ? "More spending" : "Lebih banyak") : (isEnglish ? "Less spending" : "Lebih hemat")) \(rupiah(abs(thisWeek - lastWeek))) \(isEnglish ? "vs last week" : "dibanding minggu lalu")")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(MeowlettTypography.font(size: 11, weight: .medium))
                             .foregroundStyle(change > 0 ? Color(hex: "#f87171") : Color(hex: "#16a34a"))
                     }
                     if let top {
                         Text((isEnglish ? "Top category: " : "Kategori teratas: ") + MeowlettCategory.name(for: top.key, language: language))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(MeowlettTypography.font(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -419,12 +419,12 @@ struct ReportsView: View {
                 .font(.system(size: 12, weight: .semibold))
             VStack(alignment: .leading, spacing: 3) {
                 Text(isEnglish ? "TOTAL EXPENSE" : "TOTAL PENGELUARAN")
-                    .font(.system(size: 10, weight: .heavy)).tracking(1).foregroundStyle(.secondary)
+                    .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(1).foregroundStyle(.secondary)
                 Text(reportTotal > 0 ? "-\(rupiah(reportTotal))" : rupiah(0))
-                    .font(.system(size: 30, weight: .black, design: .rounded))
+                    .font(MeowlettTypography.font(size: 30, weight: .black))
                     .foregroundStyle(reportTotal > 0 ? Color(hex: "#f87171") : Color.secondary)
                 Text("\(dayLabel) · \(reportTransactions.count) \(isEnglish ? "transactions" : "transaksi")")
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    .font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -436,21 +436,21 @@ struct ReportsView: View {
             } else {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(isEnglish ? "Per category" : "Per kategori")
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 13, weight: .heavy))
                     ForEach(Array(dailyCategoryTotals.enumerated()), id: \.offset) { _, item in
                         HStack(spacing: 8) {
                             Circle().fill(MeowlettCategory.color(for: item.0)).frame(width: 8, height: 8)
                             Text(MeowlettCategory.name(for: item.0, language: language))
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(MeowlettTypography.font(size: 12, weight: .semibold))
                             Spacer()
-                            Text(rupiah(item.1)).font(.system(size: 12, weight: .bold))
+                            Text(rupiah(item.1)).font(MeowlettTypography.font(size: 12, weight: .bold))
                         }
                     }
                 }
                 Divider().opacity(0.5)
                 VStack(alignment: .leading, spacing: 9) {
                     Text(isEnglish ? "Transaction details" : "Detail transaksi")
-                        .font(.system(size: 13, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 13, weight: .heavy))
                     ForEach(reportTransactions) { transaction in
                         HStack(spacing: 9) {
                             RoundedRectangle(cornerRadius: 9).fill(MeowlettCategory.color(for: transaction.category).opacity(0.15))
@@ -458,12 +458,12 @@ struct ReportsView: View {
                                 .overlay(Image(systemName: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "tag")
                                     .font(.system(size: 13)).foregroundStyle(MeowlettCategory.color(for: transaction.category)))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(transaction.description).font(.system(size: 12, weight: .bold))
-                                if !transaction.location.isEmpty { Text(transaction.location).font(.system(size: 10)).foregroundStyle(.secondary) }
+                                Text(transaction.description).font(MeowlettTypography.font(size: 12, weight: .bold))
+                                if !transaction.location.isEmpty { Text(transaction.location).font(MeowlettTypography.font(size: 10, weight: .regular)).foregroundStyle(.secondary) }
                             }
                             Spacer()
                             Text("-\(rupiah(transaction.amount))")
-                                .font(.system(size: 12, weight: .heavy))
+                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
                                 .foregroundStyle(Color(hex: "#f87171"))
                         }
                     }
@@ -478,7 +478,7 @@ struct ReportsView: View {
                     sectionHeading(isEnglish ? "Daily insight" : "Insight Hari Ini", symbol: "sparkles")
                     if let top = dailyCategoryTotals.first {
                         Text((isEnglish ? "Top spending: " : "Pengeluaran tertinggi: ") + MeowlettCategory.name(for: top.0, language: language) + " — " + rupiah(top.1))
-                            .font(.system(size: 11, weight: .medium))
+                            .font(MeowlettTypography.font(size: 11, weight: .medium))
                             .foregroundStyle(primary)
                     }
                     Label(
@@ -489,7 +489,7 @@ struct ReportsView: View {
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a"))
                     Text((isEnglish ? "Average per transaction: " : "Rata-rata per transaksi: ") + rupiah(reportTotal / Int64(max(reportTransactions.count, 1))))
-                        .font(.system(size: 11, weight: .medium))
+                        .font(MeowlettTypography.font(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
                 .padding(12)
@@ -587,12 +587,12 @@ struct ReportsView: View {
                 .foregroundStyle(accent)
                 .frame(width: 28, height: 28)
                 .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
-            Text(title).font(.system(size: 13, weight: .heavy)).foregroundStyle(.primary)
+            Text(title).font(MeowlettTypography.font(size: 13, weight: .heavy)).foregroundStyle(.primary)
         }
     }
 
     private func emptyMessage(_ text: String) -> some View {
-        Text(text).font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+        Text(text).font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary).multilineTextAlignment(.center)
     }
 
     private func rupiah(_ value: Int64) -> String {

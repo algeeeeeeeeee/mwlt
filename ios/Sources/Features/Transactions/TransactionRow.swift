@@ -16,7 +16,7 @@ struct TransactionRow: View {
                 }
             VStack(alignment: .leading, spacing: 3) {
                 Text(transaction.description)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 let details = [
@@ -25,13 +25,13 @@ struct TransactionRow: View {
                     transaction.note
                 ].filter { !$0.isEmpty }.joined(separator: " · ")
                 Text(details)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(MeowlettTypography.font(size: 11, weight: .medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
             Text("-\(rupiah(transaction.amount))")
-                .font(.system(size: 13, weight: .heavy))
+                .font(MeowlettTypography.font(size: 13, weight: .heavy))
                 .foregroundStyle(Color(hex: "#f87171"))
                 .lineLimit(1)
         }

@@ -44,9 +44,9 @@ struct SettingsReminderSheet: View {
                             .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 16))
                         VStack(alignment: .leading, spacing: 3) {
                             Text(isEnglish ? "Stay on track" : "Jangan lupa mencatat")
-                                .font(.system(size: 14, weight: .heavy))
+                                .font(MeowlettTypography.font(size: 14, weight: .heavy))
                             Text(isEnglish ? "Choose when Meowlett reminds you." : "Atur kapan Meowlett mengingatkanmu.")
-                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                                .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                     }
@@ -67,8 +67,8 @@ struct SettingsReminderSheet: View {
                         Image(systemName: "alarm").font(.system(size: 18)).foregroundStyle(.secondary)
                             .frame(width: 38, height: 38).background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(isEnglish ? "Reminder time" : "Waktu pengingat").font(.system(size: 14, weight: .bold))
-                            Text(isEnglish ? "Notifications are sent at this time" : "Notifikasi dikirim pada jam ini").font(.system(size: 11)).foregroundStyle(.secondary)
+                            Text(isEnglish ? "Reminder time" : "Waktu pengingat").font(MeowlettTypography.font(size: 14, weight: .bold))
+                            Text(isEnglish ? "Notifications are sent at this time" : "Notifikasi dikirim pada jam ini").font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Picker("", selection: $reminderHour) {
@@ -78,14 +78,14 @@ struct SettingsReminderSheet: View {
                         }
                         .pickerStyle(.menu)
                         .tint(AppAppearance.accent)
-                        .font(.system(size: 15, weight: .black))
+                        .font(MeowlettTypography.font(size: 15, weight: .black))
                     }
                     .padding(.horizontal, 20).padding(.vertical, 14)
                     Divider().padding(.leading, 20)
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text(isEnglish ? "Reminder days" : "Hari pengingat")
-                            .font(.system(size: 12, weight: .bold)).foregroundStyle(.secondary)
+                            .font(MeowlettTypography.font(size: 12, weight: .bold)).foregroundStyle(.secondary)
                         HStack(spacing: 6) {
                             ForEach(0..<7, id: \.self) { day in
                                 let selected = reminderDays.contains(day)
@@ -94,7 +94,7 @@ struct SettingsReminderSheet: View {
                                     else { reminderDays.append(day); reminderDays.sort() }
                                 } label: {
                                     Text(dayLabels[day])
-                                        .font(.system(size: 11, weight: .heavy))
+                                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
                                         .foregroundStyle(selected ? AppAppearance.accent : Color.secondary)
                                         .frame(maxWidth: .infinity).frame(height: 38)
                                         .background(selected ? AppAppearance.accent.opacity(0.13) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
@@ -115,18 +115,18 @@ struct SettingsReminderSheet: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text(isEnglish ? "NOTIFICATION PREVIEW" : "PREVIEW NOTIFIKASI")
-                            .font(.system(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
+                            .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 7) {
                             HStack(spacing: 8) {
-                                Text("🐱").font(.system(size: 15)).frame(width: 28, height: 28).background(AppAppearance.accent.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
-                                Text("Meowlett").font(.system(size: 11, weight: .bold)).foregroundStyle(.secondary)
+                                Text("🐱").font(MeowlettTypography.font(size: 15, weight: .regular)).frame(width: 28, height: 28).background(AppAppearance.accent.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
+                                Text("Meowlett").font(MeowlettTypography.font(size: 11, weight: .bold)).foregroundStyle(.secondary)
                                 Spacer()
-                                Text(String(format: "%02d:00", hour)).font(.system(size: 11)).foregroundStyle(.secondary)
+                                Text(String(format: "%02d:00", hour)).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
                             }
                             Text(isEnglish ? "Time to record your spending!" : "Waktunya mencatat pengeluaran!")
-                                .font(.system(size: 13, weight: .heavy))
+                                .font(MeowlettTypography.font(size: 13, weight: .heavy))
                             Text(isEnglish ? "Keep your finances organized with a quick daily update." : "Yuk catat aktivitas hari ini agar keuanganmu tetap rapi.")
-                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                                .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary)
                         }
                         .padding(14)
                         .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
@@ -168,8 +168,8 @@ struct SettingsReminderSheet: View {
             Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppAppearance.accent)
                 .frame(width: 38, height: 38).background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 14, weight: .bold))
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold))
+                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
             }
             Spacer()
             Toggle("", isOn: isOn).labelsHidden().tint(AppAppearance.primary)
@@ -274,10 +274,10 @@ struct SettingsCicilanSheet: View {
                 VStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(isEnglish ? "TOTAL MONTHLY INSTALLMENTS" : "TOTAL CICILAN BULANAN")
-                            .font(.system(size: 10, weight: .bold)).tracking(1).foregroundStyle(.white.opacity(0.62))
-                        Text(rupiah(totalMonthly)).font(.system(size: 24, weight: .black, design: .rounded)).foregroundStyle(.white)
+                            .font(MeowlettTypography.font(size: 10, weight: .bold)).tracking(1).foregroundStyle(.white.opacity(0.62))
+                        Text(rupiah(totalMonthly)).font(MeowlettTypography.font(size: 24, weight: .black)).foregroundStyle(.white)
                         Text("\(items.count) \(isEnglish ? "active items" : "item aktif")")
-                            .font(.system(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.7))
+                            .font(MeowlettTypography.font(size: 11, weight: .semibold)).foregroundStyle(.white.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(18)
@@ -287,9 +287,9 @@ struct SettingsCicilanSheet: View {
                         VStack(spacing: 8) {
                             Image(systemName: "creditcard").font(.system(size: 30, weight: .light)).foregroundStyle(AppAppearance.accent)
                             Text(isEnglish ? "No installments yet" : "Belum ada cicilan")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(MeowlettTypography.font(size: 14, weight: .bold))
                             Text(isEnglish ? "Add a monthly payment to track its progress." : "Tambahkan pembayaran bulanan untuk melacak progresnya.")
-                                .font(.system(size: 11)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                                .font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                         }
                         .frame(maxWidth: .infinity).padding(.vertical, 30)
                     } else {
@@ -327,15 +327,15 @@ struct SettingsCicilanSheet: View {
                     RoundedRectangle(cornerRadius: 11).fill(AppAppearance.accent.opacity(0.14)).frame(width: 40, height: 40)
                         .overlay(Image(systemName: "creditcard.fill").foregroundStyle(AppAppearance.accent))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(item.name).font(.system(size: 13, weight: .bold))
+                        Text(item.name).font(MeowlettTypography.font(size: 13, weight: .bold))
                         Text((isEnglish ? "Due day " : "Jatuh tempo tgl ") + item.dueDay)
-                            .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                            .font(MeowlettTypography.font(size: 10, weight: .medium)).foregroundStyle(.secondary)
                     }
                     Spacer()
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text("-\(rupiah(item.monthly))").font(.system(size: 13, weight: .heavy)).foregroundStyle(Color(hex: "#f87171"))
+                        Text("-\(rupiah(item.monthly))").font(MeowlettTypography.font(size: 13, weight: .heavy)).foregroundStyle(Color(hex: "#f87171"))
                         Text(paid ? (isEnglish ? "Paid this month" : "Lunas bulan ini") : (isEnglish ? "Not paid yet" : "Belum dibayar"))
-                            .font(.system(size: 9, weight: .semibold)).foregroundStyle(paid ? Color(hex: "#16a34a") : Color.secondary)
+                            .font(MeowlettTypography.font(size: 9, weight: .semibold)).foregroundStyle(paid ? Color(hex: "#16a34a") : Color.secondary)
                     }
                     Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)).foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
@@ -347,9 +347,9 @@ struct SettingsCicilanSheet: View {
             if expanded {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text(isEnglish ? "Progress" : "Progres").font(.system(size: 11, weight: .bold)).foregroundStyle(.secondary)
+                        Text(isEnglish ? "Progress" : "Progres").font(MeowlettTypography.font(size: 11, weight: .bold)).foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(progress)% · \(item.paidMonths.count)/\(item.duration)").font(.system(size: 11, weight: .bold))
+                        Text("\(progress)% · \(item.paidMonths.count)/\(item.duration)").font(MeowlettTypography.font(size: 11, weight: .bold))
                     }
                     GeometryReader { proxy in
                         Capsule().fill(Color.primary.opacity(0.06)).overlay(alignment: .leading) {
@@ -363,7 +363,7 @@ struct SettingsCicilanSheet: View {
                             }
                         } label: {
                             Text(paid ? (isEnglish ? "Already paid" : "Sudah dibayar") : (isEnglish ? "Mark as paid" : "Tandai dibayar"))
-                                .font(.system(size: 11, weight: .bold)).foregroundStyle(.white)
+                                .font(MeowlettTypography.font(size: 11, weight: .bold)).foregroundStyle(.white)
                                 .frame(maxWidth: .infinity).frame(height: 37)
                                 .background(paid ? Color.secondary : AppAppearance.primary, in: RoundedRectangle(cornerRadius: 10))
                         }.disabled(paid).buttonStyle(.plain)

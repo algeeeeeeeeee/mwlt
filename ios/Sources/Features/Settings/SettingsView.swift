@@ -161,7 +161,7 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 3) {
                 Text(isEnglish ? "Profile name" : "Nama profil")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(MeowlettTypography.font(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Button {
                     nameDraft = userName
@@ -169,7 +169,7 @@ struct SettingsView: View {
                 } label: {
                     HStack(spacing: 5) {
                         Text(userName.isEmpty ? (isEnglish ? "Tap to add your name" : "Ketuk untuk isi nama") : userName)
-                            .font(.system(size: 17, weight: .black))
+                            .font(MeowlettTypography.font(size: 17, weight: .black))
                             .foregroundStyle(.primary)
                         Image(systemName: "pencil")
                             .font(.system(size: 11, weight: .semibold))
@@ -190,9 +190,9 @@ struct SettingsView: View {
     private var nameEditor: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(isEnglish ? "Profile name" : "Nama profil")
-                .font(.system(size: 17, weight: .black))
+                .font(MeowlettTypography.font(size: 17, weight: .black))
             TextField(isEnglish ? "Your name" : "Namamu", text: $nameDraft)
-                .font(.system(size: 15))
+                .font(MeowlettTypography.font(size: 15, weight: .regular))
                 .padding(14)
                 .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
             HStack(spacing: 10) {
@@ -235,8 +235,8 @@ struct SettingsView: View {
                     .foregroundStyle(accent)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(.primary)
-                    Text(subtitle).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(.primary)
+                    Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 6)
                 Image(systemName: "chevron.right")
@@ -254,7 +254,7 @@ struct SettingsView: View {
         let selected = language == code
         return Button { language = code } label: {
             HStack(spacing: 5) {
-                Text(title).font(.system(size: 12, weight: .bold))
+                Text(title).font(MeowlettTypography.font(size: 12, weight: .bold))
                 if selected { Image(systemName: "checkmark.circle.fill").font(.system(size: 11)) }
             }
             .foregroundStyle(selected ? accent : Color.secondary)
@@ -288,7 +288,7 @@ private struct SettingsAppearanceSheet: View {
                     .frame(width: 36, height: 36)
                     .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                 Text(isEnglish ? "Appearance" : "Tampilan")
-                    .font(.system(size: 17, weight: .black))
+                    .font(MeowlettTypography.font(size: 17, weight: .black))
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
@@ -325,8 +325,8 @@ private struct SettingsAppearanceSheet: View {
                     Divider().opacity(0.45)
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(isEnglish ? "Language" : "Bahasa").font(.system(size: 14, weight: .bold))
-                            Text(isEnglish ? "Choose app language" : "Pilih bahasa aplikasi").font(.system(size: 11)).foregroundStyle(.secondary)
+                            Text(isEnglish ? "Language" : "Bahasa").font(MeowlettTypography.font(size: 14, weight: .bold))
+                            Text(isEnglish ? "Choose app language" : "Pilih bahasa aplikasi").font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
                         }
                         Spacer()
                         Picker("", selection: $language) {
@@ -341,7 +341,7 @@ private struct SettingsAppearanceSheet: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 8) {
                             Image(systemName: "paintpalette.fill").foregroundStyle(AppAppearance.primary)
-                            Text(isEnglish ? "Color theme" : "Tema warna").font(.system(size: 14, weight: .bold))
+                            Text(isEnglish ? "Color theme" : "Tema warna").font(MeowlettTypography.font(size: 14, weight: .bold))
                         }
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                             ForEach(AppAppearance.presets, id: \.id) { preset in
@@ -352,7 +352,7 @@ private struct SettingsAppearanceSheet: View {
                                             Circle().fill(Color(hex: preset.primary)).frame(width: 15, height: 15)
                                             Circle().fill(Color(hex: preset.accent)).frame(width: 15, height: 15)
                                         }
-                                        Text(isEnglish ? preset.nameEN : preset.nameID).font(.system(size: 11, weight: .bold))
+                                        Text(isEnglish ? preset.nameEN : preset.nameID).font(MeowlettTypography.font(size: 11, weight: .bold))
                                         if active { Label(isEnglish ? "Active" : "Aktif", systemImage: "checkmark.circle.fill").font(.system(size: 9, weight: .bold)) }
                                     }
                                     .foregroundStyle(active ? Color(hex: preset.accent) : .secondary)
@@ -365,7 +365,7 @@ private struct SettingsAppearanceSheet: View {
                             Button { themePreset = "custom" } label: {
                                 VStack(spacing: 6) {
                                     Image(systemName: "paintbrush.pointed.fill").font(.system(size: 17))
-                                    Text(isEnglish ? "Custom" : "Kustom").font(.system(size: 11, weight: .bold))
+                                    Text(isEnglish ? "Custom" : "Kustom").font(MeowlettTypography.font(size: 11, weight: .bold))
                                     if themePreset == "custom" { Label(isEnglish ? "Active" : "Aktif", systemImage: "checkmark.circle.fill").font(.system(size: 9, weight: .bold)) }
                                 }
                                 .foregroundStyle(themePreset == "custom" ? Color(hex: customAccent) : .secondary)
@@ -399,8 +399,8 @@ private struct SettingsAppearanceSheet: View {
             Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppAppearance.accent)
                 .frame(width: 36, height: 36).background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 14, weight: .bold))
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold))
+                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
             }
             Spacer()
             Toggle("", isOn: isOn).labelsHidden().tint(AppAppearance.primary)
@@ -441,7 +441,7 @@ private struct SettingsNotificationsSheet: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(accent))
                 Text(isEnglish ? "Notifications" : "Notifikasi")
-                    .font(.system(size: 17, weight: .black))
+                    .font(MeowlettTypography.font(size: 17, weight: .black))
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -467,12 +467,12 @@ private struct SettingsNotificationsSheet: View {
                                     .foregroundStyle(accent))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(isEnglish ? "Transaction reminder" : "Pengingat Transaksi")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(MeowlettTypography.font(size: 14, weight: .bold))
                                     .foregroundStyle(.primary)
                                 Text(enabled
                                      ? (isEnglish ? "Notifications active" : "Notifikasi aktif")
                                      : (isEnglish ? "Notifications off" : "Notifikasi nonaktif"))
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(MeowlettTypography.font(size: 11, weight: .medium))
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
@@ -497,9 +497,9 @@ private struct SettingsNotificationsSheet: View {
                                     .foregroundStyle(weekly ? accent : .secondary))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(isEnglish ? "Weekly summary" : "Ringkasan Mingguan")
-                                    .font(.system(size: 14, weight: .bold))
+                                    .font(MeowlettTypography.font(size: 14, weight: .bold))
                                 Text(weekly ? (isEnglish ? "Every \(dayLabels[Int(day) ?? 0])" : "\(dayLabels[Int(day) ?? 0]) tiap minggu") : (isEnglish ? "Off" : "Nonaktif"))
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(MeowlettTypography.font(size: 11, weight: .medium))
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
@@ -511,7 +511,7 @@ private struct SettingsNotificationsSheet: View {
                                     let selected = day == String(index)
                                     Button { day = String(index) } label: {
                                         Text(title)
-                                            .font(.system(size: 11, weight: .bold))
+                                            .font(MeowlettTypography.font(size: 11, weight: .bold))
                                             .foregroundStyle(selected ? .white : Color.secondary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 8)
@@ -570,7 +570,7 @@ private struct SettingsCategoryMenuSheet: View {
             Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
             HStack {
                 Text(isEnglish ? "Category" : "Kategori")
-                    .font(.system(size: 17, weight: .black))
+                    .font(MeowlettTypography.font(size: 17, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button { dismiss() } label: {
@@ -615,8 +615,8 @@ private struct SettingsCategoryMenuSheet: View {
                     .frame(width: 36, height: 36)
                     .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(.primary)
-                    Text(subtitle).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(.primary)
+                    Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(.tertiary)
@@ -639,10 +639,10 @@ private struct SettingsPlaceholderSheet: View {
         VStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 28)).foregroundStyle(AppAppearance.accent)
                 .frame(width: 72, height: 72).background(AppAppearance.accent.opacity(0.12), in: Circle())
-            Text(title).font(.system(size: 17, weight: .black))
-            Text(subtitle).font(.system(size: 12)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text(title).font(MeowlettTypography.font(size: 17, weight: .black))
+            Text(subtitle).font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Button(isEnglish ? "Close" : "Tutup") { dismiss() }
-                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                .font(MeowlettTypography.font(size: 13, weight: .bold)).foregroundStyle(.white)
                 .frame(maxWidth: .infinity).frame(height: 44).background(AppAppearance.primary, in: RoundedRectangle(cornerRadius: 13))
         }
         .padding(22)
@@ -675,10 +675,10 @@ private struct SettingsDataSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Data").font(.system(size: 17, weight: .black))
+                Text("Data").font(MeowlettTypography.font(size: 17, weight: .black))
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
-                    .font(.system(size: 12, weight: .bold))
+                    .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(.secondary)
             }
             Button {
@@ -718,7 +718,7 @@ private struct SettingsDataSheet: View {
 
             if !importError.isEmpty {
                 Text(importError)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(MeowlettTypography.font(size: 11, weight: .medium))
                     .foregroundStyle(Color(hex: "#ef4444"))
             }
         }
@@ -861,8 +861,8 @@ private struct SettingsDataSheet: View {
             Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(color)
                 .frame(width: 38, height: 38).background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(color)
-                Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(color)
+                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
             }
             Spacer()
         }

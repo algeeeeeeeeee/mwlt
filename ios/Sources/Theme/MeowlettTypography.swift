@@ -4,6 +4,7 @@ import CoreText
 enum MeowlettTypography {
     private static let fontNames = [
         "PlusJakartaSans-Regular",
+        "PlusJakartaSans-Medium",
         "PlusJakartaSans-SemiBold",
         "PlusJakartaSans-Bold",
         "PlusJakartaSans-ExtraBold"
@@ -25,7 +26,9 @@ enum MeowlettTypography {
         switch weight {
         case .ultraLight, .thin, .light, .regular:
             name = "PlusJakartaSans-Regular"
-        case .medium, .semibold:
+        case .medium:
+            name = "PlusJakartaSans-Medium"
+        case .semibold:
             name = "PlusJakartaSans-SemiBold"
         case .bold:
             name = "PlusJakartaSans-Bold"

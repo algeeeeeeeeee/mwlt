@@ -74,11 +74,11 @@ struct TransactionsView: View {
                 paymentFilterRow
                 HStack {
                     Text("\(filtered.count) \(isEnglish ? "transactions" : "transaksi")")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 12, weight: .semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Text("-\(rupiah(filteredTotal))")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(MeowlettTypography.font(size: 12, weight: .bold))
                         .foregroundStyle(Color(hex: "#f87171"))
                         .contentTransition(.numericText())
                 }
@@ -140,7 +140,7 @@ struct TransactionsView: View {
             } label: {
                 HStack(spacing: 7) {
                     Text(periodTitle)
-                        .font(.system(size: 12, weight: .bold))
+                        .font(MeowlettTypography.font(size: 12, weight: .bold))
                     Image(systemName: "chevron.down")
                         .font(.system(size: 9, weight: .black))
                         .foregroundStyle(.white.opacity(0.75))
@@ -216,7 +216,7 @@ struct TransactionsView: View {
                 Image(systemName: symbol)
                     .font(.system(size: 10, weight: .semibold))
                 Text(title)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -243,12 +243,12 @@ struct TransactionsView: View {
             Text(searchQuery.isEmpty
                  ? (isEnglish ? "No transactions yet" : "Belum ada transaksi")
                  : (isEnglish ? "No transactions found" : "Transaksi tidak ditemukan"))
-                .font(.system(size: 18, weight: .black))
+                .font(MeowlettTypography.font(size: 18, weight: .black))
                 .foregroundStyle(.primary)
             Text(searchQuery.isEmpty
                  ? (isEnglish ? "Start tracking your spending today." : "Yuk mulai catat pengeluaran hari ini.")
                  : (isEnglish ? "Try another search term." : "Coba kata pencarian lainnya."))
-                .font(.system(size: 13))
+                .font(MeowlettTypography.font(size: 13, weight: .regular))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, 12)
@@ -278,13 +278,13 @@ struct TransactionsView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))).uppercased())
-                    .font(.system(size: 12, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
                     .tracking(0.3)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
                 Text("\(transactions.count) \(isEnglish ? "transactions" : "transaksi")")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(MeowlettTypography.font(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .fixedSize()
             }
@@ -318,13 +318,13 @@ struct TransactionsView: View {
                         }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(transaction.description)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(MeowlettTypography.font(size: 14, weight: .bold))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
                         let categoryName = MeowlettCategory.name(for: transaction.category, language: language)
                         let secondary = [categoryName, transaction.location, transaction.note].filter { !$0.isEmpty }.joined(separator: " · ")
                         Text(secondary)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(MeowlettTypography.font(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                         HStack(spacing: 5) {
@@ -332,7 +332,7 @@ struct TransactionsView: View {
                             Image(systemName: method == "cash" ? "banknote" : method == "qris" ? "qrcode" : "building.columns")
                                 .font(.system(size: 8, weight: .semibold))
                             Text(method == "cash" ? (isEnglish ? "Cash" : "Tunai") : method == "qris" ? "QRIS" : "Transfer")
-                                .font(.system(size: 9, weight: .heavy))
+                                .font(MeowlettTypography.font(size: 9, weight: .heavy))
                             .lineLimit(1)
                         }
                         .foregroundStyle(Color(hex: transaction.paymentMethod == "cash" || transaction.paymentMethod.isEmpty ? "#4ade80" : transaction.paymentMethod == "qris" ? "#8b5cf6" : "#3b82f6"))
@@ -351,7 +351,7 @@ struct TransactionsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("-\(rupiah(transaction.amount))")
-                            .font(.system(size: 13, weight: .heavy))
+                            .font(MeowlettTypography.font(size: 13, weight: .heavy))
                             .foregroundStyle(Color(hex: "#f87171"))
                         Image(systemName: "chevron.down")
                             .font(.system(size: 12, weight: .medium))
