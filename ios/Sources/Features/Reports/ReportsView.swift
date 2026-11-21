@@ -35,6 +35,7 @@ struct ReportsView: View {
                 }
             }
             .navigationTitle(isEnglish ? "Reports" : "Laporan")
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 
