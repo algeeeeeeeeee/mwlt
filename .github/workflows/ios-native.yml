@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
-      - native-swift-foundation
+      - native-swift-parity
     paths:
       - 'ios/**'
       - 'public/meow.png'
+      - 'src/**'
+      - 'index.html'
       - '.github/workflows/ios-native.yml'
   pull_request:
     branches:
