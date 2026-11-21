@@ -124,7 +124,7 @@ struct SettingsView: View {
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppAppearance.background(dark: isDark))
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: selectedPhoto) { _, item in
             Task {
@@ -161,7 +161,7 @@ struct SettingsView: View {
             PhotosPicker(selection: $selectedPhoto, matching: .images) {
                 ZStack(alignment: .bottomTrailing) {
                     Circle()
-                        .fill(Color(uiColor: .tertiarySystemGroupedBackground))
+                        .fill(AppAppearance.card2(dark: isDark))
                         .frame(width: 56, height: 56)
                         .overlay {
                             if let photo {
@@ -176,7 +176,7 @@ struct SettingsView: View {
                         .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1.5))
                     Circle().fill(primary).frame(width: 18, height: 18)
                         .overlay(Image(systemName: "camera.fill").font(.system(size: 8, weight: .black)).foregroundStyle(.white))
-                        .overlay(Circle().strokeBorder(Color(uiColor: .systemGroupedBackground), lineWidth: 2))
+                        .overlay(Circle().strokeBorder(AppAppearance.background(dark: isDark), lineWidth: 2))
                 }
             }
             .buttonStyle(.plain)
@@ -215,11 +215,11 @@ struct SettingsView: View {
             TextField(isEnglish ? "Your name" : "Namamu", text: $nameDraft)
                 .font(.system(size: 15))
                 .padding(14)
-                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
+                .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
             HStack(spacing: 10) {
                 Button(isEnglish ? "Cancel" : "Batal") { showNameEditor = false }
                     .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                 Button(isEnglish ? "Save" : "Simpan") {
                     userName = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     showNameEditor = false
@@ -234,7 +234,7 @@ struct SettingsView: View {
     }
 
     private var cardColor: Color {
-        isDark ? Color(uiColor: .secondarySystemGroupedBackground) : .white
+        isDark ? AppAppearance.card(dark: isDark) : .white
     }
     private var cardBorder: Color { Color.primary.opacity(isDark ? 0.10 : 0.07) }
     private var rowDivider: some View { Rectangle().fill(cardBorder).frame(height: 1).padding(.leading, 16) }
@@ -280,7 +280,7 @@ struct SettingsView: View {
             }
             .foregroundStyle(selected ? accent : Color.secondary)
             .frame(maxWidth: .infinity).frame(height: 38)
-            .background(selected ? accent.opacity(0.10) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+            .background(selected ? accent.opacity(0.10) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? accent : cardBorder, lineWidth: 1.3))
         }
         .buttonStyle(.plain)
@@ -297,6 +297,7 @@ private struct SettingsAppearanceSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     private var isEnglish: Bool { language == "en" }
+    private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -306,14 +307,14 @@ private struct SettingsAppearanceSheet: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppAppearance.accent)
                     .frame(width: 36, height: 36)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                 Text(isEnglish ? "Appearance" : "Tampilan")
                     .font(.system(size: 17, weight: .black))
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.secondary).frame(width: 32, height: 32)
-                        .background(Color(uiColor: .secondarySystemBackground), in: Circle())
+                        .background(AppAppearance.card2(dark: isDark), in: Circle())
                 }.buttonStyle(.plain)
             }
             .padding(.horizontal, 20).padding(.vertical, 14)
@@ -374,7 +375,7 @@ private struct SettingsAppearanceSheet: View {
                                     }
                                     .foregroundStyle(active ? Color(hex: preset.accent) : .secondary)
                                     .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                    .background(active ? Color(hex: preset.primary).opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                                    .background(active ? Color(hex: preset.primary).opacity(0.12) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(active ? Color(hex: preset.accent) : Color.primary.opacity(0.07), lineWidth: active ? 2.5 : 1))
                                 }
                                 .buttonStyle(.plain)
@@ -387,7 +388,7 @@ private struct SettingsAppearanceSheet: View {
                                 }
                                 .foregroundStyle(themePreset == "custom" ? Color(hex: customAccent) : .secondary)
                                 .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                .background(themePreset == "custom" ? Color(hex: customPrimary).opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                                .background(themePreset == "custom" ? Color(hex: customPrimary).opacity(0.12) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(themePreset == "custom" ? Color(hex: customAccent) : Color.primary.opacity(0.07), lineWidth: themePreset == "custom" ? 2.5 : 1))
                             }
                             .buttonStyle(.plain)
@@ -397,7 +398,7 @@ private struct SettingsAppearanceSheet: View {
                             ColorPicker(isEnglish ? "Accent color" : "Warna aksen", selection: Binding(get: { Color(hex: customAccent) }, set: { customAccent = $0.meowlettHex; themePreset = "custom" }))
                         }
                         .padding(14)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                     }
                     .padding(.top, 14)
                     .padding(.bottom, 26)
@@ -405,7 +406,7 @@ private struct SettingsAppearanceSheet: View {
                 .padding(.horizontal, 20)
             }
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(AppAppearance.modal(dark: isDark))
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
@@ -414,7 +415,7 @@ private struct SettingsAppearanceSheet: View {
     private func appearanceSwitchRow(symbol: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppAppearance.accent)
-                .frame(width: 36, height: 36).background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                .frame(width: 36, height: 36).background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.system(size: 14, weight: .bold))
                 Text(subtitle).font(.system(size: 11)).foregroundStyle(.secondary)
@@ -518,7 +519,7 @@ private struct SettingsBudgetSheet: View {
                                 .frame(width: 104)
                                 .font(.system(size: 13, weight: .bold))
                                 .padding(9)
-                                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 11))
+                                .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 11))
                             }
                             if limit > 0 {
                                 GeometryReader { proxy in
@@ -530,7 +531,7 @@ private struct SettingsBudgetSheet: View {
                             }
                         }
                         .padding(13)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
+                        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 15))
                     }
                 }
                 .padding(16)
@@ -636,7 +637,7 @@ private struct SettingsDataSheet: View {
             Spacer()
         }
         .padding(14)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.25), lineWidth: 1.5))
     }
 }
