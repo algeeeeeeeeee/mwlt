@@ -12,9 +12,9 @@ struct SettingsView: View {
     @AppStorage("gm_custom_accent") private var customAccent = "#fb7185"
     @AppStorage("gm_profile_photo") private var profilePhoto = ""
     @AppStorage("gm_income") private var incomeRaw = "5000000"
-    @AppStorage("gm_notif_enabled") private var notificationsEnabled = "false"
+    @AppStorage("gm_notif") private var notificationsEnabled = "0"
     @AppStorage("gm_weekly_notif") private var weeklyNotification = "false"
-    @AppStorage("gm_weekly_notif_day") private var weeklyNotificationDay = "1"
+    @AppStorage("gm_weekly_notif_day") private var weeklyNotificationDay = "0"
     @AppStorage("gm_budgets") private var budgetsRaw = "{}"
     @AppStorage("mwlt.native.onboarded") private var isOnboarded = true
 
@@ -36,7 +36,8 @@ struct SettingsView: View {
     private var primary: Color { Color(hex: AppAppearance.primaryHex) }
     private var accent: Color { Color(hex: AppAppearance.accentHex) }
     private var photo: UIImage? {
-        guard let data = Data(base64Encoded: profilePhoto) else { return nil }
+        let encoded = profilePhoto.components(separatedBy: ",").last ?? profilePhoto
+        guard let data = Data(base64Encoded: encoded) else { return nil }
         return UIImage(data: data)
     }
     private var budgetCount: Int {
@@ -61,7 +62,7 @@ struct SettingsView: View {
                 settingsCard {
                     settingsRow(
                         title: isEnglish ? "Notifications" : "Notifikasi",
-                        subtitle: notificationsEnabled == "true"
+                        subtitle: notificationsEnabled == "1"
                             ? (isEnglish ? "Notifications enabled" : "Notifikasi aktif")
                             : (isEnglish ? "Notifications disabled" : "Notifikasi nonaktif"),
                         symbol: "bell"
@@ -114,33 +115,6 @@ struct SettingsView: View {
                     ) { showData = true }
                 }
 
-                settingsCard(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 9) {
-                        Text(isEnglish ? "Language" : "Bahasa")
-                            .font(.system(size: 14, weight: .bold))
-                        HStack(spacing: 8) {
-                            languageButton("id", title: "ID · Indonesia")
-                            languageButton("en", title: "EN · English")
-                        }
-                    }
-                    .padding(16)
-                }
-
-                settingsCard {
-                    Button {
-                        isOnboarded = false
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.counterclockwise")
-                            Text(isEnglish ? "Show onboarding again" : "Tampilkan onboarding lagi")
-                            Spacer()
-                        }
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(16)
-                    }
-                    .buttonStyle(.plain)
-                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -153,14 +127,14 @@ struct SettingsView: View {
         .onChange(of: selectedPhoto) { _, item in
             Task {
                 guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
-                profilePhoto = data.base64EncodedString()
+                profilePhoto = "data:image/jpeg;base64," + data.base64EncodedString()
             }
         }
         .sheet(isPresented: $showNameEditor) { nameEditor }
         .sheet(isPresented: $showAppearance) { SettingsAppearanceSheet() }
         .sheet(isPresented: $showNotifications) {
             SettingsNotificationsSheet(
-                enabled: Binding(get: { notificationsEnabled == "true" }, set: { notificationsEnabled = $0 ? "true" : "false" }),
+                enabled: Binding(get: { notificationsEnabled == "true" }, set: { notificationsEnabled = $0 ? "1" : "0" }),
                 weekly: Binding(get: { weeklyNotification == "true" }, set: { weeklyNotification = $0 ? "true" : "false" }),
                 day: Binding(get: { weeklyNotificationDay }, set: { weeklyNotificationDay = $0 }),
                 isEnglish: isEnglish
