@@ -40,6 +40,11 @@ final class FinanceStore: ObservableObject {
         save()
     }
 
+    func clearAllTransactions() {
+        transactions.removeAll()
+        save()
+    }
+
     func expenses(in month: Date = .now, calendar: Calendar = .current) -> Int64 {
         transactions
             .filter { calendar.isDate($0.date, equalTo: month, toGranularity: .month) }
