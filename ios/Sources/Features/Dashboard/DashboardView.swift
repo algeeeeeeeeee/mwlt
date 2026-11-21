@@ -20,7 +20,8 @@ struct DashboardView: View {
     @State private var showOverallBudgetEditor = false
     @State private var showGoalEditor = false
     @State private var editingGoal: DashboardSavingsGoal?
-    @State private var quickSaveGoal: DashboardSavingsGoal?
+    @State private var quickAddGoalID: Int64?
+    @State private var quickAddAmount = ""
 
     private var isEnglish: Bool { language == "en" }
     private var income: Int64 { Int64(incomeRaw) ?? 0 }
@@ -57,6 +58,18 @@ struct DashboardView: View {
         return grouped.map { key, values in
             (key, values.reduce(Int64(0)) { $0 + $1.amount })
         }.max { $0.1 < $1.1 }?.0
+    }
+    private var averageMonthlySaved: Int64 {
+        let calendar = Calendar.current
+        let previousMonths = (1...3).compactMap { offset -> Int64? in
+            guard let date = calendar.date(byAdding: .month, value: -offset, to: .now) else { return nil }
+            let expenses = store.transactions.filter {
+                calendar.isDate($0.date, equalTo: date, toGranularity: .month)
+            }.reduce(Int64(0)) { $0 + $1.amount }
+            return expenses > 0 ? max(0, income - expenses) : nil
+        }
+        guard !previousMonths.isEmpty else { return 0 }
+        return previousMonths.reduce(Int64(0), +) / Int64(previousMonths.count)
     }
     private var financialHealth: (score: Int, label: String, color: Color) {
         let ratio = income > 0 ? Double(spent) / Double(income) : 1
@@ -180,17 +193,6 @@ struct DashboardView: View {
                     }
                     editingGoal = nil
                 }
-            }
-            .sheet(item: $quickSaveGoal) { goal in
-                NativeMoneyEntrySheet(
-                    title: isEnglish ? "Add savings · \\(goal.label)" : "Tambah tabungan · \\(goal.label)",
-                    initialValue: 0,
-                    accent: Color(hex: goal.color),
-                    onSave: { amount in
-                        guard let index = savingsGoals.firstIndex(where: { $0.id == goal.id }) else { return }
-                        savingsGoals[index].saved += amount
-                    }
-                )
             }
             .sheet(isPresented: $showIncomeEditor) {
                 NavigationStack {
@@ -572,13 +574,7 @@ struct DashboardView: View {
                         )
                     }
                     ForEach(Array(entries.prefix(4).enumerated()), id: \.offset) { _, entry in
-                        budgetProgressRow(
-                            title: MeowlettCategory.name(for: entry.0, language: language),
-                            spent: monthTransactions.filter { $0.category == entry.0 }.reduce(Int64(0)) { $0 + $1.amount },
-                            limit: entry.1,
-                            color: MeowlettCategory.color(for: entry.0),
-                            showIcon: true
-                        )
+                        categoryBudgetRow(entry.0, limit: entry.1)
                     }
                 }
             }
@@ -586,6 +582,56 @@ struct DashboardView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func categoryBudgetRow(_ key: String, limit: Int64) -> some View {
+        let spent = monthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount }
+        let percentage = limit > 0 ? min(100, Int((Double(spent) / Double(limit) * 100).rounded())) : 0
+        let over = percentage >= 100
+        let warning = percentage >= 80
+        let color = MeowlettCategory.color(for: key)
+        let statusColor = over ? Color(hex: "#ef4444") : warning ? Color(hex: "#f59e0b") : Color(hex: AppAppearance.accentHex)
+        return VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 5) {
+                Image(systemName: MeowlettCategory.all.first(where: { $0.id == key })?.icon ?? "tag")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(color)
+                Text(MeowlettCategory.name(for: key, language: language))
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 4)
+                Button { budgets[key] = nil } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 3)
+                }
+                .buttonStyle(.plain)
+                Button { budgets[key] = (budgets[key] ?? limit) + 50_000 } label: {
+                    HStack(spacing: 3) {
+                        Text("\(percentage)%")
+                            .font(.system(size: 11, weight: .heavy))
+                        Image(systemName: "plus")
+                            .font(.system(size: 8, weight: .black))
+                    }
+                    .foregroundStyle(statusColor)
+                    .padding(.horizontal, 4)
+                }
+                .buttonStyle(.plain)
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(isDark ? 0.06 : 0.06))
+                    Capsule()
+                        .fill(LinearGradient(colors: [statusColor, statusColor.opacity(0.72)], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: proxy.size.width * CGFloat(percentage) / 100)
+                }
+            }
+            .frame(height: 6)
+            Text("\(rupiah(spent)) / \(rupiah(limit))")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func budgetProgressRow(title: String, spent: Int64, limit: Int64, color: Color, showIcon: Bool) -> some View {
@@ -729,28 +775,108 @@ struct DashboardView: View {
             }
             .frame(height: 6)
             if remaining > 0 {
-                Text((isEnglish ? "Remaining " : "Sisa ") + rupiah(remaining))
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text((isEnglish ? "Remaining " : "Sisa ") + rupiah(remaining))
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    if let deadline = goal.deadline, let date = dateFromISO(deadline) {
+                        let days = Calendar.current.dateComponents(
+                            [.day],
+                            from: Calendar.current.startOfDay(for: .now),
+                            to: Calendar.current.startOfDay(for: date)
+                        ).day ?? 0
+                        Text("·").foregroundStyle(.secondary)
+                        Text(days < 0
+                             ? (isEnglish ? "Overdue" : "Terlambat")
+                             : days <= 7
+                                ? "\(days) " + (isEnglish ? "days left" : "hari lagi")
+                                : date.formatted(.dateTime.day().month(.abbreviated).year()))
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(days < 0 ? Color(hex: "#f87171") : days <= 7 ? Color(hex: "#f59e0b") : Color.secondary)
+                    }
+                }
             } else {
                 Label(isEnglish ? "Goal reached" : "Target tercapai", systemImage: "checkmark.circle.fill")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(Color(hex: AppAppearance.accentHex))
             }
+            if percentage < 100 && remaining > 0 && averageMonthlySaved > 0 {
+                let months = Int(ceil(Double(remaining) / Double(averageMonthlySaved)))
+                let estimate: String = {
+                    if months <= 1 { return isEnglish ? "< 1 month away" : "< 1 bulan lagi" }
+                    if months < 12 { return isEnglish ? "\(months) months away" : "\(months) bulan lagi" }
+                    let years = months / 12
+                    let extraMonths = months % 12
+                    return isEnglish
+                        ? "\(years)y\(extraMonths > 0 ? " \(extraMonths)m" : "") away"
+                        : "\(years)th\(extraMonths > 0 ? " \(extraMonths)bl" : "") lagi"
+                }()
+                Text("Est. " + estimate)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
             if percentage < 100 {
-                Button {
-                    quickSaveGoal = goal
-                } label: {
-                    Label(isEnglish ? "Add savings" : "Tambah tabungan", systemImage: "plus")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(color)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                if quickAddGoalID == goal.id {
+                    HStack(spacing: 6) {
+                        TextField(isEnglish ? "Savings amount" : "Nominal tabungan", text: $quickAddAmount)
+                            .keyboardType(.numberPad)
+                            .font(.system(size: 13, weight: .semibold))
+                            .padding(.horizontal, 12)
+                            .frame(height: 38)
+                            .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.45), lineWidth: 1.5))
+                        Button(isEnglish ? "Save" : "Simpan") {
+                            let value = Int64(quickAddAmount.filter(\.isNumber)) ?? 0
+                            guard value > 0, let index = savingsGoals.firstIndex(where: { $0.id == goal.id }) else {
+                                quickAddGoalID = nil
+                                quickAddAmount = ""
+                                return
+                            }
+                            savingsGoals[index].saved += value
+                            quickAddGoalID = nil
+                            quickAddAmount = ""
+                        }
+                        .font(.system(size: 11, weight: .heavy))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 13)
+                        .frame(height: 38)
+                        .background(color, in: RoundedRectangle(cornerRadius: 10))
+                        Button {
+                            quickAddGoalID = nil
+                            quickAddAmount = ""
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 34, height: 38)
+                                .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    Button {
+                        quickAddGoalID = goal.id
+                        quickAddAmount = ""
+                    } label: {
+                        Label(isEnglish ? "Add savings" : "Tambah tabungan", systemImage: "plus")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(color)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
+    }
+
+    private func dateFromISO(_ value: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: value)
     }
 
     private func updateStreak() {
