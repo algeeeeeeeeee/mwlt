@@ -58,20 +58,20 @@ struct MainTabView: View {
     var body: some View {
         ZStack {
             Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
-            Group {
-                switch selected {
-                case .dashboard: DashboardView()
-                case .transactions: TransactionsView()
-                case .report: ReportsView()
-                case .date: DateTabView()
-                case .settings: SettingsView()
+            VStack(spacing: 0) {
+                topHeader
+                Group {
+                    switch selected {
+                    case .dashboard: DashboardView()
+                    case .transactions: TransactionsView()
+                    case .report: ReportsView()
+                    case .date: DateTabView()
+                    case .settings: SettingsView()
+                    }
                 }
+                .environmentObject(store)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .environmentObject(store)
-        }
-        .toolbar(.hidden, for: .navigationBar)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            topHeader
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomNavigation
@@ -91,12 +91,8 @@ struct MainTabView: View {
             }
         }
         .sheet(isPresented: $showQuickAdd) {
-            NavigationStack {
-                QuickTransactionSheet()
-                    .environmentObject(store)
-            }
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            TransactionEditorSheet(initialCategory: "food")
+                .environmentObject(store)
         }
     }
 
