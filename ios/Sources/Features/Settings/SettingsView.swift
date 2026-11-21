@@ -115,8 +115,14 @@ struct SettingsView: View {
         .sheet(isPresented: $showCategoryMenu) {
             SettingsCategoryMenuSheet(
                 isEnglish: isEnglish,
-                onBudget: { showCategoryMenu = false; showBudgets = true },
-                onManage: { showCategoryMenu = false; showCategoryManager = true }
+                onBudget: {
+                    showCategoryMenu = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { showBudgets = true }
+                },
+                onManage: {
+                    showCategoryMenu = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { showCategoryManager = true }
+                }
             )
         }
         .sheet(isPresented: $showCategoryManager) { SettingsCategoryManagerSheet() }
@@ -546,6 +552,7 @@ private struct SettingsCategoryMenuSheet: View {
     let onBudget: () -> Void
     let onManage: () -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -583,7 +590,7 @@ private struct SettingsCategoryMenuSheet: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
         }
-        .background(AppAppearance.modal(dark: UITraitCollection.current.userInterfaceStyle == .dark))
+        .background(AppAppearance.modal(dark: colorScheme == .dark))
         .presentationDetents([.height(220)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
@@ -879,6 +886,52 @@ private struct MeowlettBackupTransaction: Codable {
     var location: String
     var note: String
     var paymentMethod: String
+
+    private enum CodingKeys: String, CodingKey {
+        case id, date, amount, category, description, location, note, paymentMethod
+    }
+
+    init(id: String, date: String, amount: Int64, category: String, description: String, location: String, note: String, paymentMethod: String) {
+        self.id = id
+        self.date = date
+        self.amount = amount
+        self.category = category
+        self.description = description
+        self.location = location
+        self.note = note
+        self.paymentMethod = paymentMethod
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        if let stringID = try? values.decode(String.self, forKey: .id) {
+            id = stringID
+        } else if let numberID = try? values.decode(Int64.self, forKey: .id) {
+            id = String(numberID)
+        } else {
+            id = UUID().uuidString
+        }
+        if let stringDate = try? values.decode(String.self, forKey: .date) {
+            date = String(stringDate.prefix(10))
+        } else if let timestamp = try? values.decode(Double.self, forKey: .date) {
+            let seconds = timestamp > 10_000_000_000 ? timestamp / 1000 : timestamp
+            date = Date(timeIntervalSince1970: seconds).formatted(.iso8601.year().month().day())
+        } else {
+            throw BackupFileError.invalid
+        }
+        if let numericAmount = try? values.decode(Int64.self, forKey: .amount) {
+            amount = numericAmount
+        } else if let stringAmount = try? values.decode(String.self, forKey: .amount) {
+            amount = Int64(stringAmount.filter(\\.isNumber)) ?? 0
+        } else {
+            amount = 0
+        }
+        category = (try? values.decode(String.self, forKey: .category)) ?? "other"
+        description = (try? values.decode(String.self, forKey: .description)) ?? ""
+        location = (try? values.decode(String.self, forKey: .location)) ?? ""
+        note = (try? values.decode(String.self, forKey: .note)) ?? ""
+        paymentMethod = (try? values.decode(String.self, forKey: .paymentMethod)) ?? "cash"
+    }
 }
 
 private struct MeowlettBackupGoal: Codable {
