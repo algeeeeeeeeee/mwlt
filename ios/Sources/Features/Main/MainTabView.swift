@@ -351,7 +351,7 @@ struct MainTabView: View {
                             MeowlettTabSymbol(
                                 tab: tab,
                                 size: active ? 18 : 22,
-                                color: active ? activeColor : (isDate ? Color(hex: "#f9a8d4") : Color.secondary.opacity(0.65))
+                                color: active ? activeColor : (isDate ? Color(hex: "#f9a8d4") : Color.primary.opacity(0.28))
                             )
                             .frame(width: 22, height: 22)
                             if active {
@@ -367,7 +367,7 @@ struct MainTabView: View {
                         .background {
                             if active {
                                 RoundedRectangle(cornerRadius: 20)
-                                    .fill(isDate ? Color(hex: "#be185d").opacity(0.09) : tint.opacity(colorSchemeIsDark ? 0.16 : 0.08))
+                                    .fill(isDate ? Color(hex: "#be185d").opacity(colorSchemeIsDark ? 0.15 : 0.08) : tint.opacity(colorSchemeIsDark ? 0.11 : 0.063))
                             }
                         }
                         .contentShape(RoundedRectangle(cornerRadius: 20))
@@ -379,8 +379,9 @@ struct MainTabView: View {
             .fixedSize(horizontal: true, vertical: false)
             .padding(5)
             .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.10 : 0.07), lineWidth: 1))
-            .shadow(color: .black.opacity(colorSchemeIsDark ? 0.25 : 0.08), radius: 14, x: 0, y: 3)
+            .overlay(Capsule().fill(colorSchemeIsDark ? Color(red: 10.0 / 255, green: 10.0 / 255, blue: 10.0 / 255).opacity(0.72) : Color.white.opacity(0.72)))
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.10 : 0.08), lineWidth: 1))
+            .shadow(color: .black.opacity(colorSchemeIsDark ? 0.45 : 0.10), radius: colorSchemeIsDark ? 24 : 20, x: 0, y: colorSchemeIsDark ? 4 : 2)
             .fixedSize(horizontal: true, vertical: false)
             }
             Spacer(minLength: 0)
