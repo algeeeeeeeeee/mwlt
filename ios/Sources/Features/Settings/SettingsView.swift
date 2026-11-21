@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import UIKit
 import UserNotifications
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @AppStorage("gm_lang") private var language = "id"
@@ -638,37 +639,200 @@ private struct SettingsDataSheet: View {
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("gm_savings_goals") private var goalsRaw = "[]"
+    @AppStorage("gm_budgets") private var budgetsRaw = "{}"
+    @AppStorage("gm_categories") private var categoriesRaw = ""
+    @AppStorage("gm_daily_notes") private var dailyNotesRaw = "{}"
+
+    @State private var backupFile: MeowlettBackupFile?
+    @State private var showExporter = false
+    @State private var showImporter = false
     @State private var showResetConfirm = false
+    @State private var showRestoreConfirm = false
+    @State private var pendingRestore: MeowlettBackupPayload?
+    @State private var importError = ""
+
     private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Data").font(.system(size: 17, weight: .black))
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Data").font(.system(size: 17, weight: .black))
+                Spacer()
+                Button(isEnglish ? "Done" : "Selesai") { dismiss() }
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
             Button {
-                let export = BackupDocument(transactions: store.transactions, income: incomeRaw)
-                // Export data is represented as a shareable JSON document.
-                let data = try? JSONEncoder().encode(export)
-                if let data { UIPasteboard.general.setData(data, forPasteboardType: "public.json") }
-                dismiss()
+                backupFile = makeBackupFile()
+                showExporter = backupFile != nil
             } label: {
-                dataAction(symbol: "arrow.down.to.line", title: isEnglish ? "Backup data" : "Backup data", subtitle: isEnglish ? "Prepare a JSON backup" : "Siapkan backup JSON", color: AppAppearance.accent)
+                dataAction(
+                    symbol: "arrow.down.to.line",
+                    title: isEnglish ? "Backup data" : "Backup data",
+                    subtitle: isEnglish ? "Export a full JSON backup" : "Ekspor cadangan data lengkap",
+                    color: AppAppearance.accent
+                )
             }
+            .buttonStyle(.plain)
+
+            Button { showImporter = true } label: {
+                dataAction(
+                    symbol: "arrow.up.to.line",
+                    title: isEnglish ? "Restore backup" : "Pulihkan backup",
+                    subtitle: isEnglish ? "Restore from a Meowlett JSON file" : "Pulihkan dari file JSON Meowlett",
+                    color: AppAppearance.primary
+                )
+            }
+            .buttonStyle(.plain)
+
+            Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1).padding(.vertical, 3)
+
             Button { showResetConfirm = true } label: {
-                dataAction(symbol: "trash", title: isEnglish ? "Reset data" : "Reset data", subtitle: isEnglish ? "Delete all transactions on this device" : "Hapus semua transaksi di perangkat ini", color: Color(hex: "#ef4444"))
+                dataAction(
+                    symbol: "trash",
+                    title: isEnglish ? "Reset data" : "Reset data",
+                    subtitle: isEnglish ? "Delete finance data on this device" : "Hapus data keuangan di perangkat ini",
+                    color: Color(hex: "#ef4444")
+                )
             }
-            .confirmationDialog(isEnglish ? "Reset all data?" : "Reset semua data?", isPresented: $showResetConfirm, titleVisibility: .visible) {
-                Button(isEnglish ? "Delete all transactions" : "Hapus semua transaksi", role: .destructive) {
-                    store.clearAllTransactions()
-                    dismiss()
-                }
+            .buttonStyle(.plain)
+
+            if !importError.isEmpty {
+                Text(importError)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color(hex: "#ef4444"))
             }
-            Button(isEnglish ? "Done" : "Selesai") { dismiss() }
-                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                .frame(maxWidth: .infinity).frame(height: 44).background(AppAppearance.primary, in: RoundedRectangle(cornerRadius: 13))
         }
         .padding(20)
-        .presentationDetents([.medium])
+        .background(AppAppearance.modal(dark: isDark))
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .fileExporter(
+            isPresented: $showExporter,
+            document: backupFile,
+            contentType: .json,
+            defaultFilename: "meowlett-backup-\(Date.now.formatted(.iso8601.year().month().day()))"
+        ) { result in
+            if case .failure(let error) = result { importError = error.localizedDescription }
+        }
+        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json], allowsMultipleSelection: false) { result in
+            do {
+                let url = try result.get().first
+                guard let url else { return }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                let data = try Data(contentsOf: url)
+                let payload = try JSONDecoder().decode(MeowlettBackupPayload.self, from: data)
+                guard payload.transactions != nil else { throw BackupFileError.invalid }
+                pendingRestore = payload
+                showRestoreConfirm = true
+                importError = ""
+            } catch {
+                importError = isEnglish ? "Invalid backup file." : "File backup tidak valid."
+            }
+        }
+        .confirmationDialog(
+            isEnglish ? "Restore this backup?" : "Pulihkan backup ini?",
+            isPresented: $showRestoreConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(isEnglish ? "Restore data" : "Pulihkan data", role: .destructive) {
+                restorePendingBackup()
+            }
+            Button(isEnglish ? "Cancel" : "Batal", role: .cancel) { pendingRestore = nil }
+        } message: {
+            Text(isEnglish ? "Current finance data will be replaced." : "Data keuangan saat ini akan diganti.")
+        }
+        .confirmationDialog(
+            isEnglish ? "Reset all finance data?" : "Reset semua data keuangan?",
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(isEnglish ? "Reset data" : "Reset data", role: .destructive) { resetData() }
+            Button(isEnglish ? "Cancel" : "Batal", role: .cancel) {}
+        }
+    }
+
+    private func makeBackupFile() -> MeowlettBackupFile? {
+        let transactions = store.transactions.map {
+            MeowlettBackupTransaction(
+                id: $0.id.uuidString,
+                date: $0.date.formatted(.iso8601.year().month().day()),
+                amount: $0.amount,
+                category: $0.category,
+                description: $0.description,
+                location: $0.location,
+                note: $0.note,
+                paymentMethod: $0.paymentMethod
+            )
+        }
+        let goalsData = goalsRaw.data(using: .utf8) ?? Data("[]".utf8)
+        let goals = (try? JSONDecoder().decode([MeowlettBackupGoal].self, from: goalsData)) ?? []
+        let budgetsData = budgetsRaw.data(using: .utf8) ?? Data("{}".utf8)
+        let budgets = (try? JSONDecoder().decode([String: Int64].self, from: budgetsData)) ?? [:]
+        let categoriesData = categoriesRaw.data(using: .utf8) ?? Data("{}".utf8)
+        let categories = (try? JSONDecoder().decode([String: MeowlettCategoryDefinition].self, from: categoriesData)) ?? [:]
+        let notesData = dailyNotesRaw.data(using: .utf8) ?? Data("{}".utf8)
+        let dailyNotes = (try? JSONDecoder().decode([String: String].self, from: notesData)) ?? [:]
+        let payload = MeowlettBackupPayload(
+            version: 1,
+            exportedAt: ISO8601DateFormatter().string(from: .now),
+            transactions: transactions,
+            income: Int64(incomeRaw) ?? 5_000_000,
+            goals: goals,
+            budgets: budgets,
+            categories: categories,
+            dailyNotes: dailyNotes
+        )
+        guard let data = try? JSONEncoder().encode(payload) else { return nil }
+        return MeowlettBackupFile(data: data)
+    }
+
+    private func restorePendingBackup() {
+        guard let payload = pendingRestore, let rows = payload.transactions else { return }
+        let restored = rows.compactMap { row -> MeowlettTransaction? in
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM-dd"
+            guard let date = formatter.date(from: row.date) else { return nil }
+            return MeowlettTransaction(
+                date: date,
+                amount: row.amount,
+                category: row.category,
+                description: row.description,
+                location: row.location,
+                note: row.note,
+                paymentMethod: row.paymentMethod
+            )
+        }
+        store.replaceAllTransactions(restored)
+        incomeRaw = String(payload.income ?? 5_000_000)
+        if let goals = payload.goals, let data = try? JSONEncoder().encode(goals) {
+            goalsRaw = String(data: data, encoding: .utf8) ?? "[]"
+        }
+        if let budgets = payload.budgets, let data = try? JSONEncoder().encode(budgets) {
+            budgetsRaw = String(data: data, encoding: .utf8) ?? "{}"
+        }
+        if let categories = payload.categories, let data = try? JSONEncoder().encode(categories) {
+            categoriesRaw = String(data: data, encoding: .utf8) ?? "{}"
+        }
+        if let notes = payload.dailyNotes, let data = try? JSONEncoder().encode(notes) {
+            dailyNotesRaw = String(data: data, encoding: .utf8) ?? "{}"
+        }
+        pendingRestore = nil
+        dismiss()
+    }
+
+    private func resetData() {
+        store.clearAllTransactions()
+        incomeRaw = "5000000"
+        goalsRaw = "[]"
+        budgetsRaw = "{}"
+        categoriesRaw = ""
+        dailyNotesRaw = "{}"
+        UserDefaults.standard.removeObject(forKey: "gm_recurring")
+        dismiss()
     }
 
     private func dataAction(symbol: String, title: String, subtitle: String, color: Color) -> some View {
@@ -687,7 +851,53 @@ private struct SettingsDataSheet: View {
     }
 }
 
-private struct BackupDocument: Codable {
-    var transactions: [MeowlettTransaction]
-    var income: String
+private enum BackupFileError: Error {
+    case invalid
+}
+
+private struct MeowlettBackupFile: FileDocument {
+    static var readableContentTypes: [UTType] { [.json] }
+    var data: Data
+
+    init(data: Data) { self.data = data }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
+
+private struct MeowlettBackupTransaction: Codable {
+    var id: String
+    var date: String
+    var amount: Int64
+    var category: String
+    var description: String
+    var location: String
+    var note: String
+    var paymentMethod: String
+}
+
+private struct MeowlettBackupGoal: Codable {
+    var id: Int64
+    var label: String
+    var target: Int64
+    var saved: Int64
+    var color: String
+    var icon: String
+    var deadline: String?
+}
+
+private struct MeowlettBackupPayload: Codable {
+    var version: Int?
+    var exportedAt: String?
+    var transactions: [MeowlettBackupTransaction]?
+    var income: Int64?
+    var goals: [MeowlettBackupGoal]?
+    var budgets: [String: Int64]?
+    var categories: [String: MeowlettCategoryDefinition]?
+    var dailyNotes: [String: String]?
 }
