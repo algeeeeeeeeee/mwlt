@@ -397,7 +397,7 @@ private struct DonutBreakdown: View {
     var body: some View {
         ZStack {
             Circle().stroke(Color.primary.opacity(0.06), lineWidth: 15)
-            ForEach(Array(values.enumerated()), id: \.element.category) { index, item in
+            ForEach(Array(values.enumerated()), id: \.offset) { index, item in
                 let previous = values.prefix(index).reduce(Int64(0)) { $0 + $1.amount }
                 Circle()
                     .trim(from: total > 0 ? CGFloat(Double(previous) / total) : 0,
