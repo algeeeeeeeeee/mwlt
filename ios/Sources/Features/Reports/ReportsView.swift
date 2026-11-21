@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ReportsView: View {
     @EnvironmentObject private var store: FinanceStore
@@ -9,8 +10,8 @@ struct ReportsView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var reportDate = Date.now
-    @State private var selectedTrendCategory = "food"
-    @State private var trendMode = "line"
+    @State private var trendMode = "bar"
+    @State private var showHTMLExport = false
 
     private var isEnglish: Bool { language == "en" }
     private var isDark: Bool { colorScheme == .dark }
@@ -73,15 +74,27 @@ struct ReportsView: View {
         .prefix(4)
         .map { $0 }
     }
-    private var selectedCategoryTrend: [(Date, Int64)] {
+    private var categoryTrendMonths: [Date] {
         let calendar = Calendar.current
         return (0..<4).reversed().compactMap { offset in
-            guard let date = calendar.date(byAdding: .month, value: -offset, to: .now) else { return nil }
-            let sum = store.transactions.filter {
-                $0.category == selectedTrendCategory && calendar.isDate($0.date, equalTo: date, toGranularity: .month)
-            }.reduce(Int64(0)) { $0 + $1.amount }
-            return (date, sum)
+            guard let date = calendar.date(byAdding: .month, value: -offset, to: .now),
+                  let start = calendar.date(from: calendar.dateComponents([.year, .month], from: date)) else { return nil }
+            return start
         }
+    }
+    private var categoryTrendSeries: [ReportTrendSeries] {
+        MeowlettCategory.all.compactMap { category in
+            let values = categoryTrendMonths.map { month in
+                currentOrHistoricalMonthTotal(category: category.id, month: month)
+            }
+            guard values.contains(where: { $0 > 0 }) else { return nil }
+            return ReportTrendSeries(id: category.id, color: MeowlettCategory.color(for: category.id), values: values)
+        }
+    }
+    private func currentOrHistoricalMonthTotal(category: String, month: Date) -> Int64 {
+        store.transactions.filter {
+            $0.category == category && Calendar.current.isDate($0.date, equalTo: month, toGranularity: .month)
+        }.reduce(Int64(0)) { $0 + $1.amount }
     }
     private var weeklyTrend: [(Date, Int64)] {
         let calendar = Calendar.current
@@ -109,7 +122,7 @@ struct ReportsView: View {
                 if !budgetWarnings.isEmpty { budgetWarningCard }
                 categoryComparisonCard
                 if !insights.isEmpty { insightsCard }
-                categoryTrendCard
+                if !categoryTrendSeries.isEmpty { categoryTrendCard }
                 weeklyTrendCard
                 weeklyInsightCard
                 exportCard
@@ -123,6 +136,12 @@ struct ReportsView: View {
         }
         .background(AppAppearance.background(dark: isDark))
         .toolbar(.hidden, for: .navigationBar)
+        .fileExporter(
+            isPresented: $showHTMLExport,
+            document: ReportHTMLDocument(html: reportHTML),
+            contentType: .html,
+            defaultFilename: "laporan-\(Date.now.formatted(.iso8601.year().month()))"
+        ) { _ in }
     }
 
     private var budgetWarningCard: some View {
@@ -228,53 +247,48 @@ struct ReportsView: View {
     }
 
     private var categoryTrendCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeading(isEnglish ? "Category Trend (4 months)" : "Tren Kategori (4 bulan)", symbol: "chart.xyaxis.line")
-            HStack {
-                Menu {
-                    ForEach(MeowlettCategory.all, id: \.id) { category in
-                        Button {
-                            selectedTrendCategory = category.id
-                        } label: {
-                            if selectedTrendCategory == category.id {
-                                Label(language == "en" ? category.enName : category.idName, systemImage: "checkmark")
-                            } else {
-                                Text(language == "en" ? category.enName : category.idName)
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Circle().fill(MeowlettCategory.color(for: selectedTrendCategory)).frame(width: 7, height: 7)
-                        Text(MeowlettCategory.name(for: selectedTrendCategory, language: language))
-                            .font(.system(size: 11, weight: .bold))
-                        Image(systemName: "chevron.down").font(.system(size: 9, weight: .black))
-                    }
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 10).padding(.vertical, 7)
-                    .background(AppAppearance.card2(dark: isDark), in: Capsule())
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            sectionHeading(isEnglish ? "Category Trend (4 months)" : "Tren Kategori (4 bulan)", symbol: "chart.bar.xaxis")
+            HStack(spacing: 4) {
+                Text(isEnglish ? "Bar" : "Batang")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(trendMode == "bar" ? accent : Color.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(trendMode == "bar" ? accent.opacity(0.13) : .clear, in: Capsule())
+                    .overlay(Capsule().stroke(trendMode == "bar" ? accent : Color.secondary.opacity(0.18), lineWidth: 1.2))
+                    .contentShape(Capsule())
+                    .onTapGesture { trendMode = "bar" }
+                Text(isEnglish ? "Line" : "Garis")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(trendMode == "line" ? accent : Color.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(trendMode == "line" ? accent.opacity(0.13) : .clear, in: Capsule())
+                    .overlay(Capsule().stroke(trendMode == "line" ? accent : Color.secondary.opacity(0.18), lineWidth: 1.2))
+                    .contentShape(Capsule())
+                    .onTapGesture { trendMode = "line" }
                 Spacer()
-                Picker("", selection: $trendMode) {
-                    Text(isEnglish ? "Line" : "Garis").tag("line")
-                    Text(isEnglish ? "Bar" : "Batang").tag("bar")
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 126)
-            }
-            if selectedCategoryTrend.allSatisfy({ $0.1 == 0 }) {
-                emptyMessage(isEnglish ? "No data for this category." : "Belum ada data kategori ini.")
-                    .frame(height: 115)
-            } else {
-                NativeReportChart(values: selectedCategoryTrend, color: MeowlettCategory.color(for: selectedTrendCategory), mode: trendMode)
-                    .frame(height: 145)
             }
             HStack {
-                ForEach(Array(selectedCategoryTrend.enumerated()), id: \.offset) { _, item in
-                    Text(item.0.formatted(.dateTime.month(.abbreviated).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))))
-                        .font(.system(size: 9, weight: .semibold))
+                ForEach(Array(categoryTrendMonths.enumerated()), id: \.offset) { _, month in
+                    Text(month.formatted(.dateTime.month(.abbreviated).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
+                }
+            }
+            NativeCategoryTrendChart(series: categoryTrendSeries, mode: trendMode)
+                .frame(height: 150)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), alignment: .leading)], alignment: .leading, spacing: 7) {
+                ForEach(categoryTrendSeries) { item in
+                    HStack(spacing: 5) {
+                        Circle().fill(item.color).frame(width: 8, height: 8)
+                        Text(MeowlettCategory.name(for: item.id, language: language))
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
         }
@@ -343,22 +357,35 @@ struct ReportsView: View {
     }
 
     private var exportCard: some View {
-        HStack(spacing: 10) {
-            ShareLink(item: reportCSV) {
-                Label(isEnglish ? "Export CSV" : "Ekspor CSV", systemImage: "tablecells")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(primary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                ShareLink(item: reportCSV) {
+                    Label(isEnglish ? "Export CSV" : "Ekspor CSV", systemImage: "tablecells")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(primary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                }
+                Button {
+                    showHTMLExport = true
+                } label: {
+                    Label(isEnglish ? "Export report" : "Ekspor laporan", systemImage: "doc.text")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(accent)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
             }
             ShareLink(item: reportSummary) {
                 Label(isEnglish ? "Share summary" : "Bagikan ringkasan", systemImage: "square.and.arrow.up")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(accent)
+                    .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 11)
-                    .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 12)
+                    .background(LinearGradient(colors: [accent, primary], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 13))
             }
         }
         .padding(13)
@@ -425,17 +452,30 @@ struct ReportsView: View {
                 }
             }
             if !reportTransactions.isEmpty {
+                let daysInMonth = Calendar.current.range(of: .day, in: .month, for: reportDate)?.count ?? 30
+                let averageDailyAllowance = income > 0 ? income / Int64(max(daysInMonth, 1)) : 0
+                let aboveDailyAverage = reportTotal > averageDailyAllowance
                 Divider().opacity(0.5)
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 8) {
                     sectionHeading(isEnglish ? "Daily insight" : "Insight Hari Ini", symbol: "sparkles")
                     if let top = dailyCategoryTotals.first {
                         Text((isEnglish ? "Top spending: " : "Pengeluaran tertinggi: ") + MeowlettCategory.name(for: top.0, language: language) + " — " + rupiah(top.1))
                             .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(primary)
                     }
+                    Label(
+                        (aboveDailyAverage ? (isEnglish ? "Above daily average" : "Di atas rata-rata harian") : (isEnglish ? "Below daily average" : "Di bawah rata-rata harian"))
+                            + " (\(rupiah(averageDailyAllowance)))",
+                        systemImage: aboveDailyAverage ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+                    )
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a"))
                     Text((isEnglish ? "Average per transaction: " : "Rata-rata per transaksi: ") + rupiah(reportTotal / Int64(max(reportTransactions.count, 1))))
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
+                .padding(12)
+                .background(primary.opacity(isDark ? 0.12 : 0.06), in: RoundedRectangle(cornerRadius: 12))
             }
         }
         .cardStyle(dark: isDark)
@@ -455,6 +495,60 @@ struct ReportsView: View {
             output += fields.map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }.joined(separator: ",") + "\n"
         }
         return output
+    }
+
+    private var reportHTML: String {
+        let monthKey = Date.now.formatted(.iso8601.year().month())
+        let monthTransactions = currentMonthTransactions.sorted { $0.date > $1.date }
+        let categoryRows = Dictionary(grouping: monthTransactions, by: \.category)
+            .map { key, values in (key, values.reduce(Int64(0)) { $0 + $1.amount }) }
+            .sorted { $0.1 > $1.1 }
+        let total = monthTransactions.reduce(Int64(0)) { $0 + $1.amount }
+        let remaining = income - total
+        func escaped(_ value: String) -> String {
+            value.replacingOccurrences(of: "&", with: "&amp;")
+                .replacingOccurrences(of: "<", with: "&lt;")
+                .replacingOccurrences(of: ">", with: "&gt;")
+                .replacingOccurrences(of: "\"", with: "&quot;")
+                .replacingOccurrences(of: "'", with: "&#39;")
+        }
+        let transactionsHTML = monthTransactions.map { item in
+            """
+            <tr><td>\(item.date.formatted(.iso8601.year().month().day()))</td><td>\(escaped(item.description))</td><td>\(escaped(MeowlettCategory.name(for: item.category, language: language)))</td><td class="amount">\(escaped(rupiah(item.amount)))</td></tr>
+            """
+        }.joined()
+        let categoryHTML = categoryRows.map { key, amount in
+            let percent = total > 0 ? Int((Double(amount) / Double(total) * 100).rounded()) : 0
+            return "<tr><td>\(escaped(MeowlettCategory.name(for: key, language: language)))</td><td class=\"amount\">\(escaped(rupiah(amount)))</td><td class=\"amount\">\(percent)%</td></tr>"
+        }.joined()
+        let title = isEnglish ? "Meowlett Finance Report" : "Laporan Keuangan Meowlett"
+        let incomeTitle = isEnglish ? "INCOME" : "PEMASUKAN"
+        let expenseTitle = isEnglish ? "EXPENSES" : "PENGELUARAN"
+        let remainingTitle = isEnglish ? "REMAINING" : "SISA"
+        return """
+        <!doctype html><html lang="\(language)"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>\(title) · \(monthKey)</title>
+        <style>
+        body{font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;max-width:800px;margin:32px auto;padding:0 18px;color:#111;background:#fff}
+        h1{font-size:24px;color:#166534;margin-bottom:4px}.meta{color:#6b7280;font-size:13px}
+        .summary{display:flex;flex-wrap:wrap;gap:28px;background:#f0fdf4;border-radius:12px;padding:18px;margin:22px 0}
+        .label{font-size:10px;color:#6b7280;font-weight:800;letter-spacing:1px}.value{font-size:21px;font-weight:900;color:#166534;margin-top:5px}
+        h2{font-size:16px;color:#166534;margin:25px 0 10px}table{width:100%;border-collapse:collapse}
+        th{background:#f0fdf4;color:#166534;text-align:left;font-size:12px;padding:10px}
+        td{border-bottom:1px solid #e5e7eb;padding:9px 10px;font-size:12px}.amount{text-align:right;white-space:nowrap}
+        @media print{body{margin:0;max-width:none}}
+        </style></head><body>
+        <h1>\(title)</h1><p class="meta">\(monthKey) · \(Date.now.formatted(date: .long, time: .omitted))</p>
+        <div class="summary">
+          <div><div class="label">\(incomeTitle)</div><div class="value">\(escaped(rupiah(income)))</div></div>
+          <div><div class="label">\(expenseTitle)</div><div class="value" style="color:#ef4444">\(escaped(rupiah(total)))</div></div>
+          <div><div class="label">\(remainingTitle)</div><div class="value" style="color:\(remaining >= 0 ? "#16a34a" : "#ef4444")">\(escaped(rupiah(remaining)))</div></div>
+        </div>
+        <h2>\(isEnglish ? "Category breakdown" : "Rincian Kategori")</h2>
+        <table><thead><tr><th>\(isEnglish ? "Category" : "Kategori")</th><th class="amount">\(isEnglish ? "Amount" : "Jumlah")</th><th class="amount">%</th></tr></thead><tbody>\(categoryHTML)</tbody></table>
+        <h2>\(isEnglish ? "Transactions" : "Detail Transaksi") (\(monthTransactions.count))</h2>
+        <table><thead><tr><th>\(isEnglish ? "Date" : "Tanggal")</th><th>\(isEnglish ? "Description" : "Keterangan")</th><th>\(isEnglish ? "Category" : "Kategori")</th><th class="amount">\(isEnglish ? "Amount" : "Jumlah")</th></tr></thead><tbody>\(transactionsHTML)</tbody></table>
+        </body></html>
+        """
     }
 
     private var reportSummary: String {
@@ -481,6 +575,77 @@ struct ReportsView: View {
         formatter.locale = Locale(identifier: "id_ID")
         formatter.numberStyle = .decimal
         return "Rp" + (formatter.string(from: NSNumber(value: value)) ?? String(value))
+    }
+}
+
+private struct ReportHTMLDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.html] }
+    let html: String
+
+    init(html: String) { self.html = html }
+
+    init(configuration: ReadConfiguration) throws {
+        let data = configuration.file.regularFileContents ?? Data()
+        html = String(data: data, encoding: .utf8) ?? ""
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: Data(html.utf8))
+    }
+}
+
+private struct ReportTrendSeries: Identifiable {
+    let id: String
+    let color: Color
+    let values: [Int64]
+}
+
+private struct NativeCategoryTrendChart: View {
+    let series: [ReportTrendSeries]
+    let mode: String
+
+    var body: some View {
+        Canvas { context, size in
+            let padding: CGFloat = 10
+            let chartHeight = size.height - 8
+            let monthCount = max(series.first?.values.count ?? 4, 1)
+            let maxAmount = CGFloat(max(series.flatMap(\.values).max() ?? 1, 1))
+
+            var baseline = Path()
+            baseline.move(to: CGPoint(x: padding, y: chartHeight))
+            baseline.addLine(to: CGPoint(x: size.width - padding, y: chartHeight))
+            context.stroke(baseline, with: .color(Color.primary.opacity(0.10)), lineWidth: 1)
+
+            if mode == "bar" {
+                let groupWidth = (size.width - padding * 2) / CGFloat(monthCount)
+                let slotWidth = groupWidth * 0.72 / CGFloat(max(series.count, 1))
+                for (categoryIndex, item) in series.enumerated() {
+                    for (monthIndex, amount) in item.values.enumerated() {
+                        let barHeight = max(2, CGFloat(amount) / maxAmount * (chartHeight - 16))
+                        let x = padding + CGFloat(monthIndex) * groupWidth + groupWidth * 0.14 + CGFloat(categoryIndex) * slotWidth
+                        let rect = CGRect(x: x, y: chartHeight - barHeight, width: max(2, slotWidth - 1), height: barHeight)
+                        context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(item.color.opacity(0.9)))
+                    }
+                }
+            } else {
+                for item in series {
+                    var path = Path()
+                    var points: [CGPoint] = []
+                    for (index, amount) in item.values.enumerated() {
+                        let x = padding + CGFloat(index) / CGFloat(max(monthCount - 1, 1)) * (size.width - padding * 2)
+                        let y = chartHeight - padding - CGFloat(amount) / maxAmount * (chartHeight - padding * 2)
+                        let point = CGPoint(x: x, y: y)
+                        points.append(point)
+                        if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
+                    }
+                    context.stroke(path, with: .color(item.color), lineWidth: 2)
+                    for (index, point) in points.enumerated() where item.values[index] > 0 {
+                        let dot = CGRect(x: point.x - 3, y: point.y - 3, width: 6, height: 6)
+                        context.fill(Path(ellipseIn: dot), with: .color(item.color))
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -31,6 +31,7 @@ jobs:
   build:
     name: Build Meowlett for iOS
     runs-on: macos-15
+    timeout-minutes: 35
 
     steps:
       - name: Checkout
@@ -69,34 +70,44 @@ jobs:
             xcrun simctl list devices available
             exit 1
           fi
+          echo "Simulator selected: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-          xcrun simctl bootstatus "$DEVICE_ID" -b
+          echo "Waiting for Simulator boot..."
+          timeout 180 xcrun simctl bootstatus "$DEVICE_ID" -b
+          echo "Simulator booted."
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
-          xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+          echo "Installing Meowlett app..."
+          timeout 90 xcrun simctl install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
+          echo "Capturing onboarding preview..."
+          timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
           sleep 3
-          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
+          timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
           xcrun simctl spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
+          echo "Capturing dashboard preview..."
+          timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
           sleep 3
-          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
+          timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
 
           # Capture every top-level native tab with representative, simulator-only data.
           for TAB in transactions report date settings; do
             xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
-            xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
+            echo "Capturing $TAB preview..."
+            timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
             sleep 2
-            xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
+            timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
           done
 
           # Capture the native quick-add sheet as a separate preview state.
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
+          echo "Capturing quick-add preview..."
+          timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
           sleep 2
-          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
+          timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
+          echo "All native previews captured:"
+          ls -lh "$RUNNER_TEMP/MeowlettPreviews"
 
       - name: Upload native app previews
         uses: actions/upload-artifact@v4
