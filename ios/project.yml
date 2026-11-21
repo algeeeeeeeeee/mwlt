@@ -21,6 +21,7 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Meowlett
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
         MARKETING_VERSION: "4.1.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_CFBundleShortVersionString: "4.1.0"

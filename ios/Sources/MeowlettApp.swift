@@ -21,17 +21,20 @@ struct RootView: View {
     }
 
     var body: some View {
-        Group {
-            if isOnboarded {
-                MainTabView()
-                    .environmentObject(financeStore)
-            } else {
-                OnboardingView {
-                    isOnboarded = true
+        GeometryReader { geometry in
+            Group {
+                if isOnboarded {
+                    MainTabView()
+                        .environmentObject(financeStore)
+                } else {
+                    OnboardingView {
+                        isOnboarded = true
+                    }
                 }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+            .background(Color(uiColor: .systemBackground))
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .preferredColorScheme(preferredScheme)
     }

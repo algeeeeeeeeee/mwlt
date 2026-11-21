@@ -61,24 +61,28 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        ZStack {
-            AppAppearance.background(dark: colorSchemeIsDark).ignoresSafeArea()
-            VStack(spacing: 0) {
-                topHeader
-                Group {
-                    switch selected {
-                    case .dashboard: DashboardView()
-                    case .transactions: TransactionsView()
-                    case .report: ReportsView()
-                    case .date: DateTabView()
-                    case .settings: SettingsView()
+        GeometryReader { geometry in
+            ZStack {
+                AppAppearance.background(dark: colorSchemeIsDark).ignoresSafeArea()
+                VStack(spacing: 0) {
+                    topHeader
+                        .frame(width: geometry.size.width, alignment: .leading)
+                    Group {
+                        switch selected {
+                        case .dashboard: DashboardView()
+                        case .transactions: TransactionsView()
+                        case .report: ReportsView()
+                        case .date: DateTabView()
+                        case .settings: SettingsView()
+                        }
                     }
+                    .environmentObject(store)
+                    .frame(width: geometry.size.width, maxHeight: .infinity)
                 }
-                .environmentObject(store)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             }
+            .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomNavigation
         }
@@ -196,6 +200,7 @@ struct MainTabView: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .padding(.bottom, 10)
+        .frame(maxWidth: .infinity)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.04)).frame(height: 0.5) }
     }
