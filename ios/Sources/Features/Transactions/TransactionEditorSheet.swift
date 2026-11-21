@@ -7,6 +7,7 @@ struct TransactionEditorSheet: View {
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
     @AppStorage("gm_lang") private var language = "id"
+    @AppStorage("gm_categories") private var categoriesJSON = ""
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var descriptionText: String
