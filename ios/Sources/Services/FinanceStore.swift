@@ -77,6 +77,11 @@ final class FinanceStore: ObservableObject {
         save()
     }
 
+    func replaceAllTransactions(_ values: [MeowlettTransaction]) {
+        transactions = values.sorted { $0.date > $1.date }
+        save()
+    }
+
     func expenses(in month: Date = .now, calendar: Calendar = .current) -> Int64 {
         transactions
             .filter { calendar.isDate($0.date, equalTo: month, toGranularity: .month) }
