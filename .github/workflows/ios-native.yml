@@ -55,6 +55,37 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Capture native app previews
+        run: |
+          set -euo pipefail
+          DEVICE_ID="$(xcrun simctl list devices available | sed -nE 's/.*\\(([0-9A-F-]{36})\\) \\(Shutdown\\).*/\\1/p' | head -n1)"
+          if [ -z "$DEVICE_ID" ]; then
+            DEVICE_ID="$(xcrun simctl list devices available | sed -nE 's/.*\\(([0-9A-F-]{36})\\) \\(Booted\\).*/\\1/p' | head -n1)"
+          fi
+          test -n "$DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+          APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
+          test -d "$APP_PATH"
+          xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
+          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
+          sleep 3
+          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
+          xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
+          xcrun simctl spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
+          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
+          sleep 3
+          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
+
+      - name: Upload native app previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowlett-Native-Previews
+          path: ${{ runner.temp }}/MeowlettPreviews/*.png
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Build iPhone device
         run: |
           xcodebuild \
