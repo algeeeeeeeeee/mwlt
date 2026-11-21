@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UIKit
 
 struct SettingsView: View {
     @AppStorage("gm_lang") private var language = "id"
@@ -488,6 +489,7 @@ private struct SettingsBudgetSheet: View {
     let isEnglish: Bool
     @State private var budgets: [String: Int64] = [:]
     @State private var loaded = false
+    @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -495,7 +497,7 @@ private struct SettingsBudgetSheet: View {
             ScrollView {
                 VStack(spacing: 10) {
                     ForEach(MeowlettCategory.all, id: \.id) { category in
-                        let spent: Int64 = 0
+                        let spent = store.transactions.filter { $0.category == category.id && Calendar.current.isDate($0.date, equalTo: .now, toGranularity: .month) }.reduce(Int64(0)) { $0 + $1.amount }
                         let limit = budgets[category.id] ?? 0
                         VStack(spacing: 8) {
                             HStack(spacing: 10) {
@@ -522,7 +524,7 @@ private struct SettingsBudgetSheet: View {
                             if limit > 0 {
                                 GeometryReader { proxy in
                                     Capsule().fill(Color.primary.opacity(0.06)).overlay(alignment: .leading) {
-                                        Capsule().fill(Color(hex: category.color)).frame(width: 0)
+                                        Capsule().fill(Color(hex: category.color)) .frame(width: proxy.size.width * CGFloat(min(100, limit > 0 ? Double(spent) / Double(limit) * 100 : 0)) / 100)
                                     }
                                 }
                                 .frame(height: 5)
@@ -611,7 +613,7 @@ private struct SettingsDataSheet: View {
             }
             .confirmationDialog(isEnglish ? "Reset all data?" : "Reset semua data?", isPresented: $showResetConfirm, titleVisibility: .visible) {
                 Button(isEnglish ? "Delete all transactions" : "Hapus semua transaksi", role: .destructive) {
-                    store.transactions.removeAll()
+                    store.clearAllTransactions()
                     dismiss()
                 }
             }
