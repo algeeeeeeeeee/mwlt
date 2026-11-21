@@ -324,7 +324,7 @@ struct MainTabView: View {
                     .foregroundStyle(.white)
                     .frame(width: 54, height: 54)
                     .background(LinearGradient(colors: [tint, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
-                    .shadow(color: tint.opacity(0.34), radius: 10, x: 0, y: 4)
+                    .shadow(color: tint.opacity(0.34), radius: 16, x: 0, y: 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isEnglish ? "Add transaction" : "Tambah transaksi")
@@ -355,7 +355,7 @@ struct MainTabView: View {
                         }
                         .foregroundStyle(active ? activeColor : (isDate ? Color(hex: "#f9a8d4") : Color.secondary.opacity(0.65)))
                         .frame(minWidth: 54, minHeight: 54)
-                        .padding(.horizontal, active ? 9 : 0)
+                        .padding(.horizontal, active ? 14 : 0)
                         .background {
                             if active {
                                 RoundedRectangle(cornerRadius: 20)
@@ -378,8 +378,8 @@ struct MainTabView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
-        .padding(.top, 5)
-        .padding(.bottom, 7)
+        .padding(.top, 4)
+        .padding(.bottom, 20)
         .frame(maxWidth: .infinity)
         .background {
             LinearGradient(colors: [AppAppearance.background(dark: colorSchemeIsDark).opacity(0), AppAppearance.background(dark: colorSchemeIsDark).opacity(0.96)], startPoint: .top, endPoint: .bottom)
