@@ -75,21 +75,21 @@ jobs:
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
           xcrun simctl spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
+          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
           sleep 3
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
 
-          # Capture every top-level native tab using deterministic launch arguments.
+          # Capture every top-level native tab with representative, simulator-only data.
           for TAB in transactions report date settings; do
             xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
-            xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett "--mwlt-preview-tab=$TAB"
+            xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
             sleep 2
             xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
           done
 
           # Capture the native quick-add sheet as a separate preview state.
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-quick-add
+          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
           sleep 2
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
 
