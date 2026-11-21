@@ -27,10 +27,8 @@ struct SettingsView: View {
     @State private var showAppearance = false
     @State private var showNotifications = false
     @State private var showBudgets = false
-    @State private var showCicilan = false
-    @State private var showReminder = false
+    @State private var showCategoryMenu = false
     @State private var showCategoryManager = false
-    @State private var showTags = false
     @State private var showData = false
 
     private var isEnglish: Bool { language == "en" }
@@ -73,40 +71,10 @@ struct SettingsView: View {
 
                 settingsCard {
                     settingsRow(
-                        title: isEnglish ? "Installments" : "Cicilan",
-                        subtitle: isEnglish ? "Manage active installments" : "Kelola cicilan aktif",
-                        symbol: "creditcard"
-                    ) { showCicilan = true }
-                }
-
-                settingsCard {
-                    settingsRow(
-                        title: isEnglish ? "Payment reminders" : "Pengingat tagihan",
-                        subtitle: isEnglish ? "Manage payment reminders" : "Atur pengingat pembayaran",
-                        symbol: "bell.badge"
-                    ) { showReminder = true }
-                }
-
-                settingsCard(spacing: 0) {
-                    settingsRow(
-                        title: isEnglish ? "Per-category limits" : "Limit per Kategori",
-                        subtitle: budgetCount == 0
-                            ? (isEnglish ? "No category limits set" : "Belum ada limit kategori")
-                            : "\(budgetCount) \(isEnglish ? "limits active" : "limit aktif")",
-                        symbol: "chart.bar"
-                    ) { showBudgets = true }
-                    rowDivider
-                    settingsRow(
-                        title: isEnglish ? "Manage categories" : "Kelola Kategori",
-                        subtitle: isEnglish ? "Edit names, icons and colors" : "Atur nama, ikon, dan warna kategori",
+                        title: isEnglish ? "Category" : "Kategori",
+                        subtitle: isEnglish ? "Manage & organise categories" : "Atur & kelola kategori",
                         symbol: "square.grid.2x2"
-                    ) { showCategoryManager = true }
-                    rowDivider
-                    settingsRow(
-                        title: isEnglish ? "Tags" : "Tag",
-                        subtitle: isEnglish ? "Organize your transactions" : "Kelompokkan transaksi",
-                        symbol: "number"
-                    ) { showTags = true }
+                    ) { showCategoryMenu = true }
                 }
 
                 settingsCard {
@@ -143,10 +111,14 @@ struct SettingsView: View {
             )
         }
         .sheet(isPresented: $showBudgets) { SettingsBudgetSheet(isEnglish: isEnglish) }
-        .sheet(isPresented: $showCicilan) { SettingsCicilanSheet() }
-        .sheet(isPresented: $showReminder) { SettingsReminderSheet() }
+        .sheet(isPresented: $showCategoryMenu) {
+            SettingsCategoryMenuSheet(
+                isEnglish: isEnglish,
+                onBudget: { showCategoryMenu = false; showBudgets = true },
+                onManage: { showCategoryMenu = false; showCategoryManager = true }
+            )
+        }
         .sheet(isPresented: $showCategoryManager) { SettingsCategoryManagerSheet() }
-        .sheet(isPresented: $showTags) { SettingsPlaceholderSheet(title: isEnglish ? "Tags" : "Tag", subtitle: isEnglish ? "Tag management is being ported from JSX." : "Pengelolaan tag sedang dipindahkan dari JSX.", symbol: "number", isEnglish: isEnglish) }
         .sheet(isPresented: $showData) { SettingsDataSheet(isEnglish: isEnglish, incomeRaw: $incomeRaw) }
     }
 
@@ -565,6 +537,75 @@ private struct SettingsBudgetSheet: View {
     private func rupiah(_ amount: Int64) -> String {
         let nf = NumberFormatter(); nf.locale = Locale(identifier: "id_ID"); nf.numberStyle = .decimal
         return "Rp" + (nf.string(from: NSNumber(value: amount)) ?? String(amount))
+    }
+}
+
+private struct SettingsCategoryMenuSheet: View {
+    let isEnglish: Bool
+    let onBudget: () -> Void
+    let onManage: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
+            HStack {
+                Text(isEnglish ? "Category" : "Kategori")
+                    .font(.system(size: 17, weight: .black))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.secondary).frame(width: 32, height: 32)
+                        .background(Color(uiColor: .secondarySystemBackground), in: Circle())
+                }.buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20).padding(.vertical, 15)
+
+            VStack(spacing: 0) {
+                menuRow(
+                    symbol: "chart.bar",
+                    title: isEnglish ? "Spending Limits" : "Batas Pengeluaran",
+                    subtitle: isEnglish ? "Set monthly category budgets" : "Atur batas pengeluaran per kategori",
+                    color: AppAppearance.accent,
+                    action: onBudget
+                )
+                Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1).padding(.leading, 52)
+                menuRow(
+                    symbol: "square.grid.2x2",
+                    title: isEnglish ? "Manage categories" : "Kelola Kategori",
+                    subtitle: isEnglish ? "Manage & organise categories" : "Atur & kelola kategori",
+                    color: AppAppearance.primary,
+                    action: onManage
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+        }
+        .background(AppAppearance.modal(dark: UITraitCollection.current.userInterfaceStyle == .dark))
+        .presentationDetents([.height(220)])
+        .presentationDragIndicator(.visible)
+        .presentationCornerRadius(28)
+    }
+
+    private func menuRow(symbol: String, title: String, subtitle: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(color)
+                    .frame(width: 36, height: 36)
+                    .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title).font(.system(size: 14, weight: .bold)).foregroundStyle(.primary)
+                    Text(subtitle).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 13)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
