@@ -50,7 +50,7 @@ struct DateTabView: View {
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppAppearance.background(dark: isDark))
         .toolbar(.hidden, for: .navigationBar)
         .onAppear(perform: loadWishlist)
         .onChange(of: wishlist) { _, value in saveWishlist(value) }
@@ -329,7 +329,7 @@ struct DateTabView: View {
             TextField(isEnglish ? "Where do you want to go?" : "Mau ke mana atau ingin melakukan apa?", text: $wishlistInput)
                 .font(.system(size: 15))
                 .padding(13)
-                .background(isDark ? Color.white.opacity(0.06) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                .background(isDark ? Color.white.opacity(0.06) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#f9a8d4"), lineWidth: 1.5))
                 .submitLabel(.done)
                 .onSubmit(addWishlist)
@@ -346,11 +346,11 @@ struct DateTabView: View {
         .padding(.horizontal, 20)
         .padding(.top, 24)
         .padding(.bottom, 28)
-        .background(Color(uiColor: .systemBackground))
+        .background(AppAppearance.modal(dark: isDark))
     }
 
     private var cardBackground: Color {
-        isDark ? Color(uiColor: .secondarySystemBackground) : .white
+        AppAppearance.card(dark: isDark)
     }
     private var cardBorder: Color {
         Color.primary.opacity(isDark ? 0.10 : 0.07)
