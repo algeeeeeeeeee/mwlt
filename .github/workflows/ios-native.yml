@@ -84,7 +84,11 @@ jobs:
               if runtime.get("isAvailable") and runtime.get("platform") == "iOS"
           ]
           def version(value):
-              return tuple(int(part) for part in re.findall(r"[0-9]+", value or "0"))
+              if isinstance(value, (int, float)):
+                  return (int(value),)
+              if isinstance(value, (list, tuple)):
+                  return tuple(int(part) for part in value)
+              return tuple(int(part) for part in re.findall(r"[0-9]+", str(value or "0")))
 
           if not ios_runtimes:
               raise SystemExit("No available iOS Simulator runtime.")
