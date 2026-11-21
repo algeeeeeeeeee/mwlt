@@ -43,14 +43,45 @@ private struct MeowlettTabSymbol: View {
 
     var body: some View {
         if tab == .dashboard {
-            Image(systemName: "cat")
-                .font(.system(size: size, weight: .regular))
-                .foregroundStyle(color)
+            MeowlettCatShape()
+                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                .frame(width: size, height: size)
         } else {
             MeowlettTabShape(tab: tab)
                 .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
                 .frame(width: size, height: size)
         }
+    }
+}
+
+private struct MeowlettCatShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let sx = rect.width / 24
+        let sy = rect.height / 24
+        func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * sx, y: y * sy) }
+        var path = Path()
+        path.move(to: p(12, 5))
+        path.addCurve(to: p(14, 5.26), control1: p(12.67, 5), control2: p(13.35, 5.09))
+        path.addCurve(to: p(20.42, 3), control1: p(15.78, 3.26), control2: p(19.03, 2.42))
+        path.addCurve(to: p(20, 10), control1: p(21.82, 3.58), control2: p(20, 10))
+        path.addCurve(to: p(21, 13.44), control1: p(20.57, 11.07), control2: p(21, 12.24))
+        path.addCurve(to: p(12, 21), control1: p(21, 17.9), control2: p(16.97, 21))
+        path.addCurve(to: p(3, 13.44), control1: p(7.03, 21), control2: p(3, 18))
+        path.addCurve(to: p(4, 10), control1: p(3, 12.19), control2: p(3.5, 11.04))
+        path.addCurve(to: p(3.5, 3), control1: p(4, 10), control2: p(2.11, 3.58))
+        path.addCurve(to: p(10, 5.23), control1: p(4.89, 2.42), control2: p(8.22, 3.23))
+        path.addCurve(to: p(12, 5), control1: p(10.7, 4.99), control2: p(11.35, 4.95))
+        path.closeSubpath()
+
+        path.move(to: p(8, 14))
+        path.addLine(to: p(8, 14.5))
+        path.move(to: p(16, 14))
+        path.addLine(to: p(16, 14.5))
+        path.move(to: p(11.25, 16.25))
+        path.addLine(to: p(12.75, 16.25))
+        path.addLine(to: p(12, 17))
+        path.closeSubpath()
+        return path
     }
 }
 

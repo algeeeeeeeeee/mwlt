@@ -63,6 +63,7 @@ private struct NativeRecurringItem: Codable, Identifiable, Equatable {
 
 struct RecurringTransactionsSection: View {
     @EnvironmentObject private var store: FinanceStore
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_income") private var incomeRaw = "5000000"
     @AppStorage("gm_recurring") private var recurringRaw = "[]"
