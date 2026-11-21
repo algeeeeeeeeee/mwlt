@@ -153,7 +153,7 @@ struct ReportsView: View {
                 .background(color.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
             }
         }
-        .cardStyle()
+        .cardStyle(dark: isDark)
     }
 
     private var categoryComparisonCard: some View {
@@ -201,7 +201,7 @@ struct ReportsView: View {
                 }
             }
         }
-        .cardStyle()
+        .cardStyle(dark: isDark)
     }
 
     private var insightsCard: some View {
@@ -224,7 +224,7 @@ struct ReportsView: View {
                 .background(Color(hex: "#22c55e").opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
             }
         }
-        .cardStyle()
+        .cardStyle(dark: isDark)
     }
 
     private var categoryTrendCard: some View {
@@ -278,7 +278,7 @@ struct ReportsView: View {
                 }
             }
         }
-        .cardStyle()
+        .cardStyle(dark: isDark)
     }
 
     private var weeklyTrendCard: some View {
@@ -304,7 +304,7 @@ struct ReportsView: View {
                 }
             }
         }
-        .cardStyle()
+        .cardStyle(dark: isDark)
     }
 
     private var weeklyInsightCard: some View {
@@ -438,7 +438,7 @@ struct ReportsView: View {
                 }
             }
         }
-        .cardStyle()
+        .cardStyle(dark: isDark)
     }
 
     private var reportCSV: String {
@@ -485,7 +485,7 @@ struct ReportsView: View {
 }
 
 private extension View {
-    func cardStyle() -> some View {
+    func cardStyle(dark: Bool) -> some View {
         self
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
