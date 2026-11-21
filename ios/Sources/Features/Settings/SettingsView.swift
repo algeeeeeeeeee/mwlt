@@ -37,8 +37,17 @@ struct SettingsView: View {
     private var primary: Color { Color(hex: AppAppearance.primaryHex) }
     private var accent: Color { Color(hex: AppAppearance.accentHex) }
     private var photo: UIImage? {
-        let encoded = profilePhoto.components(separatedBy: ",").last ?? profilePhoto
-        guard let data = Data(base64Encoded: encoded) else { return nil }
+        if !profilePhoto.isEmpty {
+            let encoded = profilePhoto.components(separatedBy: ",").last ?? profilePhoto
+            if let data = Data(base64Encoded: encoded), let image = UIImage(data: data) {
+                return image
+            }
+        }
+        guard let url = Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64"),
+              let encoded = try? String(contentsOf: url, encoding: .utf8),
+              let data = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) else {
+            return nil
+        }
         return UIImage(data: data)
     }
     private var budgetCount: Int {
@@ -154,7 +163,7 @@ struct SettingsView: View {
                         }
                         .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1.5))
                     Circle().fill(primary).frame(width: 18, height: 18)
-                        .overlay(Image(systemName: "camera.fill").font(.system(size: 8, weight: .black)).foregroundStyle(.white))
+                        .overlay(Image(systemName: "camera").font(.system(size: 8, weight: .medium)).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(AppAppearance.background(dark: isDark), lineWidth: 2))
                 }
             }
