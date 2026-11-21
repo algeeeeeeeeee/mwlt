@@ -102,7 +102,7 @@ struct TransactionsView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
-            .padding(.bottom, 24)
+            .padding(.bottom, 90)
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
         }
