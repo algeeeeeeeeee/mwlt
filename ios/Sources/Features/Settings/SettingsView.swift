@@ -859,6 +859,10 @@ private struct SettingsDataSheet: View {
     }
 
     private func resetData() {
+        // Match the PWA localStorage.clear() while preserving native onboarding state.
+        for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("gm_") {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
         store.clearAllTransactions()
         incomeRaw = "5000000"
         goalsRaw = "[]"

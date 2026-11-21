@@ -2,11 +2,12 @@ import SwiftUI
 
 struct OnboardingView: View {
     let onComplete: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_username") private var savedName = ""
     @AppStorage("gm_income") private var savedIncome = "5000000"
-    @AppStorage("gm_dark_override") private var darkOverride = "false"
+    @AppStorage("gm_dark_override") private var darkOverride = "system"
     @AppStorage("gm_follow_system") private var followSystem = "0"
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
     @AppStorage("gm_custom_primary") private var customPrimary = "#881337"
@@ -79,7 +80,7 @@ struct OnboardingView: View {
         .onAppear {
             name = savedName
             income = savedIncome == "5000000" ? "" : savedIncome
-            isDark = darkOverride == "true"
+            isDark = darkOverride == "true" || (darkOverride == "system" && colorScheme == .dark)
         }
     }
 
