@@ -93,6 +93,9 @@ struct TransactionsView: View {
                         }
                     }
                 }
+                RecurringTransactionsSection()
+                    .environmentObject(store)
+                    .padding(.top, 8)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
