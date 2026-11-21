@@ -109,7 +109,7 @@ struct TransactionsView: View {
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppAppearance.background(dark: isDark))
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showEditor) {
             TransactionEditorSheet(transaction: editingTransaction)
@@ -137,7 +137,7 @@ struct TransactionsView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 46)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1.5))
         .padding(.bottom, 10)
     }
@@ -260,7 +260,7 @@ struct TransactionsView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
         .padding(.vertical, 38)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.primary.opacity(0.07), lineWidth: 1))
     }
 
@@ -371,7 +371,7 @@ struct TransactionsView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.08), lineWidth: 1))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 1.5).fill(categoryColor).frame(width: 3).padding(.vertical, 1)
@@ -415,7 +415,7 @@ struct TransactionsView: View {
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, 24)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
                 } else {
                     VStack(spacing: 0) {
                         ForEach(recurringItems) { item in
@@ -425,7 +425,7 @@ struct TransactionsView: View {
                             }
                         }
                     }
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.07), lineWidth: 1))
                 }
             }
@@ -445,14 +445,14 @@ struct TransactionsView: View {
             }
             TextField(isEnglish ? "Transaction name" : "Nama transaksi", text: $recurringDescription)
                 .font(.system(size: 14)).padding(12)
-                .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 12))
+                .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
             HStack(spacing: 8) {
                 TextField("1.000.000", text: $recurringAmount)
                     .keyboardType(.numberPad)
                     .font(.system(size: 14, weight: .bold))
                     .padding(12)
-                    .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 12))
+                    .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
                 VStack(alignment: .leading, spacing: 3) {
                     Text(isEnglish ? "DAY" : "TANGGAL")
@@ -461,7 +461,7 @@ struct TransactionsView: View {
                         .keyboardType(.numberPad)
                         .font(.system(size: 14, weight: .bold))
                         .padding(10)
-                        .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
                 }
                 .frame(width: 90)
@@ -484,7 +484,7 @@ struct TransactionsView: View {
                     Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
                 }
                 .padding(11)
-                .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 12))
+                .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
             }
             Toggle(isEnglish ? "Apply automatically" : "Catat otomatis", isOn: $recurringAutoApply)
                 .font(.system(size: 12, weight: .semibold)).tint(primary)
@@ -504,7 +504,7 @@ struct TransactionsView: View {
             .opacity(recurringDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (Int64(recurringAmount.filter(\.isNumber)) ?? 0) <= 0 ? 0.5 : 1)
         }
         .padding(14)
-        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.07), lineWidth: 1))
     }
 
