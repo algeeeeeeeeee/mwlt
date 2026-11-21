@@ -64,6 +64,21 @@ jobs:
       - name: Capture native app previews
         run: |
           set -euo pipefail
+          run_limited() {
+            local seconds="$1"
+            shift
+            python3 - "$seconds" "$@" <<'PY'
+import subprocess, sys
+seconds = int(sys.argv[1])
+command = sys.argv[2:]
+try:
+    result = subprocess.run(command, timeout=seconds)
+except subprocess.TimeoutExpired:
+    print(f"Timed out after {seconds}s: {' '.join(command)}", file=sys.stderr)
+    raise SystemExit(124)
+raise SystemExit(result.returncode)
+PY
+          }
           DEVICE_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); devices=[x for group in d["devices"].values() for x in group if x.get("isAvailable") and x.get("name","").startswith("iPhone")]; booted=next((x for x in devices if x.get("state")=="Booted"),None); chosen=booted or next((x for x in devices if x.get("state")=="Shutdown"),None); print(chosen["udid"] if chosen else "")')"
           if [ -z "$DEVICE_ID" ]; then
             echo "No available iPhone Simulator found."
@@ -73,39 +88,39 @@ jobs:
           echo "Simulator selected: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
           echo "Waiting for Simulator boot..."
-          timeout 180 xcrun simctl bootstatus "$DEVICE_ID" -b
+          run_limited 180 xcrun simctl bootstatus "$DEVICE_ID" -b
           echo "Simulator booted."
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
           echo "Installing Meowlett app..."
-          timeout 90 xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+          run_limited 90 xcrun simctl install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
           echo "Capturing onboarding preview..."
-          timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
+          run_limited 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
           sleep 3
-          timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
+          run_limited 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
           xcrun simctl spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
           echo "Capturing dashboard preview..."
-          timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
+          run_limited 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
           sleep 3
-          timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
+          run_limited 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
 
           # Capture every top-level native tab with representative, simulator-only data.
           for TAB in transactions report date settings; do
             xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
             echo "Capturing $TAB preview..."
-            timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
+            run_limited 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
             sleep 2
-            timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
+            run_limited 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
           done
 
           # Capture the native quick-add sheet as a separate preview state.
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
           echo "Capturing quick-add preview..."
-          timeout 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
+          run_limited 60 xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
           sleep 2
-          timeout 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
+          run_limited 30 xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
           echo "All native previews captured:"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
 
