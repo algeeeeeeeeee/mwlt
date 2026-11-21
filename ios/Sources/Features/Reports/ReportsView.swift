@@ -489,7 +489,7 @@ private extension View {
         self
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+            .background(AppAppearance.card(dark: dark), in: RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.primary.opacity(0.06), lineWidth: 1))
     }
 }

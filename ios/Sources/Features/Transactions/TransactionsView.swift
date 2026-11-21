@@ -329,7 +329,6 @@ struct TransactionsView: View {
                             .lineLimit(1)
                         HStack(spacing: 5) {
                             let method = transaction.paymentMethod.isEmpty ? "cash" : transaction.paymentMethod
-                            let methodColor = method == "cash" ? Color(hex: "#4ade80") : method == "qris" ? Color(hex: "#8b5cf6") : Color(hex: "#3b82f6")
                             Image(systemName: method == "cash" ? "banknote" : method == "qris" ? "qrcode" : "building.columns")
                                 .font(.system(size: 8, weight: .semibold))
                             Text(method == "cash" ? (isEnglish ? "Cash" : "Tunai") : method == "qris" ? "QRIS" : "Transfer")
