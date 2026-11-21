@@ -491,6 +491,8 @@ private struct SettingsBudgetSheet: View {
     @State private var loaded = false
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
         NavigationStack {
@@ -594,7 +596,9 @@ private struct SettingsDataSheet: View {
     @Binding var incomeRaw: String
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showResetConfirm = false
+    private var isDark: Bool { colorScheme == .dark }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
