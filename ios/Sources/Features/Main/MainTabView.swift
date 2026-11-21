@@ -38,6 +38,9 @@ struct MainTabView: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
     @AppStorage("gm_custom_accent") private var customAccent = "#fb7185"
+    @AppStorage("gm_username") private var userName = ""
+    @AppStorage("gm_dark_override") private var darkOverride = "false"
+    @AppStorage("gm_follow_system") private var followSystem = "0"
     @EnvironmentObject private var store: FinanceStore
     @State private var selected: MeowlettTab = .dashboard
     @State private var showQuickAdd = false
@@ -66,6 +69,10 @@ struct MainTabView: View {
             }
             .environmentObject(store)
         }
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            topHeader
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomNavigation
         }
@@ -78,6 +85,83 @@ struct MainTabView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
+    }
+
+    private var topHeader: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                if selected == .dashboard {
+                    Text(greeting)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Text(userName.isEmpty ? (isEnglish ? "Set your name" : "Isi namamu") : userName)
+                        .font(.system(size: 20, weight: .black))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                } else {
+                    HStack(spacing: 7) {
+                        Text(isEnglish ? selected.titleEN : selected.titleID)
+                            .font(.system(size: 20, weight: .black))
+                        if selected == .date {
+                            Image(systemName: "heart")
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundStyle(Color(hex: "#f9a8d4"))
+                        }
+                    }
+                }
+            }
+            Spacer(minLength: 8)
+            Button {
+                followSystem = "0"
+                darkOverride = colorSchemeIsDark ? "false" : "true"
+            } label: {
+                Image(systemName: colorSchemeIsDark ? "moon.fill" : "sun.max.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .frame(width: 34, height: 34)
+                    .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
+            }
+            .buttonStyle(.plain)
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                    selected = .settings
+                }
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(primary)
+                    .frame(width: 34, height: 34)
+                    .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
+            }
+            .buttonStyle(.plain)
+            ZStack(alignment: .bottomTrailing) {
+                Circle()
+                    .fill(Color(uiColor: .secondarySystemBackground))
+                    .frame(width: 38, height: 38)
+                    .overlay {
+                        Image(systemName: "cat.fill")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(tint)
+                    }
+                    .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
+                Circle().fill(tint).frame(width: 11, height: 11)
+                    .overlay(Image(systemName: "camera.fill").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
+                    .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.04)).frame(height: 0.5) }
+    }
+
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: .now)
+        if isEnglish {
+            return hour < 12 ? "Good morning" : hour < 15 ? "Good afternoon" : hour < 18 ? "Good evening" : "Good night"
+        }
+        return hour < 12 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam"
     }
 
     private var bottomNavigation: some View {
@@ -135,19 +219,6 @@ struct MainTabView: View {
             .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.10 : 0.07), lineWidth: 1))
             .shadow(color: .black.opacity(colorSchemeIsDark ? 0.25 : 0.08), radius: 14, x: 0, y: 3)
 
-            Button {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                    selected = .settings
-                }
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(selected == .settings ? tint : Color.secondary)
-                    .frame(width: 42, height: 48)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isEnglish ? "Settings" : "Pengaturan")
         }
         .padding(.horizontal, 12)
         .padding(.top, 5)
