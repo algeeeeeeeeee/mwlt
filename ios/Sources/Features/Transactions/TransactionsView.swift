@@ -5,7 +5,7 @@ struct TransactionsView: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_recurring") private var recurringRaw = "[]"
-    @AppStorage("gm_lang") private var recurringLanguage = "id"
+    @AppStorage("gm_tx_receipts") private var receiptsRaw = "{}"
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var searchQuery = ""
@@ -317,6 +317,27 @@ struct TransactionsView: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                        HStack(spacing: 5) {
+                            let method = transaction.paymentMethod.isEmpty ? "cash" : transaction.paymentMethod
+                            let methodColor = method == "cash" ? Color(hex: "#4ade80") : method == "qris" ? Color(hex: "#8b5cf6") : Color(hex: "#3b82f6")
+                            Image(systemName: method == "cash" ? "banknote" : method == "qris" ? "qrcode" : "building.columns")
+                                .font(.system(size: 8, weight: .semibold))
+                            Text(method == "cash" ? (isEnglish ? "Cash" : "Tunai") : method == "qris" ? "QRIS" : "Transfer")
+                                .font(.system(size: 9, weight: .heavy))
+                            .lineLimit(1)
+                        }
+                        .foregroundStyle(Color(hex: transaction.paymentMethod == "cash" || transaction.paymentMethod.isEmpty ? "#4ade80" : transaction.paymentMethod == "qris" ? "#8b5cf6" : "#3b82f6"))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color(hex: transaction.paymentMethod == "cash" || transaction.paymentMethod.isEmpty ? "#4ade80" : transaction.paymentMethod == "qris" ? "#8b5cf6" : "#3b82f6").opacity(0.12), in: Capsule())
+                        if hasReceipt(transaction) {
+                            Label(isEnglish ? "Receipt photo" : "Foto struk", systemImage: "photo")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.primary.opacity(0.05), in: Capsule())
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     VStack(alignment: .trailing, spacing: 4) {
@@ -603,6 +624,12 @@ struct TransactionsView: View {
         recurringCategory = "food"
         recurringAutoApply = true
         editingRecurringID = nil
+    }
+
+    private func hasReceipt(_ transaction: MeowlettTransaction) -> Bool {
+        guard let data = receiptsRaw.data(using: .utf8),
+              let receipts = try? JSONDecoder().decode([String: String].self, from: data) else { return false }
+        return receipts[transaction.id.uuidString] != nil
     }
 
     private func rupiah(_ value: Int64) -> String {

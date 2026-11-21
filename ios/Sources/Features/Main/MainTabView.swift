@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import PhotosUI
 
 private enum MeowlettTab: String, CaseIterable {
     case dashboard, transactions, report, date, settings
@@ -47,6 +48,7 @@ struct MainTabView: View {
     @EnvironmentObject private var store: FinanceStore
     @State private var selected: MeowlettTab = .dashboard
     @State private var showQuickAdd = false
+    @State private var selectedHeaderPhoto: PhotosPickerItem?
 
     private var isEnglish: Bool { language == "en" }
     private var tint: Color {
@@ -96,6 +98,18 @@ struct MainTabView: View {
         .sheet(isPresented: $showQuickAdd) {
             TransactionEditorSheet(initialCategory: "food")
                 .environmentObject(store)
+        }
+        .onChange(of: selectedHeaderPhoto) { _, item in
+            guard let item else { return }
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data),
+                      let jpeg = image.jpegData(compressionQuality: 0.82) else { return }
+                await MainActor.run {
+                    profilePhoto = "data:image/jpeg;base64," + jpeg.base64EncodedString()
+                    selectedHeaderPhoto = nil
+                }
+            }
         }
     }
 
@@ -154,25 +168,28 @@ struct MainTabView: View {
                 }
             }
             .buttonStyle(.plain)
-            ZStack(alignment: .bottomTrailing) {
-                Circle()
-                    .fill(AppAppearance.card2(dark: colorSchemeIsDark))
-                    .frame(width: 38, height: 38)
-                    .overlay {
-                        if let image = profileUIImage {
-                            Image(uiImage: image).resizable().scaledToFill()
-                                .frame(width: 38, height: 38).clipShape(Circle())
-                        } else {
-                            Image(systemName: "cat.fill")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundStyle(tint)
+            PhotosPicker(selection: $selectedHeaderPhoto, matching: .images) {
+                ZStack(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(AppAppearance.card2(dark: colorSchemeIsDark))
+                        .frame(width: 38, height: 38)
+                        .overlay {
+                            if let image = profileUIImage {
+                                Image(uiImage: image).resizable().scaledToFill()
+                                    .frame(width: 38, height: 38).clipShape(Circle())
+                            } else {
+                                Image(systemName: "cat.fill")
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundStyle(tint)
+                            }
                         }
-                    }
-                    .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
-                Circle().fill(tint).frame(width: 11, height: 11)
-                    .overlay(Image(systemName: "camera.fill").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
-                    .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
+                        .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
+                    Circle().fill(tint).frame(width: 11, height: 11)
+                        .overlay(Image(systemName: "camera.fill").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
+                        .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
+                }
             }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.top, 8)
