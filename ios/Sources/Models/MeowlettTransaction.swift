@@ -41,6 +41,15 @@ struct MeowlettCategoryDefinition: Codable, Equatable {
     var displayIcon: String {
         switch icon.lowercased() {
         case "utensils", "utensil": return "fork.knife"
+        case "beer": return "mug.fill"
+        case "palette": return "paintpalette.fill"
+        case "gift": return "gift.fill"
+        case "dumbbell": return "dumbbell.fill"
+        case "smartphone": return "iphone"
+        case "gamepad": return "gamecontroller.fill"
+        case "search": return "magnifyingglass"
+        case "star": return "sparkles"
+        case "dollar": return "dollarsign.circle.fill"
         case "car": return "car.fill"
         case "heart": return "heart.fill"
         case "shoppingbag": return "bag.fill"

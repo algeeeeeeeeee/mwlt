@@ -23,7 +23,7 @@ struct SettingsCategoryManagerSheet: View {
         "#38bdf8","#e879f9","#facc15"
     ]
     private let icons: [(String,String)] = [
-        ("utensils","fork.knife"),("coffee","cup.and.saucer.fill"),("pizza","takeoutbag.and.cup.and.straw.fill"),
+        ("utensils","fork.knife"),("coffee","cup.and.saucer.fill"),("pizza","takeoutbag.and.cup.and.straw.fill"),("beer","mug.fill"),
         ("car","car.fill"),("plane","airplane"),("shoppingbag","bag.fill"),("shirt","tshirt.fill"),
         ("palette","paintpalette.fill"),("gift","gift.fill"),("heart","heart.fill"),("pill","pills.fill"),
         ("dumbbell","dumbbell.fill"),("dollar","dollarsign.circle.fill"),("banknote","banknote"),
