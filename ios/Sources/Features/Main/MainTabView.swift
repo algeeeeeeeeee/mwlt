@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 private enum MeowlettTab: String, CaseIterable {
     case dashboard, transactions, report, date, settings
@@ -41,6 +42,8 @@ struct MainTabView: View {
     @AppStorage("gm_username") private var userName = ""
     @AppStorage("gm_dark_override") private var darkOverride = "false"
     @AppStorage("gm_follow_system") private var followSystem = "0"
+    @AppStorage("gm_profile_photo") private var profilePhoto = ""
+    @AppStorage("gm_notif") private var notificationsEnabled = "0"
     @EnvironmentObject private var store: FinanceStore
     @State private var selected: MeowlettTab = .dashboard
     @State private var showQuickAdd = false
@@ -136,11 +139,19 @@ struct MainTabView: View {
                     selected = .settings
                 }
             } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(primary)
-                    .frame(width: 34, height: 34)
-                    .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(primary)
+                        .frame(width: 34, height: 34)
+                        .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
+                    if notificationsEnabled != "1" {
+                        Circle().fill(Color(hex: "#ef4444"))
+                            .frame(width: 7, height: 7)
+                            .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1))
+                            .offset(x: -1, y: 1)
+                    }
+                }
             }
             .buttonStyle(.plain)
             ZStack(alignment: .bottomTrailing) {
@@ -148,9 +159,14 @@ struct MainTabView: View {
                     .fill(Color(uiColor: .secondarySystemBackground))
                     .frame(width: 38, height: 38)
                     .overlay {
-                        Image(systemName: "cat.fill")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundStyle(tint)
+                        if let image = profileUIImage {
+                            Image(uiImage: image).resizable().scaledToFill()
+                                .frame(width: 38, height: 38).clipShape(Circle())
+                        } else {
+                            Image(systemName: "cat.fill")
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundStyle(tint)
+                        }
                     }
                     .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
                 Circle().fill(tint).frame(width: 11, height: 11)
@@ -163,6 +179,13 @@ struct MainTabView: View {
         .padding(.bottom, 10)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.04)).frame(height: 0.5) }
+    }
+
+    private var profileUIImage: UIImage? {
+        guard !profilePhoto.isEmpty else { return nil }
+        let encoded = profilePhoto.components(separatedBy: ",").last ?? profilePhoto
+        guard let data = Data(base64Encoded: encoded) else { return nil }
+        return UIImage(data: data)
     }
 
     private var greeting: String {
