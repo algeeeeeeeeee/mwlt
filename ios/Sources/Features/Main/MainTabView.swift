@@ -41,7 +41,7 @@ struct MainTabView: View {
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
     @AppStorage("gm_custom_accent") private var customAccent = "#fb7185"
     @AppStorage("gm_username") private var userName = ""
-    @AppStorage("gm_dark_override") private var darkOverride = "false"
+    @AppStorage("gm_dark_override") private var darkOverride = "system"
     @AppStorage("gm_follow_system") private var followSystem = "0"
     @AppStorage("gm_profile_photo") private var profilePhoto = ""
     @AppStorage("gm_notif") private var notificationsEnabled = "0"
@@ -82,6 +82,7 @@ struct MainTabView: View {
             bottomNavigation
         }
         .tint(tint)
+        .preferredColorScheme(preferredColorScheme)
         .onAppear {
             // Deterministic launch routing is used only by the simulator preview workflow.
             let arguments = ProcessInfo.processInfo.arguments
@@ -281,6 +282,10 @@ struct MainTabView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     private var colorSchemeIsDark: Bool { colorScheme == .dark }
+    private var preferredColorScheme: ColorScheme? {
+        if followSystem == "1" || darkOverride == "system" { return nil }
+        return darkOverride == "true" ? .dark : .light
+    }
 }
 
 private struct QuickTransactionSheet: View {

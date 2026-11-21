@@ -8,7 +8,7 @@ struct SettingsView: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_username") private var userName = ""
-    @AppStorage("gm_dark_override") private var darkOverride = "false"
+    @AppStorage("gm_dark_override") private var darkOverride = "system"
     @AppStorage("gm_follow_system") private var followSystem = "0"
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
     @AppStorage("gm_custom_primary") private var customPrimary = "#881337"
@@ -55,7 +55,7 @@ struct SettingsView: View {
                 settingsCard {
                     settingsRow(
                         title: isEnglish ? "Display mode" : "Mode tampilan",
-                        subtitle: "\(darkOverride == "true" ? (isEnglish ? "Dark" : "Gelap") : (isEnglish ? "Light" : "Terang")) · \(selectedThemeName)",
+                        subtitle: "\(isDark ? (isEnglish ? "Dark" : "Gelap") : (isEnglish ? "Light" : "Terang")) · \(selectedThemeName)",
                         symbol: darkOverride == "true" ? "moon.fill" : "sun.max.fill"
                     ) { showAppearance = true }
                 }
@@ -268,7 +268,7 @@ struct SettingsView: View {
 
 private struct SettingsAppearanceSheet: View {
     @AppStorage("gm_lang") private var language = "id"
-    @AppStorage("gm_dark_override") private var darkOverride = "false"
+    @AppStorage("gm_dark_override") private var darkOverride = "system"
     @AppStorage("gm_follow_system") private var followSystem = "0"
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
     @AppStorage("gm_custom_primary") private var customPrimary = "#881337"
@@ -305,7 +305,7 @@ private struct SettingsAppearanceSheet: View {
                         title: isEnglish ? "Display mode" : "Mode tampilan",
                         subtitle: darkOverride == "true" ? (isEnglish ? "Dark mode" : "Mode gelap") : (isEnglish ? "Light mode" : "Mode terang"),
                         isOn: Binding(
-                            get: { darkOverride == "true" },
+                            get: { colorScheme == .dark },
                             set: { darkOverride = $0 ? "true" : "false"; followSystem = "0" }
                         )
                     )
@@ -316,7 +316,10 @@ private struct SettingsAppearanceSheet: View {
                         subtitle: followSystem == "1" ? (isEnglish ? "Using device appearance" : "Mengikuti tampilan perangkat") : (isEnglish ? "Manual mode" : "Mode manual"),
                         isOn: Binding(
                             get: { followSystem == "1" },
-                            set: { followSystem = $0 ? "1" : "0" }
+                            set: { value in
+                                followSystem = value ? "1" : "0"
+                                if !value { darkOverride = colorScheme == .dark ? "true" : "false" }
+                            }
                         )
                     )
                     Divider().opacity(0.45)
