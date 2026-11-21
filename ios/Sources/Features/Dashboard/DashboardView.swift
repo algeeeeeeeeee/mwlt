@@ -84,7 +84,7 @@ struct DashboardView: View {
                 .frame(maxWidth: 560)
                 .frame(maxWidth: .infinity)
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .background(AppAppearance.background(dark: isDark))
             .toolbar(.hidden, for: .navigationBar)
             .onAppear(perform: loadPersistedDashboardData)
             .onChange(of: budgets) { _, value in persistBudgets(value) }
@@ -273,7 +273,7 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
         .padding(12)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var weeklyInsightCard: some View {
@@ -295,7 +295,7 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
         .padding(12)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var predictionCard: some View {
@@ -318,7 +318,7 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var budgetCard: some View {
@@ -393,7 +393,7 @@ struct DashboardView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private func budgetProgressRow(title: String, spent: Int64, limit: Int64, color: Color, showIcon: Bool) -> some View {
@@ -490,7 +490,7 @@ struct DashboardView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private func savingsGoalRow(_ goal: DashboardSavingsGoal) -> some View {
@@ -622,7 +622,7 @@ struct DashboardView: View {
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private var recentTransactionsCard: some View {
@@ -654,12 +654,12 @@ struct DashboardView: View {
                     .font(.system(size: 12, weight: .bold))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 9)
-                    .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                 }
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private func sectionHeading(_ title: String, icon: String) -> some View {
@@ -744,12 +744,12 @@ private struct NativeMoneyEntrySheet: View {
                     }
             }
             .padding(14)
-            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+            .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(accent.opacity(0.55), lineWidth: 1.5))
             HStack(spacing: 10) {
                 Button(language == "en" ? "Cancel" : "Batal") { dismiss() }
                     .foregroundStyle(.primary).frame(maxWidth: .infinity).frame(height: 45)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
                 Button(language == "en" ? "Save" : "Simpan") {
                     onSave(Int64(amountText.filter(\.isNumber)) ?? 0)
                     dismiss()
@@ -808,7 +808,7 @@ private struct DashboardGoalEditorSheet: View {
                                 Image(systemName: item.1).font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(Color(hex: color))
                                     .frame(maxWidth: .infinity).frame(height: 42)
-                                    .background(icon == item.0 ? Color(hex: color).opacity(0.16) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                                    .background(icon == item.0 ? Color(hex: color).opacity(0.16) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
                                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(icon == item.0 ? Color(hex: color) : .clear, lineWidth: 1.5))
                             }.buttonStyle(.plain)
                         }
