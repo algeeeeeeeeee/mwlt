@@ -121,7 +121,7 @@ struct ReportsView: View {
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppAppearance.background(dark: isDark))
         .toolbar(.hidden, for: .navigationBar)
     }
 
@@ -252,7 +252,7 @@ struct ReportsView: View {
                     }
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 10).padding(.vertical, 7)
-                    .background(Color(uiColor: .secondarySystemBackground), in: Capsule())
+                    .background(AppAppearance.card2(dark: isDark), in: Capsule())
                 }
                 Spacer()
                 Picker("", selection: $trendMode) {
@@ -362,7 +362,7 @@ struct ReportsView: View {
             }
         }
         .padding(13)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var selectedDayReportCard: some View {
@@ -489,7 +489,7 @@ private extension View {
         self
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18))
+            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
             .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.primary.opacity(0.06), lineWidth: 1))
     }
 }
