@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct TransactionEditorSheet: View {
     let transaction: MeowlettTransaction?
@@ -8,6 +10,7 @@ struct TransactionEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
+    @AppStorage("gm_tx_receipts") private var receiptsRaw = "{}"
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var descriptionText: String
@@ -18,6 +21,10 @@ struct TransactionEditorSheet: View {
     @State private var note: String
     @State private var paymentMethod: String
     @State private var showCalculator = false
+    @State private var selectedReceipt: PhotosPickerItem?
+    @State private var receiptImage: UIImage?
+    @State private var receiptDataURL: String?
+    @State private var showCameraPicker = false
 
     private var isEnglish: Bool { language == "en" }
     private var primary: Color { Color(hex: AppAppearance.primaryHex) }
@@ -51,6 +58,7 @@ struct TransactionEditorSheet: View {
                         styledField(isEnglish ? "Location" : "Lokasi", text: $location)
                         styledField(isEnglish ? "Note" : "Catatan", text: $note)
                     }
+                    receiptSection
                     HStack(spacing: 8) {
                         Button(action: save) {
                             Text(transaction == nil ? (isEnglish ? "+ Add" : "+ Tambah") : (isEnglish ? "Save" : "Simpan"))
@@ -86,6 +94,24 @@ struct TransactionEditorSheet: View {
             AmountCalculatorSheet(initialValue: amount, onApply: { amountText = Self.formatAmount($0) })
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showCameraPicker) {
+            NativeCameraPicker { image in
+                acceptReceipt(image)
+                showCameraPicker = false
+            } onCancel: {
+                showCameraPicker = false
+            }
+            .ignoresSafeArea()
+        }
+        .onAppear(perform: loadReceipt)
+        .onChange(of: selectedReceipt) { _, item in
+            guard let item else { return }
+            Task {
+                guard let data = try? await item.loadTransferable(type: Data.self),
+                      let image = UIImage(data: data) else { return }
+                await MainActor.run { acceptReceipt(image) }
+            }
         }
     }
 
@@ -221,11 +247,105 @@ struct TransactionEditorSheet: View {
     private var inputBackground: Color { dark ? Color.white.opacity(0.06) : AppAppearance.card2(dark: dark) }
     private var inputBorder: Color { dark ? Color.white.opacity(0.12) : Color.primary.opacity(0.10) }
 
+    private var receiptSection: some View {
+        VStack(spacing: 8) {
+            if let image = receiptImage {
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 150)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    Button(action: clearReceipt) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 30, height: 30)
+                            .background(Color(hex: "#ef4444").opacity(0.88), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(8)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    PhotosPicker(selection: $selectedReceipt, matching: .images) {
+                        Label(isEnglish ? "Upload receipt" : "Unggah struk", systemImage: "photo")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.10), style: StrokeStyle(lineWidth: 1.2, dash: [5, 3])))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showCameraPicker = true
+                    } label: {
+                        Label(isEnglish ? "Camera" : "Kamera", systemImage: "camera")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 11)
+                            .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.10), style: StrokeStyle(lineWidth: 1.2, dash: [5, 3])))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
+                    .opacity(UIImagePickerController.isSourceTypeAvailable(.camera) ? 1 : 0.45)
+                }
+            }
+        }
+    }
+
+    private func loadReceipt() {
+        guard let data = receiptsRaw.data(using: .utf8),
+              let receipts = try? JSONDecoder().decode([String: String].self, from: data) else { return }
+        let key = transaction.map { $0.id.uuidString } ?? "_new"
+        guard let value = receipts[key] else { return }
+        receiptDataURL = value
+        let base64 = value.components(separatedBy: ",").last ?? value
+        if let bytes = Data(base64Encoded: base64) {
+            receiptImage = UIImage(data: bytes)
+        }
+    }
+
+    private func acceptReceipt(_ image: UIImage) {
+        guard let data = image.jpegData(compressionQuality: 0.82) else { return }
+        receiptImage = UIImage(data: data)
+        receiptDataURL = "data:image/jpeg;base64," + data.base64EncodedString()
+        selectedReceipt = nil
+    }
+
+    private func clearReceipt() {
+        receiptImage = nil
+        receiptDataURL = nil
+        selectedReceipt = nil
+    }
+
+    private func persistReceipt(for id: UUID) {
+        guard let data = receiptsRaw.data(using: .utf8),
+              var receipts = try? JSONDecoder().decode([String: String].self, from: data) else { return }
+        receipts.removeValue(forKey: "_new")
+        if let receiptDataURL {
+            receipts[id.uuidString] = receiptDataURL
+        } else {
+            receipts.removeValue(forKey: id.uuidString)
+        }
+        if let encoded = try? JSONEncoder().encode(receipts),
+           let value = String(data: encoded, encoding: .utf8) {
+            receiptsRaw = value
+        }
+    }
+
     private func save() {
         let trimmed = descriptionText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, amount > 0 else { return }
+        let savedID = transaction?.id ?? UUID()
         let item = MeowlettTransaction(
-            id: transaction?.id ?? UUID(),
+            id: savedID,
             date: date,
             amount: amount,
             category: category,
@@ -235,6 +355,7 @@ struct TransactionEditorSheet: View {
             paymentMethod: paymentMethod
         )
         if transaction == nil { store.add(item) } else { store.update(item) }
+        persistReceipt(for: savedID)
         dismiss()
     }
 
