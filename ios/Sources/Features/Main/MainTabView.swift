@@ -286,10 +286,14 @@ struct MainTabView: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .padding(.top, 10)
         .padding(.bottom, 10)
         .frame(maxWidth: .infinity)
-        .background(.ultraThinMaterial)
+        .background {
+            AppAppearance.background(dark: colorSchemeIsDark)
+                .opacity(colorSchemeIsDark ? 0.65 : 0.60)
+                .background(.ultraThinMaterial)
+        }
         .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.04)).frame(height: 0.5) }
     }
 
