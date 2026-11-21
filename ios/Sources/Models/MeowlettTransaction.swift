@@ -115,11 +115,11 @@ enum MeowlettCategory {
             return builtIns
         }
 
-        let orderedKeys = builtIns.map(\.id) + saved.keys.filter { key in !builtIns.contains(where: { $0.id == key }) }.sorted()
+        // gm_categories is authoritative once saved: removed categories must stay removed.
+        let orderedKeys = builtIns.map(\.id).filter { saved[$0] != nil }
+            + saved.keys.filter { key in !builtIns.contains(where: { $0.id == key }) }.sorted()
         return orderedKeys.compactMap { key in
-            guard let item = saved[key] else {
-                return builtIns.first(where: { $0.id == key })
-            }
+            guard let item = saved[key] else { return nil }
             let fallback = builtIns.first(where: { $0.id == key })
             let english = item.label.isEmpty ? (fallback?.enName ?? key) : item.label
             let indonesia = item.labelId ?? fallback?.idName ?? item.label

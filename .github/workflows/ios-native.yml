@@ -68,7 +68,7 @@ jobs:
           # Create a brand-new full-size simulator. Reusing a previously resized
           # simulator can produce a short, window-like screenshot with black bars.
           SIM_SELECTION="$(python3 -c '
-          import json,re,subprocess
+          import json, subprocess, sys, re
 
           def simctl_json(*args):
               result = subprocess.run(
@@ -83,55 +83,47 @@ jobs:
               runtime for runtime in runtimes
               if runtime.get("isAvailable") and runtime.get("platform") == "iOS"
           ]
-          def version(value):
-              if isinstance(value, (int, float)):
-                  return (int(value),)
-              if isinstance(value, (list, tuple)):
-                  return tuple(int(part) for part in value)
-              return tuple(int(part) for part in re.findall(r"[0-9]+", str(value or "0")))
-
           if not ios_runtimes:
               raise SystemExit("No available iOS Simulator runtime.")
+
+          def version(value):
+              return tuple(int(part) for part in re.findall(r"[0-9]+", str(value or "0")))
+
           runtime = max(ios_runtimes, key=lambda item: version(item.get("version")))
-
-          def supports_runtime(device_type):
-              minimum = device_type.get("minRuntimeVersion")
-              maximum = device_type.get("maxRuntimeVersion")
-              target = version(runtime.get("version"))
-              return (not minimum or target >= version(minimum)) and (not maximum or target <= version(maximum))
-
-          priorities = [
-              "iPhone XR", "iPhone 11", "iPhone 11 Pro", "iPhone 12",
-              "iPhone 13", "iPhone 14", "iPhone SE (3rd generation)", "iPhone 15"
-          ]
           available = [
               item for item in types
               if item.get("identifier", "").startswith("com.apple.CoreSimulator.SimDeviceType.iPhone")
-              and supports_runtime(item)
           ]
 
-          chosen = None
-          device_id = None
+          priorities = [
+              "iPhone XR", "iPhone 11", "iPhone 11 Pro", "iPhone 12",
+              "iPhone 13", "iPhone 14", "iPhone SE (3rd generation)",
+              "iPhone 15", "iPhone 16e", "iPhone 16", "iPhone 16 Pro"
+          ]
+          ordered = []
+          for name in priorities:
+              candidate = next((item for item in available if item.get("name") == name), None)
+              if candidate and candidate not in ordered:
+                  ordered.append(candidate)
+          ordered.extend(item for item in available if item not in ordered)
+
           errors = []
-          for preferred in priorities:
-              candidate = next((item for item in available if item.get("name") == preferred), None)
-              if candidate is None:
-                  continue
+          for candidate in ordered:
               attempt = subprocess.run(
                   ["xcrun", "simctl", "create",
-                   "MeowlettPreview-" + preferred.replace(" ", ""),
+                   "MeowlettPreview-" + candidate["name"].replace(" ", ""),
                    candidate["identifier"], runtime["identifier"]],
                   text=True, capture_output=True
               )
               if attempt.returncode == 0:
-                  chosen = candidate
                   device_id = attempt.stdout.strip()
+                  print("Created Simulator: " + candidate["name"] + " / " + candidate["identifier"], file=sys.stderr)
+                  print("|".join([device_id, candidate["name"], candidate["identifier"], runtime["identifier"]]))
                   break
-              errors.append(preferred + ": " + attempt.stderr.strip())
-
-          if not device_id:
-              raise SystemExit("Could not create an iPhone simulator. " + " | ".join(errors))
-          print("|".join([device_id, chosen["name"], chosen["identifier"], runtime["identifier"]]))
+              errors.append(candidate.get("name", "iPhone") + ": " + attempt.stderr.strip())
+          else:
+              names = ", ".join(item.get("name", "?") for item in available)
+              raise SystemExit("Could not create an iPhone simulator. Available: " + names + ". Errors: " + " | ".join(errors))
           ')"
           DEVICE_ID="${SIM_SELECTION%%|*}"
           SIM_REST="${SIM_SELECTION#*|}"
