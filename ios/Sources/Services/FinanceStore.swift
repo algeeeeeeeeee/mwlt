@@ -14,38 +14,6 @@ final class FinanceStore: ObservableObject {
         fileURL = directory.appendingPathComponent("transactions.json")
         load()
         seedPreviewDataIfRequested()
-        applyDueRecurringTransactions()
-    }
-
-    private func applyDueRecurringTransactions() {
-        guard let raw = UserDefaults.standard.string(forKey: "gm_recurring"),
-              let data = raw.data(using: .utf8),
-              let recurring = try? JSONDecoder().decode([MeowlettRecurringTransaction].self, from: data) else { return }
-
-        let today = Calendar.current.startOfDay(for: .now)
-        let todayDay = Calendar.current.component(.day, from: today)
-        var changed = false
-        for item in recurring where item.autoApply && item.day == todayDay && item.amount > 0 {
-            let exists = transactions.contains {
-                $0.description == item.description &&
-                $0.amount == item.amount &&
-                Calendar.current.isDate($0.date, inSameDayAs: today)
-            }
-            guard !exists else { continue }
-            transactions.insert(
-                MeowlettTransaction(
-                    date: today,
-                    amount: item.amount,
-                    category: item.category,
-                    description: item.description,
-                    location: "Rutin",
-                    note: "Otomatis"
-                ),
-                at: 0
-            )
-            changed = true
-        }
-        if changed { save() }
     }
 
     func add(_ transaction: MeowlettTransaction) {

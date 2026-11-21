@@ -4,7 +4,6 @@ struct TransactionsView: View {
     @EnvironmentObject private var store: FinanceStore
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
-    @AppStorage("gm_recurring") private var recurringRaw = "[]"
     @AppStorage("gm_tx_receipts") private var receiptsRaw = "{}"
     @Environment(\.colorScheme) private var colorScheme
 
@@ -15,15 +14,6 @@ struct TransactionsView: View {
     @State private var activeTransactionID: UUID?
     @State private var showEditor = false
     @State private var editingTransaction: MeowlettTransaction?
-    @State private var recurringItems: [MeowlettRecurringTransaction] = []
-    @State private var recurringLoaded = false
-    @State private var showRecurringPanel = false
-    @State private var recurringDescription = ""
-    @State private var recurringAmount = ""
-    @State private var recurringDay = "1"
-    @State private var recurringCategory = "food"
-    @State private var recurringAutoApply = true
-    @State private var editingRecurringID: Int64?
 
     private var isEnglish: Bool { language == "en" }
     private var isDark: Bool { colorScheme == .dark }
@@ -103,8 +93,6 @@ struct TransactionsView: View {
                         }
                     }
                 }
-                recurringSection
-                    .padding(.top, 10)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -118,8 +106,6 @@ struct TransactionsView: View {
             TransactionEditorSheet(transaction: editingTransaction)
                 .environmentObject(store)
         }
-        .onAppear(perform: loadRecurring)
-        .onChange(of: recurringItems) { _, value in persistRecurring(value) }
     }
 
     private var searchField: some View {
@@ -422,232 +408,6 @@ struct TransactionsView: View {
             RoundedRectangle(cornerRadius: 1.5).fill(categoryColor).frame(width: 3).padding(.vertical, 1)
         }
         .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
-    }
-
-    private var recurringSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) { showRecurringPanel.toggle() }
-            } label: {
-                HStack(spacing: 8) {
-                    Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
-                    Image(systemName: "repeat").font(.system(size: 11, weight: .bold)).foregroundStyle(.secondary)
-                    Text(isEnglish ? "RECURRING TRANSACTIONS" : "TRANSAKSI RUTIN")
-                        .font(.system(size: 10, weight: .heavy)).tracking(1.1).foregroundStyle(.secondary).fixedSize()
-                    if recurringItems.contains(where: { !$0.autoApply }) {
-                        Text("\(recurringItems.filter { !$0.autoApply }.count)")
-                            .font(.system(size: 9, weight: .black)).foregroundStyle(.white)
-                            .padding(.horizontal, 6).padding(.vertical, 3)
-                            .background(Color(hex: "#ef4444"), in: Capsule())
-                    }
-                    Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(showRecurringPanel ? 180 : 0))
-                    Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if showRecurringPanel {
-                recurringFormCard
-                if recurringItems.isEmpty {
-                    VStack(spacing: 8) {
-                        Image(systemName: "repeat.circle")
-                            .font(.system(size: 29, weight: .light)).foregroundStyle(accent)
-                        Text(isEnglish ? "No recurring transactions" : "Belum ada transaksi rutin")
-                            .font(.system(size: 13, weight: .bold))
-                        Text(isEnglish ? "Add a payment that repeats every month." : "Tambahkan pembayaran yang berulang setiap bulan.")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity).padding(.vertical, 24)
-                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(recurringItems) { item in
-                            recurringRow(item)
-                            if item.id != recurringItems.last?.id {
-                                Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1).padding(.leading, 60)
-                            }
-                        }
-                    }
-                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.07), lineWidth: 1))
-                }
-            }
-        }
-    }
-
-    private var recurringFormCard: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            HStack {
-                Label(isEnglish ? "Add recurring" : "Tambah transaksi rutin", systemImage: "repeat")
-                    .font(.system(size: 13, weight: .heavy)).foregroundStyle(.primary)
-                Spacer()
-                if editingRecurringID != nil {
-                    Button(isEnglish ? "Cancel edit" : "Batal edit") { resetRecurringForm() }
-                        .font(.system(size: 11, weight: .bold)).foregroundStyle(.secondary)
-                }
-            }
-            TextField(isEnglish ? "Transaction name" : "Nama transaksi", text: $recurringDescription)
-                .font(.system(size: 14)).padding(12)
-                .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
-            HStack(spacing: 8) {
-                TextField("1.000.000", text: $recurringAmount)
-                    .keyboardType(.numberPad)
-                    .font(.system(size: 14, weight: .bold))
-                    .padding(12)
-                    .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(isEnglish ? "DAY" : "TANGGAL")
-                        .font(.system(size: 9, weight: .heavy)).foregroundStyle(.secondary)
-                    TextField("1", text: $recurringDay)
-                        .keyboardType(.numberPad)
-                        .font(.system(size: 14, weight: .bold))
-                        .padding(10)
-                        .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1.3))
-                }
-                .frame(width: 90)
-            }
-            Menu {
-                ForEach(MeowlettCategory.all, id: \.id) { category in
-                    Button {
-                        recurringCategory = category.id
-                    } label: {
-                        Label(category.idName, systemImage: category.icon)
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: MeowlettCategory.all.first(where: { $0.id == recurringCategory })?.icon ?? "tag")
-                        .foregroundStyle(MeowlettCategory.color(for: recurringCategory))
-                    Text(MeowlettCategory.name(for: recurringCategory, language: language))
-                        .font(.system(size: 12, weight: .bold)).foregroundStyle(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
-                }
-                .padding(11)
-                .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-            }
-            Toggle(isEnglish ? "Apply automatically" : "Catat otomatis", isOn: $recurringAutoApply)
-                .font(.system(size: 12, weight: .semibold)).tint(primary)
-            Text(isEnglish ? "Automatic entries are created on the selected day when the app opens. Manual items can be recorded from the list." : "Transaksi otomatis dibuat saat aplikasi dibuka pada tanggal pilihan. Item manual bisa dicatat dari daftar.")
-                .font(.system(size: 10)).foregroundStyle(.secondary)
-            Button(action: saveRecurring) {
-                Label(editingRecurringID == nil
-                      ? (isEnglish ? "Add recurring" : "Tambah transaksi rutin")
-                      : (isEnglish ? "Save changes" : "Simpan perubahan"),
-                      systemImage: editingRecurringID == nil ? "plus" : "checkmark")
-                    .font(.system(size: 12, weight: .heavy))
-                    .foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 42)
-                    .background(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
-            .disabled(recurringDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (Int64(recurringAmount.filter(\.isNumber)) ?? 0) <= 0)
-            .opacity(recurringDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (Int64(recurringAmount.filter(\.isNumber)) ?? 0) <= 0 ? 0.5 : 1)
-        }
-        .padding(14)
-        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.07), lineWidth: 1))
-    }
-
-    private func recurringRow(_ item: MeowlettRecurringTransaction) -> some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 11)
-                .fill(MeowlettCategory.color(for: item.category).opacity(0.15))
-                .frame(width: 38, height: 38)
-                .overlay(Image(systemName: MeowlettCategory.all.first(where: { $0.id == item.category })?.icon ?? "tag")
-                    .foregroundStyle(MeowlettCategory.color(for: item.category)))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.description).font(.system(size: 13, weight: .bold)).foregroundStyle(.primary).lineLimit(1)
-                HStack(spacing: 4) {
-                    Text(MeowlettCategory.name(for: item.category, language: language))
-                    Text("·")
-                    Text((isEnglish ? "Day" : "Tgl") + " \(item.day)")
-                    Text("·")
-                    Text(item.autoApply ? (isEnglish ? "Auto" : "Otomatis") : "Manual")
-                        .foregroundStyle(item.autoApply ? accent : Color(hex: "#f59e0b"))
-                }
-                .font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 2)
-            VStack(alignment: .trailing, spacing: 6) {
-                Text("-\(rupiah(item.amount))").font(.system(size: 12, weight: .heavy)).foregroundStyle(Color(hex: "#f87171"))
-                HStack(spacing: 5) {
-                    if !item.autoApply {
-                        Button {
-                            store.add(MeowlettTransaction(date: .now, amount: item.amount, category: item.category, description: item.description, location: "Rutin", note: "Manual"))
-                        } label: {
-                            Text(isEnglish ? "Record" : "Catat")
-                                .font(.system(size: 9, weight: .heavy)).foregroundStyle(Color(hex: "#d97706"))
-                                .padding(.horizontal, 7).padding(.vertical, 5)
-                                .background(Color(hex: "#f59e0b").opacity(0.13), in: RoundedRectangle(cornerRadius: 7))
-                        }.buttonStyle(.plain)
-                    }
-                    Button {
-                        recurringDescription = item.description
-                        recurringAmount = String(item.amount)
-                        recurringDay = String(item.day)
-                        recurringCategory = item.category
-                        recurringAutoApply = item.autoApply
-                        editingRecurringID = item.id
-                    } label: {
-                        Image(systemName: "pencil").font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
-                    }.buttonStyle(.plain)
-                    Button {
-                        recurringItems.removeAll { $0.id == item.id }
-                    } label: {
-                        Image(systemName: "trash").font(.system(size: 10, weight: .semibold)).foregroundStyle(Color(hex: "#ef4444"))
-                    }.buttonStyle(.plain)
-                }
-            }
-        }
-        .padding(.horizontal, 12).padding(.vertical, 11)
-    }
-
-    private func loadRecurring() {
-        guard !recurringLoaded else { return }
-        if let data = recurringRaw.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([MeowlettRecurringTransaction].self, from: data) {
-            recurringItems = decoded
-        }
-        recurringLoaded = true
-    }
-
-    private func persistRecurring(_ value: [MeowlettRecurringTransaction]) {
-        guard recurringLoaded, let data = try? JSONEncoder().encode(value),
-              let json = String(data: data, encoding: .utf8) else { return }
-        recurringRaw = json
-    }
-
-    private func saveRecurring() {
-        let title = recurringDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty, let value = Int64(recurringAmount.filter(\.isNumber)), value > 0 else { return }
-        let item = MeowlettRecurringTransaction(
-            id: editingRecurringID ?? Int64(Date().timeIntervalSince1970 * 1000),
-            description: title,
-            amount: value,
-            category: recurringCategory,
-            day: min(31, max(1, Int(recurringDay) ?? 1)),
-            autoApply: recurringAutoApply
-        )
-        if let id = editingRecurringID, let index = recurringItems.firstIndex(where: { $0.id == id }) {
-            recurringItems[index] = item
-        } else {
-            recurringItems.append(item)
-        }
-        resetRecurringForm()
-    }
-
-    private func resetRecurringForm() {
-        recurringDescription = ""
-        recurringAmount = ""
-        recurringDay = "1"
-        recurringCategory = "food"
-        recurringAutoApply = true
-        editingRecurringID = nil
     }
 
     private func hasReceipt(_ transaction: MeowlettTransaction) -> Bool {

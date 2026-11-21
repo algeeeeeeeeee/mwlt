@@ -32,15 +32,6 @@ struct MeowlettTransaction: Identifiable, Codable, Equatable {
     }
 }
 
-struct MeowlettRecurringTransaction: Codable, Identifiable, Equatable {
-    var id: Int64
-    var description: String
-    var amount: Int64
-    var category: String
-    var day: Int
-    var autoApply: Bool
-}
-
 struct MeowlettCategoryDefinition: Codable, Equatable {
     var label: String
     var labelId: String?
