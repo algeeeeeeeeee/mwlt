@@ -67,19 +67,20 @@ jobs:
 
           # Create a brand-new full-size simulator. Reusing a previously resized
           # simulator can produce a short, window-like screenshot with black bars.
-          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes available -j | python3 -c '
+          SIM_SELECTION="$(xcrun simctl list devices available -j | python3 -c '
           import json,sys
-          items=json.load(sys.stdin).get("devicetypes",[])
-          preferences=["iPhone 16 Pro","iPhone 16","iPhone 15 Pro"]
-          chosen=next((x for name in preferences for x in items if x.get("name")==name),None)
-          print(chosen.get("identifier","") if chosen else "")
+          data=json.load(sys.stdin)
+          for runtime, devices in data.get("devices",{}).items():
+              chosen=next((device for device in devices
+                           if device.get("isAvailable")
+                           and device.get("name","").startswith("iPhone")
+                           and device.get("deviceTypeIdentifier")),None)
+              if chosen:
+                  print(chosen["deviceTypeIdentifier"] + "|" + runtime)
+                  break
           ')"
-          RUNTIME_ID="$(xcrun simctl list runtimes available -j | python3 -c '
-          import json,sys
-          items=[x for x in json.load(sys.stdin).get("runtimes",[]) if x.get("isAvailable") and x.get("name","").startswith("iOS ")]
-          chosen=next((x for x in items if x.get("name")=="iOS 18.5"), items[-1] if items else None)
-          print(chosen.get("identifier","") if chosen else "")
-          ')"
+          DEVICE_TYPE_ID="\${SIM_SELECTION%%|*}"
+          RUNTIME_ID="\${SIM_SELECTION#*|}"
           if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
             echo "Could not find a standard iPhone simulator device type and iOS runtime."
             xcrun simctl list devicetypes available
