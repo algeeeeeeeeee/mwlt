@@ -77,6 +77,19 @@ struct MainTabView: View {
             bottomNavigation
         }
         .tint(tint)
+        .onAppear {
+            // Deterministic launch routing is used only by the simulator preview workflow.
+            let arguments = ProcessInfo.processInfo.arguments
+            if let argument = arguments.first(where: { $0.hasPrefix("--mwlt-preview-tab=") }) {
+                let rawValue = String(argument.dropFirst("--mwlt-preview-tab=".count))
+                if let previewTab = MeowlettTab(rawValue: rawValue) {
+                    selected = previewTab
+                }
+            }
+            if arguments.contains("--mwlt-preview-quick-add") {
+                showQuickAdd = true
+            }
+        }
         .sheet(isPresented: $showQuickAdd) {
             NavigationStack {
                 QuickTransactionSheet()
