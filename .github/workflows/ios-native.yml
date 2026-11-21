@@ -79,8 +79,8 @@ jobs:
                   print(chosen["deviceTypeIdentifier"] + "|" + runtime)
                   break
           ')"
-          DEVICE_TYPE_ID="\${SIM_SELECTION%%|*}"
-          RUNTIME_ID="\${SIM_SELECTION#*|}"
+          DEVICE_TYPE_ID="${SIM_SELECTION%%|*}"
+          RUNTIME_ID="${SIM_SELECTION#*|}"
           if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
             echo "Could not find a standard iPhone simulator device type and iOS runtime."
             xcrun simctl list devicetypes available
