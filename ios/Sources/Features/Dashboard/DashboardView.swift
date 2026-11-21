@@ -4,6 +4,7 @@ struct DashboardView: View {
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("gm_lang") private var language = "id"
+    @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_username") private var userName = ""
     @AppStorage("gm_income") private var incomeRaw = "5000000"
     @State private var showIncomeEditor = false
