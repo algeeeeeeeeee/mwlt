@@ -60,7 +60,7 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack {
-            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+            AppAppearance.background(dark: colorSchemeIsDark).ignoresSafeArea()
             VStack(spacing: 0) {
                 topHeader
                 Group {
@@ -156,7 +156,7 @@ struct MainTabView: View {
             .buttonStyle(.plain)
             ZStack(alignment: .bottomTrailing) {
                 Circle()
-                    .fill(Color(uiColor: .secondarySystemBackground))
+                    .fill(AppAppearance.card2(dark: colorSchemeIsDark))
                     .frame(width: 38, height: 38)
                     .overlay {
                         if let image = profileUIImage {
@@ -257,7 +257,7 @@ struct MainTabView: View {
         .padding(.bottom, 7)
         .frame(maxWidth: .infinity)
         .background {
-            LinearGradient(colors: [Color(uiColor: .systemGroupedBackground).opacity(0), Color(uiColor: .systemGroupedBackground).opacity(0.96)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [AppAppearance.background(dark: colorSchemeIsDark).opacity(0), AppAppearance.background(dark: colorSchemeIsDark).opacity(0.96)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea(edges: .bottom)
         }
     }
