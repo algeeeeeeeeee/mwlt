@@ -4,6 +4,7 @@ import UIKit
 
 struct SettingsView: View {
     @AppStorage("gm_lang") private var language = "id"
+    @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_username") private var userName = ""
     @AppStorage("gm_dark_override") private var darkOverride = "false"
     @AppStorage("gm_follow_system") private var followSystem = "0"
@@ -143,7 +144,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showBudgets) { SettingsBudgetSheet(isEnglish: isEnglish) }
         .sheet(isPresented: $showCicilan) { SettingsCicilanSheet() }
         .sheet(isPresented: $showReminder) { SettingsReminderSheet() }
-        .sheet(isPresented: $showCategoryManager) { SettingsPlaceholderSheet(title: isEnglish ? "Manage categories" : "Kelola Kategori", subtitle: isEnglish ? "Custom category editing is being ported from JSX." : "Pengelolaan kategori kustom sedang dipindahkan dari JSX.", symbol: "square.grid.2x2", isEnglish: isEnglish) }
+        .sheet(isPresented: $showCategoryManager) { SettingsCategoryManagerSheet() }
         .sheet(isPresented: $showTags) { SettingsPlaceholderSheet(title: isEnglish ? "Tags" : "Tag", subtitle: isEnglish ? "Tag management is being ported from JSX." : "Pengelolaan tag sedang dipindahkan dari JSX.", symbol: "number", isEnglish: isEnglish) }
         .sheet(isPresented: $showData) { SettingsDataSheet(isEnglish: isEnglish, incomeRaw: $incomeRaw) }
     }
