@@ -43,7 +43,7 @@ struct SettingsView: View {
                 return image
             }
         }
-        guard let url = Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64"),
+        guard let url = Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64")\n            ?? Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64", subdirectory: "Images"),
               let encoded = try? String(contentsOf: url, encoding: .utf8),
               let data = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) else {
             return nil
