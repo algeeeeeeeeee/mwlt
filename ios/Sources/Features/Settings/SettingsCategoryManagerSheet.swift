@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsCategoryManagerSheet: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesRaw = ""
+    @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
     @State private var categories: [String: MeowlettCategoryDefinition] = [:]
     @State private var loaded = false
