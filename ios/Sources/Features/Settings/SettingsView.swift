@@ -267,18 +267,14 @@ struct SettingsView: View {
 
     private func settingsRow(title: String, subtitle: String, symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: symbol)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(accent)
-                    .frame(width: 24)
+            HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(.primary)
                     Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 6)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 16)
