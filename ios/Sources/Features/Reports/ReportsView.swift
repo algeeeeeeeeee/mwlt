@@ -500,7 +500,7 @@ private struct NativeReportChart: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let maxValue = max(Double(values.map(\.1).max() ?? 1), 1)
+            let maxValue = max(Double(values.map { $0.1 }.max() ?? 1), 1)
             let points = values.enumerated().map { index, item in
                 CGPoint(
                     x: values.count > 1 ? proxy.size.width * CGFloat(index) / CGFloat(values.count - 1) : proxy.size.width / 2,
