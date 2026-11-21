@@ -109,7 +109,7 @@ struct SettingsBudgetSheet: View {
                 ))
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.trailing)
-                .font(.system(size: 13, weight: .bold))
+                .font(MeowlettTypography.font(size: 13, weight: .bold))
                 .foregroundStyle(.primary)
                 .padding(.horizontal, 10)
                 .frame(width: 110, height: 38)

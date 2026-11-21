@@ -327,7 +327,7 @@ struct DateTabView: View {
                 .buttonStyle(.plain)
             }
             TextField(isEnglish ? "Where do you want to go?" : "Mau ke mana atau ingin melakukan apa?", text: $wishlistInput)
-                .font(.system(size: 15))
+                .font(MeowlettTypography.font(size: 15, weight: .regular))
                 .padding(13)
                 .background(isDark ? Color.white.opacity(0.06) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#f9a8d4"), lineWidth: 1.5))

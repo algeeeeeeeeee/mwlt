@@ -67,31 +67,74 @@ jobs:
 
           # Create a brand-new full-size simulator. Reusing a previously resized
           # simulator can produce a short, window-like screenshot with black bars.
-          SIM_SELECTION="$(xcrun simctl list devices available -j | python3 -c '
-          import json,sys
-          data=json.load(sys.stdin)
-          fallback=None
-          preferred=None
-          for runtime, devices in data.get("devices",{}).items():
-              for device in devices:
-                  if not device.get("isAvailable") or not device.get("deviceTypeIdentifier"):
-                      continue
-                  name=device.get("name","")
-                  entry=(device["deviceTypeIdentifier"],runtime,name)
-                  if fallback is None and name.startswith("iPhone"):
-                      fallback=entry
-                  if name == "iPhone XR":
-                      preferred=entry
-              if preferred:
+          SIM_SELECTION="$(python3 -c '
+          import json,re,subprocess
+
+          def simctl_json(*args):
+              result = subprocess.run(
+                  ["xcrun", "simctl", "list", *args, "-j"],
+                  check=True, text=True, capture_output=True
+              )
+              return json.loads(result.stdout)
+
+          types = simctl_json("devicetypes").get("devicetypes", [])
+          runtimes = simctl_json("runtimes").get("runtimes", [])
+          ios_runtimes = [
+              runtime for runtime in runtimes
+              if runtime.get("isAvailable") and runtime.get("platform") == "iOS"
+          ]
+          def version(value):
+              return tuple(int(part) for part in re.findall(r"[0-9]+", value or "0"))
+
+          if not ios_runtimes:
+              raise SystemExit("No available iOS Simulator runtime.")
+          runtime = max(ios_runtimes, key=lambda item: version(item.get("version")))
+
+          def supports_runtime(device_type):
+              minimum = device_type.get("minRuntimeVersion")
+              maximum = device_type.get("maxRuntimeVersion")
+              target = version(runtime.get("version"))
+              return (not minimum or target >= version(minimum)) and (not maximum or target <= version(maximum))
+
+          priorities = [
+              "iPhone XR", "iPhone 11", "iPhone 11 Pro", "iPhone 12",
+              "iPhone 13", "iPhone 14", "iPhone SE (3rd generation)", "iPhone 15"
+          ]
+          available = [
+              item for item in types
+              if item.get("identifier", "").startswith("com.apple.CoreSimulator.SimDeviceType.iPhone")
+              and supports_runtime(item)
+          ]
+
+          chosen = None
+          device_id = None
+          errors = []
+          for preferred in priorities:
+              candidate = next((item for item in available if item.get("name") == preferred), None)
+              if candidate is None:
+                  continue
+              attempt = subprocess.run(
+                  ["xcrun", "simctl", "create",
+                   "MeowlettPreview-" + preferred.replace(" ", ""),
+                   candidate["identifier"], runtime["identifier"]],
+                  text=True, capture_output=True
+              )
+              if attempt.returncode == 0:
+                  chosen = candidate
+                  device_id = attempt.stdout.strip()
                   break
-          chosen=preferred or fallback
-          if chosen:
-              print("|".join(chosen))
+              errors.append(preferred + ": " + attempt.stderr.strip())
+
+          if not device_id:
+              raise SystemExit("Could not create an iPhone simulator. " + " | ".join(errors))
+          print("|".join([device_id, chosen["name"], chosen["identifier"], runtime["identifier"]]))
           ')"
-          DEVICE_TYPE_ID="${SIM_SELECTION%%|*}"
+          DEVICE_ID="${SIM_SELECTION%%|*}"
           SIM_REST="${SIM_SELECTION#*|}"
-          RUNTIME_ID="${SIM_REST%%|*}"
-          DEVICE_NAME="${SIM_REST#*|}"
+          DEVICE_NAME="${SIM_REST%%|*}"
+          SIM_REST="${SIM_REST#*|}"
+          DEVICE_TYPE_ID="${SIM_REST%%|*}"
+          RUNTIME_ID="${SIM_REST#*|}"
           if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
             echo "Could not find a standard iPhone simulator device type and iOS runtime."
             xcrun simctl list devicetypes available
@@ -108,7 +151,7 @@ jobs:
           (
             sleep 720
             echo "::error::Native preview capture exceeded 12 minutes."
-            kill -TERM "$"
+            kill -TERM "$PPID"
           ) &
           WATCHDOG_PID=$!
           trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT

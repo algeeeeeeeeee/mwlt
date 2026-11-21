@@ -128,7 +128,7 @@ struct TransactionsView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.secondary)
             TextField(isEnglish ? "Search transactions..." : "Cari transaksi...", text: $searchQuery)
-                .font(.system(size: 15))
+                .font(MeowlettTypography.font(size: 15, weight: .regular))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             if !searchQuery.isEmpty {
@@ -415,7 +415,7 @@ struct TransactionsView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.08), lineWidth: 1))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 1.5).fill(categoryColor).frame(width: 3).padding(.vertical, 1)

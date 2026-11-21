@@ -40,6 +40,7 @@ struct RootView: View {
             .background(Color(uiColor: .systemBackground))
         }
         .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .environment(\.font, MeowlettTypography.font(size: 14, weight: .regular))
         .preferredColorScheme(preferredScheme)
     }
 }

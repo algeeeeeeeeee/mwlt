@@ -72,7 +72,7 @@ struct TransactionEditorSheet: View {
                         .opacity(descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || amount <= 0 ? 0.5 : 1)
 
                         Button(isEnglish ? "Cancel" : "Batal") { dismiss() }
-                            .font(.system(size: 13, weight: .bold))
+                            .font(MeowlettTypography.font(size: 13, weight: .bold))
                             .foregroundStyle(.primary)
                             .frame(width: 110, height: 46)
                             .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 14))
@@ -87,9 +87,10 @@ struct TransactionEditorSheet: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(AppAppearance.modal(dark: dark))
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .presentationDetents([.fraction(0.88)])
+        .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
+        .presentationBackground(AppAppearance.modal(dark: dark))
         .sheet(isPresented: $showCalculator) {
             AmountCalculatorSheet(initialValue: amount, onApply: { amountText = Self.formatAmount($0) })
                 .presentationDetents([.medium])
@@ -237,7 +238,7 @@ struct TransactionEditorSheet: View {
 
     private func styledField(_ placeholder: String, text: Binding<String>) -> some View {
         TextField(placeholder, text: text)
-            .font(.system(size: 15))
+            .font(MeowlettTypography.font(size: 15, weight: .regular))
             .padding(.horizontal, 16)
             .frame(height: 46)
             .background(inputBackground, in: RoundedRectangle(cornerRadius: 14))
