@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import UIKit
+import UserNotifications
 
 struct SettingsView: View {
     @AppStorage("gm_lang") private var language = "id"
@@ -135,7 +136,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showAppearance) { SettingsAppearanceSheet() }
         .sheet(isPresented: $showNotifications) {
             SettingsNotificationsSheet(
-                enabled: Binding(get: { notificationsEnabled == "true" }, set: { notificationsEnabled = $0 ? "1" : "0" }),
+                enabled: Binding(get: { notificationsEnabled == "1" }, set: { notificationsEnabled = $0 ? "1" : "0" }),
                 weekly: Binding(get: { weeklyNotification == "true" }, set: { weeklyNotification = $0 ? "true" : "false" }),
                 day: Binding(get: { weeklyNotificationDay }, set: { weeklyNotificationDay = $0 }),
                 isEnglish: isEnglish
@@ -431,22 +432,28 @@ private struct SettingsNotificationsSheet: View {
     @Binding var day: String
     let isEnglish: Bool
     @Environment(\.dismiss) private var dismiss
+    @State private var permissionError = ""
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle(isEnglish ? "Enable notifications" : "Aktifkan notifikasi", isOn: $enabled)
-                    Toggle(isEnglish ? "Weekly summary" : "Ringkasan mingguan", isOn: $weekly)
-                        .disabled(!enabled)
+                    Toggle(isEnglish ? "Daily reminder" : "Pengingat harian", isOn: Binding(
+                        get: { enabled },
+                        set: { value in Task { await updateDailyReminder(value) } }
+                    ))
+                    Toggle(isEnglish ? "Weekly summary" : "Ringkasan Mingguan", isOn: $weekly)
                     Picker(isEnglish ? "Summary day" : "Hari ringkasan", selection: $day) {
                         ForEach(Array((isEnglish ? ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] : ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"]).enumerated()), id: \.offset) { index, label in
                             Text(label).tag(String(index))
                         }
                     }
-                    .disabled(!enabled || !weekly)
+                    .disabled(!weekly)
+                    if !permissionError.isEmpty {
+                        Text(permissionError).font(.footnote).foregroundStyle(.red)
+                    }
                 } footer: {
-                    Text(isEnglish ? "Notifications are scheduled locally on this device." : "Notifikasi dijadwalkan secara lokal di perangkat ini.")
+                    Text(isEnglish ? "Notifications are scheduled locally on this device." : "Notifikasi dijadwalkan lokal di perangkat ini.")
                 }
             }
             .navigationTitle(isEnglish ? "Notifications" : "Notifikasi")
@@ -456,6 +463,22 @@ private struct SettingsNotificationsSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    @MainActor
+    private func updateDailyReminder(_ value: Bool) async {
+        if value {
+            do {
+                let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+                enabled = granted
+                permissionError = granted ? "" : (isEnglish ? "Notification permission was denied." : "Izin notifikasi ditolak.")
+            } catch {
+                enabled = false
+                permissionError = error.localizedDescription
+            }
+        } else {
+            enabled = false
+        }
     }
 }
 
