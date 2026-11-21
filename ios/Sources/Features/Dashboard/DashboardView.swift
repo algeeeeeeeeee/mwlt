@@ -10,6 +10,7 @@ struct DashboardView: View {
     @State private var showIncomeEditor = false
     @State private var incomeDraft = ""
     @State private var recentCount = 5
+    @AppStorage("gm_streak") private var streakRaw = "{\"count\":0,\"lastDate\":\"\"}"
     @AppStorage("gm_budgets") private var budgetsRaw = "{}"
     @AppStorage("gm_overall_budget") private var overallBudgetRaw = "0"
     @AppStorage("gm_savings_goals") private var savingsGoalsRaw = "[]"
@@ -30,6 +31,74 @@ struct DashboardView: View {
     private var remaining: Int64 { income - spent }
     private var todaySpent: Int64 {
         store.transactions.filter { Calendar.current.isDateInToday($0.date) }.reduce(0) { $0 + $1.amount }
+    }
+    private var currentStreak: Int {
+        guard let data = streakRaw.data(using: .utf8),
+              let state = try? JSONDecoder().decode(DashboardStreakData.self, from: data) else { return 0 }
+        return state.count
+    }
+    private var thisWeekTransactions: [MeowlettTransaction] {
+        guard let interval = Calendar.current.dateInterval(of: .weekOfYear, for: .now) else { return [] }
+        return store.transactions.filter { interval.contains($0.date) }
+    }
+    private var lastWeekTransactions: [MeowlettTransaction] {
+        guard let previous = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: .now),
+              let interval = Calendar.current.dateInterval(of: .weekOfYear, for: previous) else { return [] }
+        return store.transactions.filter { interval.contains($0.date) }
+    }
+    private var thisWeekSpent: Int64 {
+        thisWeekTransactions.reduce(Int64(0)) { $0 + $1.amount }
+    }
+    private var lastWeekSpent: Int64 {
+        lastWeekTransactions.reduce(Int64(0)) { $0 + $1.amount }
+    }
+    private var topWeeklyCategory: String? {
+        let grouped = Dictionary(grouping: thisWeekTransactions, by: \.category)
+        return grouped.map { key, values in
+            (key, values.reduce(Int64(0)) { $0 + $1.amount })
+        }.max { $0.1 < $1.1 }?.0
+    }
+    private var financialHealth: (score: Int, label: String, color: Color) {
+        let ratio = income > 0 ? Double(spent) / Double(income) : 1
+        let ratioPoints = income <= 0 ? 0 : ratio <= 0.5 ? 30 : ratio <= 0.7 ? 20 : ratio <= 0.9 ? 10 : 0
+        let daysInMonth = Calendar.current.range(of: .day, in: .month, for: .now)?.count ?? 30
+        let daysPassed = Calendar.current.component(.day, from: .now)
+        let activeDays = Set(monthTransactions.map { Calendar.current.startOfDay(for: $0.date) }).count
+        let consistencyPoints = Int((Double(activeDays) / Double(max(1, min(daysPassed, daysInMonth))) * 25).rounded())
+        let streakPoints = min(15, Int((Double(currentStreak) / 7 * 15).rounded()))
+        let goalPoints = savingsGoals.isEmpty ? 0 : (savingsGoals.contains(where: { $0.saved > 0 }) ? 15 : 8)
+        let overBudgetCount = budgets.filter { key, limit in
+            guard limit > 0 else { return false }
+            let categorySpent = monthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount }
+            return categorySpent > limit
+        }.count
+        let budgetPoints = overBudgetCount == 0 ? 15 : overBudgetCount == 1 ? 8 : 0
+        let score = min(100, ratioPoints + consistencyPoints + streakPoints + goalPoints + budgetPoints)
+        let label: String = score >= 80 ? (isEnglish ? "Excellent" : "Sangat Baik")
+            : score >= 60 ? (isEnglish ? "Good" : "Baik")
+            : score >= 40 ? (isEnglish ? "Fair" : "Cukup")
+            : (isEnglish ? "Need Attention" : "Perlu Perhatian")
+        let hex = score >= 80 ? "#4ade80" : score >= 60 ? AppAppearance.accentHex : score >= 40 ? "#fbbf24" : "#f87171"
+        return (score, label, Color(hex: hex))
+    }
+    private var dailyHealthTip: String {
+        let tipsID = [
+            "Coba keluarkan di bawah 70% pemasukan",
+            "Catat setiap transaksi hari ini",
+            "Buat target tabungan untuk naikkan skor",
+            "Buka app tiap hari untuk jaga streak",
+            "Atur budget per kategori supaya terkontrol"
+        ]
+        let tipsEN = [
+            "Try spending under 70% of income",
+            "Record every transaction today",
+            "Set a savings target to boost score",
+            "Open the app daily to build your streak",
+            "Set category budgets to stay on track"
+        ]
+        let day = Calendar.current.ordinality(of: .day, in: .year, for: .now) ?? 1
+        let tips = isEnglish ? tipsEN : tipsID
+        return tips[(day - 1) % tips.count]
     }
     private var expensePercent: Int {
         guard income > 0 else { return 0 }
@@ -72,11 +141,13 @@ struct DashboardView: View {
                         weeklyInsightCard
                     }
 
+                    financialHealthCard
                     predictionCard
                     budgetCard
                     savingsGoalsCard
                     recentTransactionsCard
                     categoryBreakdownCard
+                    paymentMethodStatsCard
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
@@ -86,7 +157,10 @@ struct DashboardView: View {
             }
             .background(AppAppearance.background(dark: isDark))
             .toolbar(.hidden, for: .navigationBar)
-            .onAppear(perform: loadPersistedDashboardData)
+            .onAppear {
+                loadPersistedDashboardData()
+                updateStreak()
+            }
             .onChange(of: budgets) { _, value in persistBudgets(value) }
             .onChange(of: savingsGoals) { _, value in persistSavingsGoals(value) }
             .sheet(isPresented: $showOverallBudgetEditor) {
@@ -257,68 +331,186 @@ struct DashboardView: View {
     }
 
     private var streakCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let factsID = [
+            "ATM pertama dipasang di London tahun 1967.",
+            "Uang kertas pertama berasal dari Tiongkok.",
+            "Warren Buffett membeli saham pertama pada usia 11 tahun.",
+            "Koin pertama dicetak di Lydia sekitar 600 SM.",
+            "Aturan 50/30/20 membagi kebutuhan, keinginan, dan tabungan.",
+            "Dana darurat ideal umumnya 3–6 bulan pengeluaran.",
+            "Bunga majemuk membantu tabungan berkembang."
+        ]
+        let factsEN = [
+            "The first ATM was installed in London in 1967.",
+            "Paper money originated in China.",
+            "Warren Buffett bought his first stock at age 11.",
+            "The first coins were minted in Lydia around 600 BC.",
+            "The 50/30/20 rule divides needs, wants, and savings.",
+            "A common emergency fund goal is 3–6 months of expenses.",
+            "Compound interest helps savings grow over time."
+        ]
+        let day = Calendar.current.component(.day, from: .now)
+        let month = Calendar.current.component(.month, from: .now)
+        let facts = isEnglish ? factsEN : factsID
+        let fact = facts[(day + month * 31 + currentStreak) % facts.count]
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 5) {
                 Image(systemName: "flame.fill").foregroundStyle(Color(hex: "#fb923c"))
-                Text(isEnglish ? "STREAK" : "STREAK")
-                    .foregroundStyle(.secondary)
+                Text("STREAK").foregroundStyle(.secondary)
             }
             .font(.system(size: 9, weight: .heavy))
-            let activeDays = Set(store.transactions.map { Calendar.current.startOfDay(for: $0.date) }).count
-            Text("\(activeDays)")
-                .font(.system(size: 24, weight: .black, design: .rounded))
-            Text(isEnglish ? "active days recorded" : "hari aktif tercatat")
-                .font(.system(size: 9))
+            Text("\(currentStreak) " + (isEnglish ? "days" : "hari"))
+                .font(.system(size: 26, weight: .black, design: .rounded))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            HStack(spacing: 4) {
+                Image(systemName: currentStreak >= 7 ? "flame.fill" : currentStreak >= 3 ? "sparkles" : "calendar")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(currentStreak >= 7 ? Color(hex: "#fb923c") : Color(hex: "#4ade80"))
+                Text(currentStreak >= 7 ? (isEnglish ? "On fire!" : "Konsisten!") : currentStreak >= 3 ? (isEnglish ? "Keep going!" : "Teruskan!") : (isEnglish ? "Open daily" : "Buka tiap hari"))
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            Text("“\(fact)”")
+                .font(.system(size: 8, weight: .medium))
+                .italic()
                 .foregroundStyle(.secondary)
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 2)
         }
-        .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
         .padding(12)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var weeklyInsightCard: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 5) {
-                Image(systemName: "chart.line.uptrend.xyaxis").foregroundStyle(Color(hex: "#60a5fa"))
-                Text(isEnglish ? "7-DAY SPENDING" : "PENGELUARAN 7 HARI")
-                    .foregroundStyle(.secondary)
+                Image(systemName: "bolt.fill").foregroundStyle(Color(hex: AppAppearance.accentHex))
+                Text(isEnglish ? "THIS WEEK" : "MINGGU INI").foregroundStyle(.secondary)
             }
             .font(.system(size: 9, weight: .heavy))
-            HStack(alignment: .lastTextBaseline, spacing: 3) {
-                Text(rupiah(dailyTotals.reduce(0, +)))
-                    .font(.system(size: 15, weight: .black, design: .rounded))
+            if thisWeekSpent == 0 {
+                Text(isEnglish ? "No spending this week yet." : "Belum ada transaksi minggu ini.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(rupiah(thisWeekSpent))
+                    .font(.system(size: 17, weight: .black, design: .rounded))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.65)
+                    .minimumScaleFactor(0.7)
+                if lastWeekSpent > 0 && thisWeekSpent != lastWeekSpent {
+                    let difference = thisWeekSpent - lastWeekSpent
+                    Text("\(difference > 0 ? "▲" : "▼") \(rupiah(abs(difference))) " + (isEnglish ? "vs last week" : "vs minggu lalu"))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(difference > 0 ? Color(hex: "#f87171") : Color(hex: "#4ade80"))
+                }
+                if let topWeeklyCategory {
+                    Text((isEnglish ? "Most: " : "Terbanyak: ") + MeowlettCategory.name(for: topWeeklyCategory, language: language))
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(MeowlettCategory.color(for: topWeeklyCategory))
+                        .lineLimit(1)
+                }
+                Sparkline(values: dailyTotals.map(Double.init))
+                    .frame(height: 25)
             }
-            Sparkline(values: dailyTotals.map(Double.init))
-                .frame(height: 25)
         }
-        .frame(maxWidth: .infinity, minHeight: 84, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
         .padding(12)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
     }
 
+    @ViewBuilder
     private var predictionCard: some View {
-        let daysPassed = max(Calendar.current.component(.day, from: .now), 1)
+        let dayOfMonth = Calendar.current.component(.day, from: .now)
         let daysInMonth = Calendar.current.range(of: .day, in: .month, for: .now)?.count ?? 30
-        let prediction = Int64(Double(spent) / Double(daysPassed) * Double(daysInMonth))
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 7) {
-                Image(systemName: "sparkles")
-                    .foregroundStyle(Color(hex: AppAppearance.accentHex))
-                Text(isEnglish ? "END-OF-MONTH PREDICTION" : "PREDIKSI AKHIR BULAN")
-                    .font(.system(size: 10, weight: .heavy))
-                    .tracking(0.5)
+        if dayOfMonth >= 3 && spent > 0 && income > 0 {
+            let predicted = Int64(Double(spent) / Double(dayOfMonth) * Double(daysInMonth))
+            HStack(spacing: 12) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex))
+                    .frame(width: 36, height: 36)
+                    .background((predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex)).opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(isEnglish ? "MONTH PREDICTION" : "PREDIKSI AKHIR BULAN")
+                        .font(.system(size: 10, weight: .heavy))
+                        .tracking(0.5)
+                        .foregroundStyle(.secondary)
+                    Text((isEnglish ? "Est. spending: " : "Est. pengeluaran: ") + rupiah(predicted))
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(predicted > income ? Color(hex: "#f87171") : .primary)
+                    Label(
+                        predicted > income
+                            ? (isEnglish ? "Likely over budget this month" : "Kemungkinan over budget bulan ini")
+                            : (isEnglish ? "On track · est. saving " + rupiah(income - predicted) : "Aman · estimasi sisa " + rupiah(income - predicted)),
+                        systemImage: predicted > income ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+                    )
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex))
+                }
+                Spacer(minLength: 0)
             }
-            Text(rupiah(prediction))
-                .font(.system(size: 23, weight: .black, design: .rounded))
-            Text(isEnglish ? "Based on your average daily spending" : "Berdasarkan rata-rata pengeluaran harianmu")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var financialHealthCard: some View {
+        let score = financialHealth
+        return VStack(alignment: .leading, spacing: 9) {
+            HStack {
+                HStack(spacing: 8) {
+                    Image(systemName: "heart.text.square.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(score.color)
+                        .frame(width: 28, height: 28)
+                        .background(score.color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
+                    Text(isEnglish ? "FINANCIAL HEALTH" : "KESEHATAN FINANSIAL")
+                        .font(.system(size: 11, weight: .heavy))
+                        .tracking(0.5)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text("\(score.score)")
+                        .font(.system(size: 25, weight: .black, design: .rounded))
+                        .foregroundStyle(score.color)
+                    Text("/100")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(isDark ? 0.08 : 0.07))
+                    Capsule()
+                        .fill(LinearGradient(colors: [score.color.opacity(0.55), score.color], startPoint: .leading, endPoint: .trailing))
+                        .frame(width: proxy.size.width * CGFloat(score.score) / 100)
+                }
+            }
+            .frame(height: 8)
+            HStack(alignment: .center, spacing: 8) {
+                Text(score.label)
+                    .font(.system(size: 12, weight: .heavy))
+                    .foregroundStyle(score.color)
+                Spacer(minLength: 3)
+                Text(dailyHealthTip)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(score.color)
+                    .multilineTextAlignment(.trailing)
+                    .lineLimit(2)
+                    .frame(maxWidth: 190, alignment: .trailing)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(score.color.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private var budgetCard: some View {
@@ -561,6 +753,25 @@ struct DashboardView: View {
         }
     }
 
+    private func updateStreak() {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: .now)
+        guard let data = streakRaw.data(using: .utf8),
+              var state = try? JSONDecoder().decode(DashboardStreakData.self, from: data) else { return }
+        guard state.lastDate != today else { return }
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now).map { formatter.string(from: $0) } ?? ""
+        state.count = state.lastDate == yesterday ? state.count + 1 : 1
+        state.lastDate = today
+        if let encoded = try? JSONEncoder().encode(state),
+           let value = String(data: encoded, encoding: .utf8) {
+            streakRaw = value
+        }
+    }
+
     private func loadPersistedDashboardData() {
         guard !storageLoaded else { return }
         if let data = budgetsRaw.data(using: .utf8),
@@ -584,6 +795,53 @@ struct DashboardView: View {
         guard storageLoaded, let data = try? JSONEncoder().encode(value),
               let string = String(data: data, encoding: .utf8) else { return }
         savingsGoalsRaw = string
+    }
+
+    private var paymentMethodStatsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeading(isEnglish ? "Payment method" : "Metode Bayar", icon: "wallet.bifold")
+            let total = monthTransactions.reduce(Int64(0)) { $0 + $1.amount }
+            ForEach(["cash", "transfer", "qris"], id: \.self) { method in
+                let values = monthTransactions.filter { ($0.paymentMethod.isEmpty ? "cash" : $0.paymentMethod) == method }
+                let amount = values.reduce(Int64(0)) { $0 + $1.amount }
+                let percentage = total > 0 ? Int((Double(amount) / Double(total) * 100).rounded()) : 0
+                let color = method == "cash" ? Color(hex: "#4ade80") : method == "transfer" ? Color(hex: "#3b82f6") : Color(hex: "#8b5cf6")
+                let title = method == "cash" ? (isEnglish ? "Cash" : "Tunai") : method == "transfer" ? "Transfer" : "QRIS"
+                let symbol = method == "cash" ? "banknote" : method == "transfer" ? "building.columns" : "qrcode"
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack {
+                        HStack(spacing: 6) {
+                            Image(systemName: symbol)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(color)
+                            Text(title).font(.system(size: 12, weight: .bold))
+                            Text("\(values.count)x")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("-\(rupiah(amount))")
+                                .font(.system(size: 12, weight: .heavy))
+                                .foregroundStyle(Color(hex: "#f87171"))
+                            Text("\(percentage)%")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(Color.primary.opacity(isDark ? 0.07 : 0.06))
+                            Capsule().fill(color).frame(width: proxy.size.width * CGFloat(percentage) / 100)
+                        }
+                    }
+                    .frame(height: 5)
+                }
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
     }
 
     private var categoryBreakdownCard: some View {
@@ -681,6 +939,11 @@ struct DashboardView: View {
         formatter.maximumFractionDigits = 0
         return formatter.string(from: NSNumber(value: value)) ?? "Rp \(value)"
     }
+}
+
+private struct DashboardStreakData: Codable {
+    var count: Int
+    var lastDate: String
 }
 
 private struct DashboardSavingsGoal: Identifiable, Codable, Equatable {
