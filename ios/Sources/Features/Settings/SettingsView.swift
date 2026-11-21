@@ -141,8 +141,8 @@ struct SettingsView: View {
             )
         }
         .sheet(isPresented: $showBudgets) { SettingsBudgetSheet(isEnglish: isEnglish) }
-        .sheet(isPresented: $showCicilan) { SettingsPlaceholderSheet(title: isEnglish ? "Installments" : "Cicilan", subtitle: isEnglish ? "Installment manager from the original app is being ported." : "Pengelola cicilan dari aplikasi asli sedang dipindahkan.", symbol: "creditcard", isEnglish: isEnglish) }
-        .sheet(isPresented: $showReminder) { SettingsPlaceholderSheet(title: isEnglish ? "Payment reminders" : "Pengingat tagihan", subtitle: isEnglish ? "Reminder schedules and notifications are being ported." : "Jadwal pengingat dan notifikasi sedang dipindahkan.", symbol: "bell.badge", isEnglish: isEnglish) }
+        .sheet(isPresented: $showCicilan) { SettingsCicilanSheet() }
+        .sheet(isPresented: $showReminder) { SettingsReminderSheet() }
         .sheet(isPresented: $showCategoryManager) { SettingsPlaceholderSheet(title: isEnglish ? "Manage categories" : "Kelola Kategori", subtitle: isEnglish ? "Custom category editing is being ported from JSX." : "Pengelolaan kategori kustom sedang dipindahkan dari JSX.", symbol: "square.grid.2x2", isEnglish: isEnglish) }
         .sheet(isPresented: $showTags) { SettingsPlaceholderSheet(title: isEnglish ? "Tags" : "Tag", subtitle: isEnglish ? "Tag management is being ported from JSX." : "Pengelolaan tag sedang dipindahkan dari JSX.", symbol: "number", isEnglish: isEnglish) }
         .sheet(isPresented: $showData) { SettingsDataSheet(isEnglish: isEnglish, incomeRaw: $incomeRaw) }
@@ -440,7 +440,7 @@ private struct SettingsNotificationsSheet: View {
                         .disabled(!enabled)
                     Picker(isEnglish ? "Summary day" : "Hari ringkasan", selection: $day) {
                         ForEach(Array((isEnglish ? ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"] : ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"]).enumerated()), id: \.offset) { index, label in
-                            Text(label).tag(String(index + 1))
+                            Text(label).tag(String(index))
                         }
                     }
                     .disabled(!enabled || !weekly)
