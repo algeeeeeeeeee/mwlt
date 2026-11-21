@@ -841,7 +841,6 @@ private struct SettingsDataSheet: View {
         budgetsRaw = "{}"
         categoriesRaw = ""
         dailyNotesRaw = "{}"
-        UserDefaults.standard.removeObject(forKey: "gm_recurring")
         dismiss()
     }
 
@@ -925,7 +924,7 @@ private struct MeowlettBackupTransaction: Codable {
         if let numericAmount = try? values.decode(Int64.self, forKey: .amount) {
             amount = numericAmount
         } else if let stringAmount = try? values.decode(String.self, forKey: .amount) {
-            amount = Int64(stringAmount.filter(\\.isNumber)) ?? 0
+            amount = Int64(stringAmount.filter(\.isNumber)) ?? 0
         } else {
             amount = 0
         }
