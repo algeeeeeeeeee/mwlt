@@ -718,7 +718,7 @@ private struct NativeMoneyEntrySheet: View {
     let initialValue: Int64
     let accent: Color
     let onSave: (Int64) -> Void
-    @Environment(\\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("gm_lang") private var language = "id"
     @State private var amountText = ""
 
@@ -733,7 +733,7 @@ private struct NativeMoneyEntrySheet: View {
                     .keyboardType(.numberPad)
                     .font(.system(size: 21, weight: .black, design: .rounded))
                     .onChange(of: amountText) { _, value in
-                        let digits = String(value.filter(\\.isNumber))
+                        let digits = String(value.filter(\.isNumber))
                         if digits != value {
                             let formatter = NumberFormatter()
                             formatter.locale = Locale(identifier: "id_ID")
@@ -750,7 +750,7 @@ private struct NativeMoneyEntrySheet: View {
                     .foregroundStyle(.primary).frame(maxWidth: .infinity).frame(height: 45)
                     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
                 Button(language == "en" ? "Save" : "Simpan") {
-                    onSave(Int64(amountText.filter(\\.isNumber)) ?? 0)
+                    onSave(Int64(amountText.filter(\.isNumber)) ?? 0)
                     dismiss()
                 }
                 .fontWeight(.heavy).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 45)
@@ -773,7 +773,7 @@ private struct NativeMoneyEntrySheet: View {
 private struct DashboardGoalEditorSheet: View {
     let goal: DashboardSavingsGoal?
     let onSave: (DashboardSavingsGoal) -> Void
-    @Environment(\\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
     @AppStorage("gm_lang") private var language = "id"
     @State private var label = ""
     @State private var target = ""
@@ -802,7 +802,7 @@ private struct DashboardGoalEditorSheet: View {
                 }
                 Section(isEnglish ? "Icon" : "Ikon") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
-                        ForEach(icons, id: \\.0) { item in
+                        ForEach(icons, id: \.0) { item in
                             Button { icon = item.0 } label: {
                                 Image(systemName: item.1).font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(Color(hex: color))
@@ -815,7 +815,7 @@ private struct DashboardGoalEditorSheet: View {
                 }
                 Section(isEnglish ? "Color" : "Warna") {
                     HStack {
-                        ForEach(colors, id: \\.self) { value in
+                        ForEach(colors, id: \.self) { value in
                             Circle().fill(Color(hex: value)).frame(width: 23, height: 23)
                                 .overlay(Circle().stroke(color == value ? Color.primary : .clear, lineWidth: 2).padding(-3))
                                 .onTapGesture { color = value }
@@ -833,19 +833,19 @@ private struct DashboardGoalEditorSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(isEnglish ? "Save" : "Simpan") {
                         guard !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                              let targetValue = Int64(target.filter(\\.isNumber)), targetValue > 0 else { return }
+                              let targetValue = Int64(target.filter(\.isNumber)), targetValue > 0 else { return }
                         onSave(DashboardSavingsGoal(
                             id: goal?.id ?? Int64(Date().timeIntervalSince1970 * 1000),
                             label: label.trimmingCharacters(in: .whitespacesAndNewlines),
                             target: targetValue,
-                            saved: Int64(saved.filter(\\.isNumber)) ?? 0,
+                            saved: Int64(saved.filter(\.isNumber)) ?? 0,
                             color: color,
                             icon: icon,
                             deadline: deadline.isEmpty ? nil : deadline
                         ))
                         dismiss()
                     }
-                    .disabled(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (Int64(target.filter(\\.isNumber)) ?? 0) <= 0)
+                    .disabled(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (Int64(target.filter(\.isNumber)) ?? 0) <= 0)
                 }
             }
         }
