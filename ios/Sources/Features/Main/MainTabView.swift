@@ -77,7 +77,8 @@ struct MainTabView: View {
                         }
                     }
                     .environmentObject(store)
-                    .frame(width: geometry.size.width, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(width: geometry.size.width)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             }
