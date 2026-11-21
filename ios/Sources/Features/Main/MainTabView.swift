@@ -54,7 +54,7 @@ private struct MeowlettTabSymbol: View {
     }
 }
 
-private struct MeowlettCatShape: Shape {
+struct MeowlettCatShape: Shape {
     func path(in rect: CGRect) -> Path {
         let sx = rect.width / 24
         let sy = rect.height / 24
@@ -272,9 +272,9 @@ struct MainTabView: View {
                                 Image(uiImage: image).resizable().scaledToFill()
                                     .frame(width: 38, height: 38).clipShape(Circle())
                             } else {
-                                Image(systemName: "cat.fill")
-                                    .font(.system(size: 17, weight: .medium))
-                                    .foregroundStyle(tint)
+                                MeowlettCatShape()
+                                    .stroke(tint, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                                    .frame(width: 19, height: 19)
                             }
                         }
                         .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))

@@ -147,9 +147,9 @@ struct SettingsView: View {
                                 Image(uiImage: photo).resizable().scaledToFill()
                                     .frame(width: 56, height: 56).clipShape(Circle())
                             } else {
-                                Image(systemName: "cat.fill")
-                                    .font(.system(size: 25, weight: .medium))
-                                    .foregroundStyle(accent)
+                                MeowlettCatShape()
+                                    .stroke(accent, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                                    .frame(width: 27, height: 27)
                             }
                         }
                         .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1.5))

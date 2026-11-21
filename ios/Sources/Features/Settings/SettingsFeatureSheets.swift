@@ -231,6 +231,44 @@ private struct NativeInstallment: Codable, Identifiable, Equatable {
     var startMonth: String
     var duration: Int
     var paidMonths: [String]
+
+    init(id: Int64, name: String, total: Int64, monthly: Int64, dueDay: String, startMonth: String, duration: Int, paidMonths: [String]) {
+        self.id = id
+        self.name = name
+        self.total = total
+        self.monthly = monthly
+        self.dueDay = dueDay
+        self.startMonth = startMonth
+        self.duration = duration
+        self.paidMonths = paidMonths
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, total, monthly, dueDay, startMonth, duration, paidMonths
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        if let value = try? values.decode(Int64.self, forKey: .id) {
+            id = value
+        } else if let value = try? values.decode(Double.self, forKey: .id) {
+            id = Int64(value)
+        } else {
+            id = Int64(Date().timeIntervalSince1970 * 1000)
+        }
+        name = (try? values.decode(String.self, forKey: .name)) ?? ""
+        total = (try? values.decode(Int64.self, forKey: .total))
+            ?? Int64((try? values.decode(String.self, forKey: .total))?.filter(\.isNumber) ?? "") ?? 0
+        monthly = (try? values.decode(Int64.self, forKey: .monthly))
+            ?? Int64((try? values.decode(String.self, forKey: .monthly))?.filter(\.isNumber) ?? "") ?? 0
+        dueDay = (try? values.decode(String.self, forKey: .dueDay))
+            ?? String((try? values.decode(Int.self, forKey: .dueDay)) ?? 5)
+        startMonth = (try? values.decode(String.self, forKey: .startMonth))
+            ?? Date.now.formatted(.dateTime.year().month(.twoDigits))
+        duration = (try? values.decode(Int.self, forKey: .duration))
+            ?? Int((try? values.decode(String.self, forKey: .duration)) ?? "") ?? 12
+        paidMonths = (try? values.decode([String].self, forKey: .paidMonths)) ?? []
+    }
 }
 
 struct SettingsCicilanSheet: View {

@@ -40,6 +40,13 @@ final class FinanceStore: ObservableObject {
         save()
     }
 
+    func restore(_ transaction: MeowlettTransaction) {
+        guard !transactions.contains(where: { $0.id == transaction.id }) else { return }
+        transactions.append(transaction)
+        transactions.sort { $0.date > $1.date }
+        save()
+    }
+
     func clearAllTransactions() {
         transactions.removeAll()
         save()

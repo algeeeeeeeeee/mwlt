@@ -14,6 +14,9 @@ struct TransactionsView: View {
     @State private var activeTransactionID: UUID?
     @State private var showEditor = false
     @State private var editingTransaction: MeowlettTransaction?
+    @State private var recentlyDeletedTransaction: MeowlettTransaction?
+    @State private var showUndoToast = false
+    @State private var undoTask: Task<Void, Never>?
 
     private var isEnglish: Bool { language == "en" }
     private var isDark: Bool { colorScheme == .dark }
@@ -104,6 +107,14 @@ struct TransactionsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
+        .overlay(alignment: .bottom) {
+            if showUndoToast, let deleted = recentlyDeletedTransaction {
+                undoToast(for: deleted)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showEditor) {
             TransactionEditorSheet(transaction: editingTransaction)
@@ -384,7 +395,7 @@ struct TransactionsView: View {
                     }
                     .buttonStyle(.plain)
                     Button {
-                        store.delete(transaction)
+                        deleteTransactionWithUndo(transaction)
                         activeTransactionID = nil
                     } label: {
                         Label(isEnglish ? "Delete" : "Hapus", systemImage: "trash")
@@ -410,6 +421,62 @@ struct TransactionsView: View {
             RoundedRectangle(cornerRadius: 1.5).fill(categoryColor).frame(width: 3).padding(.vertical, 1)
         }
         .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
+    }
+
+    private func undoToast(for transaction: MeowlettTransaction) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "trash")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.85))
+            Text(isEnglish ? "Transaction deleted" : "Transaksi dihapus")
+                .font(MeowlettTypography.font(size: 12, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            Button(isEnglish ? "Undo" : "Urungkan") {
+                undoDeletedTransaction()
+            }
+            .font(MeowlettTypography.font(size: 12, weight: .black))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(.white.opacity(0.18), in: Capsule())
+            .buttonStyle(.plain)
+            .accessibilityLabel(isEnglish ? "Undo delete" : "Batalkan penghapusan")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .background(Color(hex: "#27272a"), in: Capsule())
+        .overlay(Capsule().stroke(.white.opacity(0.12), lineWidth: 1))
+        .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 4)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func deleteTransactionWithUndo(_ transaction: MeowlettTransaction) {
+        undoTask?.cancel()
+        recentlyDeletedTransaction = transaction
+        store.delete(transaction)
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            showUndoToast = true
+        }
+        undoTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                showUndoToast = false
+            }
+            recentlyDeletedTransaction = nil
+        }
+    }
+
+    private func undoDeletedTransaction() {
+        guard let transaction = recentlyDeletedTransaction else { return }
+        undoTask?.cancel()
+        store.restore(transaction)
+        withAnimation(.easeOut(duration: 0.2)) {
+            showUndoToast = false
+        }
+        recentlyDeletedTransaction = nil
     }
 
     private func hasReceipt(_ transaction: MeowlettTransaction) -> Bool {
