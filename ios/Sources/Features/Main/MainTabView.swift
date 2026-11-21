@@ -171,7 +171,7 @@ struct MainTabView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             bottomNavigation
         }
         .tint(tint)
