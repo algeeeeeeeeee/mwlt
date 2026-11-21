@@ -64,34 +64,62 @@ jobs:
       - name: Capture native app previews
         run: |
           set -euo pipefail
-          DEVICE_ID="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); devices=[x for group in d["devices"].values() for x in group if x.get("isAvailable") and x.get("name","").startswith("iPhone")]; booted=next((x for x in devices if x.get("state")=="Booted"),None); chosen=booted or next((x for x in devices if x.get("state")=="Shutdown"),None); print(chosen["udid"] if chosen else "")')"
-          if [ -z "$DEVICE_ID" ]; then
-            echo "No available iPhone Simulator found."
-            xcrun simctl list devices available
+
+          # Create a brand-new full-size simulator. Reusing a previously resized
+          # simulator can produce a short, window-like screenshot with black bars.
+          DEVICE_TYPE_ID="$(xcrun simctl list devicetypes available -j | python3 -c '
+          import json,sys
+          items=json.load(sys.stdin).get("devicetypes",[])
+          preferences=["iPhone 16 Pro","iPhone 16","iPhone 15 Pro"]
+          chosen=next((x for name in preferences for x in items if x.get("name")==name),None)
+          print(chosen.get("identifier","") if chosen else "")
+          ')"
+          RUNTIME_ID="$(xcrun simctl list runtimes available -j | python3 -c '
+          import json,sys
+          items=[x for x in json.load(sys.stdin).get("runtimes",[]) if x.get("isAvailable") and x.get("name","").startswith("iOS ")]
+          chosen=next((x for x in items if x.get("name")=="iOS 18.5"), items[-1] if items else None)
+          print(chosen.get("identifier","") if chosen else "")
+          ')"
+          if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
+            echo "Could not find a standard iPhone simulator device type and iOS runtime."
+            xcrun simctl list devicetypes available
+            xcrun simctl list runtimes available
             exit 1
           fi
-          echo "Simulator selected: $DEVICE_ID"
-          xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
-          echo "Waiting for Simulator boot..."
+
+          DEVICE_ID="$(xcrun simctl create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
+          cleanup_simulator() {
+            xcrun simctl shutdown "$DEVICE_ID" >/dev/null 2>&1 || true
+            xcrun simctl delete "$DEVICE_ID" >/dev/null 2>&1 || true
+          }
+          trap cleanup_simulator EXIT
+
+          echo "Fresh simulator: $DEVICE_ID ($DEVICE_TYPE_ID / $RUNTIME_ID)"
+          xcrun simctl boot "$DEVICE_ID"
+          echo "Waiting for fresh Simulator boot..."
           xcrun simctl bootstatus "$DEVICE_ID" -b
           echo "Simulator booted."
+          xcrun simctl status_bar "$DEVICE_ID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
           echo "Installing Meowlett app..."
           xcrun simctl install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
+
           echo "Capturing onboarding preview..."
           xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
           sleep 3
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
           xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
           xcrun simctl spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
+
           echo "Capturing dashboard preview..."
           xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
           sleep 3
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
 
-          # Capture every top-level native tab with representative, simulator-only data.
+          # Capture every top-level native tab with representative simulator-only data.
           for TAB in transactions report date settings; do
             xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
             echo "Capturing $TAB preview..."
@@ -106,6 +134,7 @@ jobs:
           xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
           sleep 2
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
+
           echo "All native previews captured:"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
 
