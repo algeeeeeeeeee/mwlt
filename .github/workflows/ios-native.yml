@@ -93,12 +93,23 @@ jobs:
             xcrun simctl shutdown "$DEVICE_ID" >/dev/null 2>&1 || true
             xcrun simctl delete "$DEVICE_ID" >/dev/null 2>&1 || true
           }
-          trap cleanup_simulator EXIT
+          # Prevent a stuck simctl launch/screenshot from holding the macOS runner indefinitely.
+          (
+            sleep 720
+            echo "::error::Native preview capture exceeded 12 minutes."
+            kill -TERM "$"
+          ) &
+          WATCHDOG_PID=$!
+          trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
 
           echo "Fresh simulator: $DEVICE_ID ($DEVICE_TYPE_ID / $RUNTIME_ID)"
-          xcrun simctl boot "$DEVICE_ID"
-          echo "Waiting for fresh Simulator boot..."
-          xcrun simctl bootstatus "$DEVICE_ID" -b
+          perl -e 'alarm shift; exec @ARGV' 90 xcrun simctl boot "$DEVICE_ID"
+          echo "Waiting for fresh Simulator boot (maximum 4 minutes)..."
+          if ! perl -e 'alarm shift; exec @ARGV' 240 xcrun simctl bootstatus "$DEVICE_ID" -b; then
+            echo "::error::Simulator boot did not finish within 4 minutes."
+            xcrun simctl list devices available
+            exit 1
+          fi
           echo "Simulator booted."
           xcrun simctl status_bar "$DEVICE_ID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
 

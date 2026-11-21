@@ -21,7 +21,7 @@ struct SettingsReminderSheet: View {
         VStack(spacing: 0) {
             Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
             HStack {
-                Label(isEnglish ? "Payment reminders" : "Pengingat tagihan", systemImage: "bell")
+                Label(isEnglish ? "Transaction reminders" : "Pengingat Transaksi", systemImage: "bell")
                     .font(.system(size: 16, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()

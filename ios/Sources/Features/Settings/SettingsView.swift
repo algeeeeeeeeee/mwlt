@@ -416,7 +416,7 @@ private struct SettingsNotificationsSheet: View {
     let isEnglish: Bool
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
-    @State private var permissionError = ""
+    @State private var showReminderSettings = false
 
     private var isDark: Bool { colorScheme == .dark }
     private var primary: Color { AppAppearance.primary }
@@ -457,28 +457,33 @@ private struct SettingsNotificationsSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    HStack(spacing: 12) {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(AppAppearance.card2(dark: isDark))
-                            .frame(width: 36, height: 36)
-                            .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(accent))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(isEnglish ? "Daily reminder" : "Pengingat harian")
-                                .font(.system(size: 14, weight: .bold))
-                            Text(enabled
-                                 ? (isEnglish ? "Notifications active" : "Notifikasi aktif")
-                                 : (isEnglish ? "Notifications off" : "Notifikasi nonaktif"))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.secondary)
+                    Button { showReminderSettings = true } label: {
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(AppAppearance.card2(dark: isDark))
+                                .frame(width: 36, height: 36)
+                                .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(accent))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(isEnglish ? "Transaction reminder" : "Pengingat Transaksi")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Text(enabled
+                                     ? (isEnglish ? "Notifications active" : "Notifikasi aktif")
+                                     : (isEnglish ? "Notifications off" : "Notifikasi nonaktif"))
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.tertiary)
                         }
-                        Spacer()
-                        switchControl(isOn: enabled) {
-                            Task { await updateDailyReminder(!enabled) }
-                        }
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
                     }
-                    .padding(.vertical, 14)
+                    .buttonStyle(.plain)
 
                     Divider().overlay(AppAppearance.border(dark: isDark))
 
@@ -520,19 +525,13 @@ private struct SettingsNotificationsSheet: View {
                     }
                     .padding(.vertical, 14)
 
-                    if !permissionError.isEmpty {
-                        Text(permissionError)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color(hex: "#ef4444"))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 6)
-                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
             }
         }
         .background(AppAppearance.modal(dark: isDark))
+        .sheet(isPresented: $showReminderSettings) { SettingsReminderSheet() }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(28)
@@ -556,22 +555,7 @@ private struct SettingsNotificationsSheet: View {
         .accessibilityLabel(isOn ? (isEnglish ? "On" : "Aktif") : (isEnglish ? "Off" : "Nonaktif"))
     }
 
-    @MainActor
-    private func updateDailyReminder(_ value: Bool) async {
-        if value {
-            do {
-                let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                enabled = granted
-                permissionError = granted ? "" : (isEnglish ? "Notification permission was denied." : "Izin notifikasi ditolak.")
-            } catch {
-                enabled = false
-                permissionError = error.localizedDescription
-            }
-        } else {
-            enabled = false
-            permissionError = ""
-        }
-    }
+
 }
 
 private struct SettingsCategoryMenuSheet: View {
