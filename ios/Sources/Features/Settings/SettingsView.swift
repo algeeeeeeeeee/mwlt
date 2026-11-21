@@ -172,20 +172,44 @@ struct SettingsView: View {
                 Text(isEnglish ? "Profile name" : "Nama profil")
                     .font(MeowlettTypography.font(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Button {
-                    nameDraft = userName
-                    showNameEditor = true
-                } label: {
-                    HStack(spacing: 5) {
-                        Text(userName.isEmpty ? (isEnglish ? "Tap to add your name" : "Ketuk untuk isi nama") : userName)
-                            .font(MeowlettTypography.font(size: 17, weight: .black))
-                            .foregroundStyle(.primary)
-                        Image(systemName: "pencil")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
+                if showNameEditor {
+                    HStack(spacing: 6) {
+                        TextField(isEnglish ? "Your name" : "Namamu", text: $nameDraft)
+                            .font(MeowlettTypography.font(size: 16, weight: .bold))
+                            .textInputAutocapitalization(.words)
+                            .submitLabel(.done)
+                            .onSubmit(saveProfileName)
+                            .frame(width: 130)
+                            .padding(.vertical, 2)
+                            .overlay(alignment: .bottom) {
+                                Rectangle().fill(accent).frame(height: 2)
+                            }
+                        Button(action: saveProfileName) {
+                            Text("OK")
+                                .font(MeowlettTypography.font(size: 12, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(primary, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                        .buttonStyle(.plain)
                     }
+                } else {
+                    Button {
+                        nameDraft = userName
+                        showNameEditor = true
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(userName.isEmpty ? (isEnglish ? "Tap to add your name" : "Ketuk untuk isi nama") : userName)
+                                .font(MeowlettTypography.font(size: 17, weight: .black))
+                                .foregroundStyle(.primary)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             Spacer(minLength: 0)
         }
@@ -194,6 +218,11 @@ struct SettingsView: View {
         .background(cardColor, in: RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(cardBorder, lineWidth: 1))
         .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
+    }
+
+    private func saveProfileName() {
+        userName = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        showNameEditor = false
     }
 
     private var nameEditor: some View {
