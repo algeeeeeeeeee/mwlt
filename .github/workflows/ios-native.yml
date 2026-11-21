@@ -79,6 +79,20 @@ jobs:
           sleep 3
           xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
 
+          # Capture every top-level native tab using deterministic launch arguments.
+          for TAB in transactions report date settings; do
+            xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
+            xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett "--mwlt-preview-tab=$TAB"
+            sleep 2
+            xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
+          done
+
+          # Capture the native quick-add sheet as a separate preview state.
+          xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
+          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-quick-add
+          sleep 2
+          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
+
       - name: Upload native app previews
         uses: actions/upload-artifact@v4
         with:
