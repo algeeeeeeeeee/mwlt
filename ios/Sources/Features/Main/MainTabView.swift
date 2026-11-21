@@ -216,7 +216,9 @@ struct MainTabView: View {
     }
 
     private var bottomNavigation: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            HStack(spacing: 10) {
             Button {
                 showQuickAdd = true
             } label: {
@@ -263,13 +265,17 @@ struct MainTabView: View {
                         .contentShape(RoundedRectangle(cornerRadius: 20))
                     }
                     .buttonStyle(.plain)
+                    .fixedSize(horizontal: true, vertical: false)
                 }
             }
+            .fixedSize(horizontal: true, vertical: false)
             .padding(5)
             .background(.ultraThinMaterial, in: Capsule())
             .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.10 : 0.07), lineWidth: 1))
             .shadow(color: .black.opacity(colorSchemeIsDark ? 0.25 : 0.08), radius: 14, x: 0, y: 3)
-
+            .fixedSize(horizontal: true, vertical: false)
+            }
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
         .padding(.top, 5)
