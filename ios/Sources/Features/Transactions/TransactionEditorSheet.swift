@@ -67,7 +67,7 @@ struct TransactionEditorSheet: View {
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(.primary)
                             .frame(width: 110, height: 46)
-                            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                            .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1))
                     }
                     .padding(.top, 2)
@@ -78,7 +78,7 @@ struct TransactionEditorSheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .background(Color(uiColor: .systemBackground))
+        .background(AppAppearance.modal(dark: dark))
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
@@ -133,7 +133,7 @@ struct TransactionEditorSheet: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .frame(width: 44, height: 46)
-                    .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                    .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
@@ -176,7 +176,7 @@ struct TransactionEditorSheet: View {
                         .foregroundStyle(selected ? color : Color.secondary)
                         .padding(.horizontal, 11)
                         .padding(.vertical, 7)
-                        .background(selected ? color.opacity(0.13) : Color(uiColor: .secondarySystemBackground), in: Capsule())
+                        .background(selected ? color.opacity(0.13) : AppAppearance.card2(dark: dark), in: Capsule())
                         .overlay(Capsule().stroke(selected ? color : Color.primary.opacity(0.08), lineWidth: selected ? 2 : 1))
                     }
                     .buttonStyle(.plain)
@@ -203,7 +203,7 @@ struct TransactionEditorSheet: View {
             .foregroundStyle(selected ? accent : Color.secondary)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(selected ? accent.opacity(0.10) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .background(selected ? accent.opacity(0.10) : AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.primary.opacity(0.08), lineWidth: selected ? 2 : 1))
         }
         .buttonStyle(.plain)
@@ -218,7 +218,7 @@ struct TransactionEditorSheet: View {
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(inputBorder, lineWidth: 1.5))
     }
 
-    private var inputBackground: Color { dark ? Color.white.opacity(0.06) : Color(uiColor: .secondarySystemBackground) }
+    private var inputBackground: Color { dark ? Color.white.opacity(0.06) : AppAppearance.card2(dark: dark) }
     private var inputBorder: Color { dark ? Color.white.opacity(0.12) : Color.primary.opacity(0.10) }
 
     private func save() {
@@ -264,7 +264,7 @@ private struct AmountCalculatorSheet: View {
                 .font(.system(size: 32, weight: .black, design: .rounded))
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(18)
-                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 14))
             ForEach(0..<4, id: \.self) { row in
                 HStack(spacing: 10) {
                     ForEach(keys[row], id: \.self) { key in
@@ -273,7 +273,7 @@ private struct AmountCalculatorSheet: View {
                             .foregroundStyle(["÷","×","−","+"].contains(key) ? AppAppearance.accent : .primary)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
+                            .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 13))
                     }
                 }
             }
