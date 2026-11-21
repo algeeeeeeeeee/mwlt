@@ -11,7 +11,7 @@ struct TransactionsView: View {
     @State private var searchQuery = ""
     @State private var period = "monthly"
     @State private var sortOrder = "date-desc"
-    @State private var categoryFilter = "all"
+    @State private var filterPayment = "all"
     @State private var activeTransactionID: UUID?
     @State private var showEditor = false
     @State private var editingTransaction: MeowlettTransaction?
@@ -44,7 +44,9 @@ struct TransactionsView: View {
         default:
             items = items.filter { calendar.isDate($0.date, equalTo: .now, toGranularity: .month) }
         }
-        if categoryFilter != "all" { items = items.filter { $0.category == categoryFilter } }
+        if filterPayment != "all" {
+            items = items.filter { ($0.paymentMethod.isEmpty ? "cash" : $0.paymentMethod) == filterPayment }
+        }
         if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let query = searchQuery.lowercased()
             items = items.filter {
@@ -79,6 +81,7 @@ struct TransactionsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 searchField
                 filterControls
+                paymentFilterRow
                 HStack {
                     Text("\(filtered.count) \(isEnglish ? "transactions" : "transaksi")")
                         .font(.system(size: 12, weight: .semibold))
@@ -143,39 +146,41 @@ struct TransactionsView: View {
     }
 
     private var filterControls: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 5) {
-                filterMenu(
-                    title: periodTitle,
-                    active: true,
-                    options: [
-                        ("daily", isEnglish ? "Today" : "Hari ini"),
-                        ("weekly", isEnglish ? "This week" : "Minggu ini"),
-                        ("monthly", isEnglish ? "This month" : "Bulan ini")
-                    ],
-                    selection: $period
-                )
-                filterMenu(
-                    title: amountSortTitle,
-                    active: sortOrder.hasPrefix("amt"),
-                    options: [
-                        ("amt-desc", isEnglish ? "Highest amount" : "Nominal terbesar"),
-                        ("amt-asc", isEnglish ? "Lowest amount" : "Nominal terkecil")
-                    ],
-                    selection: $sortOrder
-                )
-                filterMenu(
-                    title: dateSortTitle,
-                    active: sortOrder.hasPrefix("date"),
-                    options: [
-                        ("date-desc", isEnglish ? "Newest date" : "Tanggal terbaru"),
-                        ("date-asc", isEnglish ? "Oldest date" : "Tanggal terlama")
-                    ],
-                    selection: $sortOrder
-                )
+        HStack(spacing: 6) {
+            Menu {
+                Button(isEnglish ? "Today" : "Hari ini") { period = "daily" }
+                Button(isEnglish ? "This week" : "Minggu ini") { period = "weekly" }
+                Button(isEnglish ? "This month" : "Bulan ini") { period = "monthly" }
+            } label: {
+                HStack(spacing: 7) {
+                    Text(periodTitle)
+                        .font(.system(size: 12, weight: .bold))
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white.opacity(0.75))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(primary, in: Capsule())
+            }
+            Spacer(minLength: 4)
+            sortButton(
+                symbol: "calendar",
+                active: sortOrder.hasPrefix("date"),
+                ascending: sortOrder == "date-asc"
+            ) {
+                sortOrder = sortOrder == "date-desc" ? "date-asc" : "date-desc"
+            }
+            sortButton(
+                symbol: "text.alignleft",
+                active: sortOrder.hasPrefix("amt"),
+                ascending: sortOrder == "amt-asc"
+            ) {
+                sortOrder = sortOrder == "amt-desc" ? "amt-asc" : "amt-desc"
             }
         }
-        .padding(.bottom, 10)
+        .padding(.bottom, 8)
     }
 
     private var periodTitle: String {
@@ -185,38 +190,57 @@ struct TransactionsView: View {
         default: return isEnglish ? "This month" : "Bulan ini"
         }
     }
-    private var amountSortTitle: String {
-        sortOrder == "amt-asc" ? (isEnglish ? "Lowest" : "Terkecil") : (isEnglish ? "Highest" : "Terbesar")
-    }
-    private var dateSortTitle: String {
-        sortOrder == "date-asc" ? (isEnglish ? "Oldest" : "Terlama") : (isEnglish ? "Newest" : "Terbaru")
+
+    private func sortButton(symbol: String, active: Bool, ascending: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(active ? accent.opacity(0.13) : Color.primary.opacity(isDark ? 0.06 : 0.045))
+                Circle()
+                    .stroke(active ? accent.opacity(0.55) : Color.primary.opacity(0.10), lineWidth: 1.2)
+                VStack(spacing: -3) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 10, weight: .bold))
+                    Image(systemName: ascending ? "arrow.up" : "arrow.down")
+                        .font(.system(size: 8, weight: .black))
+                }
+                .foregroundStyle(active ? accent : Color.secondary)
+            }
+            .frame(width: 32, height: 32)
+        }
+        .buttonStyle(.plain)
     }
 
-    private func filterMenu(title: String, active: Bool, options: [(String, String)], selection: Binding<String>) -> some View {
-        Menu {
-            ForEach(options, id: \.0) { option in
-                Button {
-                    selection.wrappedValue = option.0
-                } label: {
-                    if selection.wrappedValue == option.0 {
-                        Label(option.1, systemImage: "checkmark")
-                    } else {
-                        Text(option.1)
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 5) {
-                Text(title)
-                    .font(.system(size: 12, weight: .bold))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9, weight: .black))
-            }
-            .foregroundStyle(active ? .white : Color.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(active ? primary : Color.primary.opacity(isDark ? 0.07 : 0.05), in: Capsule())
+    private var paymentFilterRow: some View {
+        HStack(spacing: 6) {
+            paymentFilterChip("all", title: isEnglish ? "All" : "Semua", symbol: "line.3.horizontal")
+            paymentFilterChip("cash", title: isEnglish ? "Cash" : "Tunai", symbol: "banknote")
+            paymentFilterChip("transfer", title: isEnglish ? "Transfer" : "Transfer", symbol: "building.columns")
+            paymentFilterChip("qris", title: "QRIS", symbol: "qrcode")
         }
+        .padding(.bottom, 10)
+    }
+
+    private func paymentFilterChip(_ value: String, title: String, symbol: String) -> some View {
+        let selected = filterPayment == value
+        return Button {
+            filterPayment = value
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: 10, weight: .semibold))
+                Text(title)
+                    .font(.system(size: 11, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(selected ? accent : Color.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+            .background(selected ? accent.opacity(0.12) : Color.primary.opacity(isDark ? 0.045 : 0.035), in: Capsule())
+            .overlay(Capsule().stroke(selected ? accent.opacity(0.55) : Color.primary.opacity(0.08), lineWidth: selected ? 1.5 : 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private var emptyState: some View {
