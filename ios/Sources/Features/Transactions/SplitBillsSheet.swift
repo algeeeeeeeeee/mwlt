@@ -326,11 +326,11 @@ private struct NativeSplitBillEditor: View {
         let names = members.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
         guard names.count >= 2, parsedTotal > 0 else { return }
         let old = item.members.reduce(into: [String: NativeSplitBillMember]()) { $0[$1.name] = $1 }
-        let share = parsedTotal / Int64(names.count)
+        let share = Int64((Double(parsedTotal) / Double(names.count)).rounded())
         let owner = paidBy.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? names[0] : paidBy.trimmingCharacters(in: .whitespacesAndNewlines)
         let newMembers = names.map { name in
             let saved = old[name]
-            return NativeSplitBillMember(name: name, share: share, paid: name == owner || (saved?.paid ?? false))
+            return NativeSplitBillMember(name: name, share: share, paid: saved?.paid ?? false)
         }
         onSave(NativeSplitBill(
             id: item.id,
@@ -339,7 +339,7 @@ private struct NativeSplitBillEditor: View {
             members: newMembers,
             paidBy: owner,
             date: item.date,
-            settled: newMembers.allSatisfy { $0.name == owner || $0.paid }
+            settled: item.settled
         ))
         dismiss()
     }

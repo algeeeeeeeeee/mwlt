@@ -554,8 +554,17 @@ struct RecurringTransactionsSection: View {
                 store.add(MeowlettTransaction(date: now, amount: item.amount, category: item.category, description: item.description, location: "Rutin", note: "Otomatis"))
                 if notificationsEnabled == "1" {
                     postNotification(title: isEnglish ? "Auto-recorded" : "Tercatat Otomatis",
-                                     body: "\(item.description) · \(rupiah(item.amount))")
+                                     body: isEnglish ? "\\(item.description) — \\(rupiah(item.amount)) recorded" : "\\(item.description) — \\(rupiah(item.amount)) dicatat")
                 }
+            }
+        }
+
+        if notificationsEnabled == "1" {
+            for item in recurring where !item.autoApply && item.day == day {
+                postNotification(
+                    title: isEnglish ? "Payment reminder" : "Pengingat Tagihan",
+                    body: isEnglish ? "Time to record: \\(item.description) — \\(rupiah(item.amount))" : "Waktunya catat: \\(item.description) — \\(rupiah(item.amount))"
+                )
             }
         }
     }

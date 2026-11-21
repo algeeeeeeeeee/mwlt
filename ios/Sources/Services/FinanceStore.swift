@@ -14,11 +14,13 @@ final class FinanceStore: ObservableObject {
         fileURL = directory.appendingPathComponent("transactions.json")
         load()
         seedPreviewDataIfRequested()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func add(_ transaction: MeowlettTransaction) {
         transactions.insert(transaction, at: 0)
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func update(_ transaction: MeowlettTransaction) {
@@ -26,6 +28,7 @@ final class FinanceStore: ObservableObject {
         transactions[index] = transaction
         transactions.sort { $0.date > $1.date }
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func delete(at offsets: IndexSet) {
@@ -33,11 +36,13 @@ final class FinanceStore: ObservableObject {
             .filter { !offsets.contains($0.offset) }
             .map { $0.element }
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func delete(_ transaction: MeowlettTransaction) {
         transactions.removeAll { $0.id == transaction.id }
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func restore(_ transaction: MeowlettTransaction) {
@@ -45,16 +50,19 @@ final class FinanceStore: ObservableObject {
         transactions.append(transaction)
         transactions.sort { $0.date > $1.date }
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func clearAllTransactions() {
         transactions.removeAll()
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func replaceAllTransactions(_ values: [MeowlettTransaction]) {
         transactions = values.sorted { $0.date > $1.date }
         save()
+        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func expenses(in month: Date = .now, calendar: Calendar = .current) -> Int64 {

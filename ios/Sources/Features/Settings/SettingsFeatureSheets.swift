@@ -9,6 +9,7 @@ struct SettingsReminderSheet: View {
     @AppStorage("gm_reminder_smart") private var reminderSmart = "1"
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var financeStore: FinanceStore
     @State private var reminderDays = [1,2,3,4,5]
     @State private var loaded = false
     @State private var permissionMessage = ""
@@ -123,10 +124,10 @@ struct SettingsReminderSheet: View {
                                 Spacer()
                                 Text(String(format: "%02d:00", hour)).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
                             }
-                            Text(isEnglish ? "Time to record your spending!" : "Waktunya mencatat pengeluaran!")
-                                .font(MeowlettTypography.font(size: 13, weight: .heavy))
-                            Text(isEnglish ? "Keep your finances organized with a quick daily update." : "Yuk catat aktivitas hari ini agar keuanganmu tetap rapi.")
-                                .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary)
+                            Text(isEnglish
+                                 ? "💸 Haven't logged expenses today! Don't forget to record your transactions 🐱"
+                                 : "💸 Belum catat pengeluaran hari ini! Jangan lupa input transaksi 🐱")
+                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
                         }
                         .padding(14)
                         .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
@@ -158,7 +159,10 @@ struct SettingsReminderSheet: View {
             }
             loaded = true
         }
-        .onChange(of: reminderDays) { _, _ in saveDays() }
+        .onChange(of: reminderDays) { _, _ in
+            saveDays()
+            if notificationEnabled == "1" { scheduleNotifications() }
+        }
         .onChange(of: reminderHour) { _, _ in if notificationEnabled == "1" { scheduleNotifications() } }
         .onChange(of: reminderSmart) { _, _ in if notificationEnabled == "1" { scheduleNotifications() } }
     }
@@ -194,7 +198,7 @@ struct SettingsReminderSheet: View {
             }
         } else {
             notificationEnabled = "0"
-            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: (0..<7).map { "meowlett-reminder-\($0)" })
+            MeowlettReminderScheduler.removePendingRequests()
         }
     }
 
@@ -204,21 +208,13 @@ struct SettingsReminderSheet: View {
     }
 
     private func scheduleNotifications() {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: (0..<7).map { "meowlett-reminder-\($0)" })
-        let content = UNMutableNotificationContent()
-        content.title = "Meowlett"
-        content.body = isEnglish ? "Time to record your spending!" : "Waktunya mencatat pengeluaran hari ini!"
-        content.sound = .default
-        for day in reminderDays {
-            var components = DateComponents()
-            components.weekday = day + 1
-            components.hour = hour
-            components.minute = 0
-            let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-            let request = UNNotificationRequest(identifier: "meowlett-reminder-\(day)", content: content, trigger: trigger)
-            center.add(request)
-        }
+        MeowlettReminderScheduler.schedule(
+            days: reminderDays,
+            hour: hour,
+            smart: reminderSmart != "0",
+            language: language,
+            transactions: financeStore.transactions
+        )
     }
 }
 
