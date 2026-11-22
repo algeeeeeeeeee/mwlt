@@ -64,6 +64,17 @@ enum AppAppearance {
         return Color(hex: result)
     }
 
+    static func readableAccent() -> Color {
+        guard luminance(accentHex) < 0.55 else { return Color(hex: accentHex) }
+        var ratio = 0.1
+        var result = accentHex
+        while luminance(result) < 0.55 && ratio <= 1 {
+            result = lighten(accentHex, ratio: ratio)
+            ratio += 0.1
+        }
+        return Color(hex: result)
+    }
+
     private static func rgb(_ hex: String) -> (Int, Int, Int) {
         let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var value: UInt64 = 0
