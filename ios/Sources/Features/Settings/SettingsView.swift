@@ -66,7 +66,7 @@ struct SettingsView: View {
                     settingsRow(
                         title: isEnglish ? "Display Mode" : "Mode Tampilan",
                         subtitle: "\(isDark ? (isEnglish ? "Dark mode active" : "Mode gelap aktif") : (isEnglish ? "Light mode active" : "Mode terang aktif")) · \(selectedThemeName)",
-                        symbol: darkOverride == "true" ? "moon.fill" : "sun.max.fill"
+                        symbol: isDark ? "moon.fill" : "sun.max.fill"
                     ) { showAppearance = true }
                 }
 
@@ -484,7 +484,7 @@ private struct SettingsAppearanceSheet: View {
                                     .foregroundStyle(themePreset == "custom" ? Color.white : Color.primary)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
-                                    .background(themePreset == "custom" ? AppAppearance.primary : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 8))
+                                    .background(themePreset == "custom" ? AppAppearance.primary : categoryBackground, in: RoundedRectangle(cornerRadius: 8))
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -579,7 +579,7 @@ private struct SettingsAppearanceSheet: View {
         return Button { language = code } label: {
             Text(code.uppercased())
                 .font(MeowlettTypography.font(size: 12, weight: .bold))
-                .foregroundStyle(selected ? (isDark ? Color(hex: "#fca5a5") : AppAppearance.primary) : Color.secondary)
+                .foregroundStyle(selected ? selectedLanguageTextColor : Color.secondary)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(selected ? AppAppearance.primary.opacity(0.13) : categoryBackground, in: RoundedRectangle(cornerRadius: 10))
@@ -600,6 +600,44 @@ private struct SettingsAppearanceSheet: View {
         case "orange": return "sun.max"
         default: return "wind"
         }
+    }
+
+    private var selectedLanguageTextColor: Color {
+        let hex = AppAppearance.primaryHex
+        let rgb = rgbComponents(hex)
+        if isDark {
+            return Color(hex: transformedHex(rgb, ratio: 0.45, lighten: true))
+        }
+
+        let originalLuminance = (0.299 * Double(rgb.0) + 0.587 * Double(rgb.1) + 0.114 * Double(rgb.2)) / 255
+        if originalLuminance <= 0.5 { return Color(hex: hex) }
+        var adjustment = 0.1
+        var result = hex
+        while adjustment <= 1.0 {
+            result = transformedHex(rgb, ratio: adjustment, lighten: false)
+            let value = rgbComponents(result)
+            let luminance = (0.299 * Double(value.0) + 0.587 * Double(value.1) + 0.114 * Double(value.2)) / 255
+            if luminance <= 0.5 { break }
+            adjustment += 0.1
+        }
+        return Color(hex: result)
+    }
+
+    private func rgbComponents(_ hex: String) -> (Int, Int, Int) {
+        let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var value: UInt64 = 0
+        Scanner(string: cleaned).scanHexInt64(&value)
+        return (Int((value >> 16) & 0xff), Int((value >> 8) & 0xff), Int(value & 0xff))
+    }
+
+    private func transformedHex(_ rgb: (Int, Int, Int), ratio: Double, lighten: Bool) -> String {
+        func component(_ value: Int) -> Int {
+            if lighten {
+                return min(255, Int((Double(value) + Double(255 - value) * ratio).rounded()))
+            }
+            return max(0, Int((Double(value) * (1 - ratio)).rounded()))
+        }
+        return String(format: "#%02X%02X%02X", component(rgb.0), component(rgb.1), component(rgb.2))
     }
 
     private func customColorControl(title: String, value: Binding<Color>, hex: String) -> some View {
@@ -638,6 +676,9 @@ private struct SettingsNotificationsSheet: View {
     private var isDark: Bool { colorScheme == .dark }
     private var primary: Color { AppAppearance.primary }
     private var accent: Color { AppAppearance.accent }
+    private var categoryBackground: Color {
+        isDark ? AppAppearance.card2(dark: true) : AppAppearance.background(dark: false)
+    }
     private var dayLabels: [String] {
         isEnglish ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"]
     }
@@ -654,7 +695,7 @@ private struct SettingsNotificationsSheet: View {
 
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(AppAppearance.card2(dark: isDark))
+                    .fill(categoryBackground)
                     .frame(width: 36, height: 36)
                     .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
                         .font(.system(size: 18, weight: .regular))
@@ -709,7 +750,7 @@ private struct SettingsNotificationsSheet: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(AppAppearance.card2(dark: isDark))
                                 .frame(width: 36, height: 36)
-                                .overlay(Image(systemName: "chart.bar.fill")
+                                .overlay(Image(systemName: "info.circle")
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(weekly ? accent : Color.secondary))
                             VStack(alignment: .leading, spacing: 2) {
@@ -727,21 +768,21 @@ private struct SettingsNotificationsSheet: View {
                         }
 
                         if weekly {
-                            HStack(spacing: 6) {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 6)], spacing: 6) {
                                 ForEach(Array(dayLabels.enumerated()), id: \.offset) { index, title in
                                     let selected = day == String(index)
                                     Button { day = String(index) } label: {
                                         Text(title)
                                             .font(MeowlettTypography.font(size: 11, weight: .bold))
                                             .foregroundStyle(selected ? .white : Color.secondary)
-                                            .frame(maxWidth: .infinity)
+                                            .padding(.horizontal, 14)
                                             .padding(.vertical, 6)
-                                            .background(selected ? primary : AppAppearance.card2(dark: isDark), in: Capsule())
+                                            .background(selected ? primary : categoryBackground, in: Capsule())
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
-                            .padding(.top, 3)
+                            .padding(.top, 12)
                         }
                     }
                     .padding(.vertical, 14)
@@ -809,7 +850,7 @@ private struct SettingsNotificationsSheet: View {
     private func switchControl(isOn: Bool, isLoading: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Capsule()
-                .fill(isOn ? primary : Color.secondary.opacity(isDark ? 0.25 : 0.20))
+                .fill(isOn ? primary : AppAppearance.border(dark: isDark))
                 .frame(width: 48, height: 28)
                 .overlay(alignment: isOn ? .trailing : .leading) {
                     Circle()
