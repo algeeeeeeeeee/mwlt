@@ -348,9 +348,12 @@ struct SettingsReminderSheet: View {
 
     private func reminderSwitch(isOn: Bool, isLoading: Bool = false) -> some View {
         Capsule()
-            .fill(isOn
-                  ? LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing)
-                  : categoryBackground)
+            .fill(categoryBackground)
+            .overlay {
+                if isOn {
+                    Capsule().fill(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+            }
             .frame(width: 46, height: 26)
             .overlay(alignment: isOn ? .trailing : .leading) {
                 Circle()
