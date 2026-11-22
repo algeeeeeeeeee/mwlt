@@ -1223,89 +1223,184 @@ struct DashboardView: View {
     }
 
     private var paymentMethodStatsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeading(isEnglish ? "Payment method" : "Metode Bayar", icon: "wallet.bifold")
+        let primaryText = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.45))
+            : AppAppearance.readablePrimaryOnLight()
+        let trackColor = isDark ? AppAppearance.card2(dark: true) : AppAppearance.input(dark: false)
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(primaryText.opacity(0.10))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "wallet.bifold")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(primaryText)
+                    )
+                Text(isEnglish ? "Payment Method" : "Metode Bayar")
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.bottom, 12)
+
             let total = monthTransactions.reduce(Int64(0)) { $0 + $1.amount }
-            ForEach(["cash", "transfer", "qris"], id: \.self) { method in
-                let values = monthTransactions.filter { ($0.paymentMethod.isEmpty ? "cash" : $0.paymentMethod) == method }
-                let amount = values.reduce(Int64(0)) { $0 + $1.amount }
-                let percentage = total > 0 ? Int((Double(amount) / Double(total) * 100).rounded()) : 0
-                let color = method == "cash" ? Color(hex: "#4ade80") : method == "transfer" ? Color(hex: "#3b82f6") : Color(hex: "#8b5cf6")
-                let title = method == "cash" ? (isEnglish ? "Cash" : "Tunai") : method == "transfer" ? "Transfer" : "QRIS"
-                let symbol = method == "cash" ? "banknote" : method == "transfer" ? "building.columns" : "qrcode"
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack {
-                        HStack(spacing: 6) {
-                            Image(systemName: symbol)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(color)
-                            Text(title).font(MeowlettTypography.font(size: 12, weight: .bold))
-                            Text("\(values.count)x")
-                                .font(MeowlettTypography.font(size: 10, weight: .semibold))
-                                .foregroundStyle(.secondary)
+            VStack(spacing: 10) {
+                ForEach(["cash", "transfer", "qris"], id: \.self) { method in
+                    let values = monthTransactions.filter { ($0.paymentMethod.isEmpty ? "cash" : $0.paymentMethod) == method }
+                    let amount = values.reduce(Int64(0)) { $0 + $1.amount }
+                    let percentage = total > 0 ? Int((Double(amount) / Double(total) * 100).rounded()) : 0
+                    let color = method == "cash"
+                        ? Color(hex: "#4ade80")
+                        : method == "transfer" ? Color(hex: "#3b82f6") : Color(hex: "#8b5cf6")
+                    let title = method == "cash"
+                        ? (isEnglish ? "Cash" : "Tunai")
+                        : method == "transfer" ? "Transfer" : "QRIS"
+                    let symbol = method == "cash"
+                        ? "dollarsign.circle"
+                        : method == "transfer" ? "building.columns" : "qrcode"
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: symbol)
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundStyle(color)
+                                Text(title)
+                                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Text("\(values.count)x")
+                                    .font(MeowlettTypography.font(size: 11, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text("-\(rupiah(amount))")
+                                    .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                                    .foregroundStyle(Color(hex: "#f87171"))
+                                Text("\(percentage)%")
+                                    .font(MeowlettTypography.font(size: 10, weight: .regular))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text("-\(rupiah(amount))")
-                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
-                                .foregroundStyle(Color(hex: "#f87171"))
-                            Text("\(percentage)%")
-                                .font(MeowlettTypography.font(size: 9, weight: .semibold))
-                                .foregroundStyle(.secondary)
+                        GeometryReader { proxy in
+                            ZStack(alignment: .leading) {
+                                Capsule().fill(trackColor)
+                                Capsule()
+                                    .fill(color)
+                                    .frame(width: proxy.size.width * CGFloat(percentage) / 100)
+                            }
                         }
+                        .frame(height: 5)
                     }
-                    GeometryReader { proxy in
-                        ZStack(alignment: .leading) {
-                            Capsule().fill(Color.primary.opacity(isDark ? 0.07 : 0.06))
-                            Capsule().fill(color).frame(width: proxy.size.width * CGFloat(percentage) / 100)
-                        }
-                    }
-                    .frame(height: 5)
                 }
             }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private var categoryBreakdownCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeading(isEnglish ? "Category breakdown" : "Pengeluaran per Kategori", icon: "chart.bar.fill")
+        let primaryText = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.45))
+            : AppAppearance.readablePrimaryOnLight()
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(primaryText.opacity(0.10))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "chart.pie")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(primaryText)
+                    )
+                Text(isEnglish ? "Category Breakdown" : "Rincian Kategori")
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.bottom, 4)
+
             if categoryTotals.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "chart.pie").font(.system(size: 28)).foregroundStyle(Color(hex: AppAppearance.accentHex))
-                    Text(isEnglish ? "No data yet" : "Belum ada data").font(MeowlettTypography.font(size: 15, weight: .bold))
-                    Text(isEnglish ? "Add transactions to see your breakdown." : "Tambahkan transaksi untuk melihat rinciannya.")
-                        .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                VStack(spacing: 0) {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: AppAppearance.accentHex).opacity(0.13),
+                                    Color(hex: AppAppearance.primaryHex).opacity(0.10)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 72, height: 72)
+                        .overlay(Circle().stroke(Color(hex: AppAppearance.accentHex).opacity(0.22), lineWidth: 1.5))
+                        .overlay(
+                            Image(systemName: "xmark")
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundStyle(primaryText)
+                        )
+                        .padding(.bottom, 14)
+
+                    Text(isEnglish ? "No data" : "Belum ada data")
+                        .font(MeowlettTypography.font(size: 16, weight: .heavy))
+                        .foregroundStyle(.primary)
+                        .padding(.bottom, 8)
+
+                    Text(isEnglish
+                         ? "Start recording expenses to see your breakdown."
+                         : "Mulai catat pengeluaran untuk melihat rinciannya.")
+                        .font(MeowlettTypography.font(size: 13, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 40)
             } else {
-                HStack(spacing: 18) {
-                    DonutBreakdown(values: categoryTotals)
-                        .frame(width: 126, height: 126)
-                    VStack(alignment: .leading, spacing: 9) {
-                        ForEach(categoryTotals.prefix(5), id: \.category) { item in
+                HStack(alignment: .center, spacing: 16) {
+                    DonutBreakdown(
+                        values: categoryTotals,
+                        totalText: rupiah(spent)
+                    )
+                    .frame(width: 140, height: 140)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(categoryTotals, id: \.category) { item in
+                            let share = spent > 0
+                                ? Int((Double(item.amount) / Double(spent) * 100).rounded())
+                                : 0
                             HStack(spacing: 6) {
-                                Circle().fill(MeowlettCategory.color(for: item.category)).frame(width: 7, height: 7)
+                                Circle()
+                                    .fill(MeowlettCategory.color(for: item.category))
+                                    .frame(width: 9, height: 9)
                                 Text(MeowlettCategory.name(for: item.category, language: language))
-                                    .font(MeowlettTypography.font(size: 10, weight: .semibold))
+                                    .font(MeowlettTypography.font(size: 13, weight: .semibold))
+                                    .foregroundStyle(.secondary)
                                     .lineLimit(1)
                                 Spacer(minLength: 2)
-                                Text(rupiah(item.amount))
-                                    .font(MeowlettTypography.font(size: 10, weight: .bold))
+                                Text("\(share)%")
+                                    .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                                    .foregroundStyle(.primary)
                                     .lineLimit(1)
-                                    .minimumScaleFactor(0.7)
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 8)
             }
         }
         .padding(16)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private var recentTransactionsCard: some View {
@@ -1839,22 +1934,42 @@ private struct Sparkline: View {
 
 private struct DonutBreakdown: View {
     let values: [(category: String, amount: Int64)]
-    private var total: Double { Double(values.reduce(Int64(0)) { $0 + $1.amount }) }
+    let totalText: String
+
+    private var total: Double {
+        Double(values.reduce(Int64(0)) { $0 + $1.amount })
+    }
+
     var body: some View {
         ZStack {
-            Circle().stroke(Color.primary.opacity(0.06), lineWidth: 15)
+            Circle()
+                .stroke(Color.primary.opacity(0.06), lineWidth: 22.4)
+
             ForEach(Array(values.enumerated()), id: \.offset) { index, item in
                 let previous = values.prefix(index).reduce(Int64(0)) { $0 + $1.amount }
+                let start = total > 0 ? CGFloat(Double(previous) / total) : 0
+                let end = total > 0 ? CGFloat(Double(previous + item.amount) / total) : 0
+                let gap: CGFloat = values.count > 1 ? 0.0032 : 0
                 Circle()
-                    .trim(from: total > 0 ? CGFloat(Double(previous) / total) : 0,
-                          to: total > 0 ? CGFloat(Double(previous + item.amount) / total) : 0)
-                    .stroke(MeowlettCategory.color(for: item.category), style: StrokeStyle(lineWidth: 15, lineCap: .butt))
+                    .trim(from: start, to: max(start, end - gap))
+                    .stroke(
+                        MeowlettCategory.color(for: item.category).opacity(0.92),
+                        style: StrokeStyle(lineWidth: 22.4, lineCap: .butt)
+                    )
                     .rotationEffect(.degrees(-90))
             }
-            VStack(spacing: 1) {
-                Text("TOTAL").font(MeowlettTypography.font(size: 7, weight: .heavy)).foregroundStyle(.secondary)
-                Text("\(values.count)").font(MeowlettTypography.font(size: 19, weight: .black))
+
+            VStack(spacing: 2) {
+                Text("Total")
+                    .font(MeowlettTypography.font(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text(totalText)
+                    .font(MeowlettTypography.font(size: 15, weight: .heavy))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
+            .padding(.horizontal, 4)
         }
     }
 }
