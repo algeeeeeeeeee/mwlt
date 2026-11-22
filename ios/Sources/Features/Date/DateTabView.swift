@@ -14,6 +14,7 @@ private struct DateWishlistItem: Identifiable, Codable, Equatable {
 
 struct DateTabView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var modalBlurCoordinator: ModalBlurCoordinator
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_date_wishlist") private var wishlistJSON = "[]"
     @Environment(\.colorScheme) private var colorScheme
@@ -59,8 +60,6 @@ struct DateTabView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
-        .blur(radius: activeSheet == nil ? 0 : 8)
-        .animation(.easeInOut(duration: 0.2), value: activeSheet != nil)
         .overlay(alignment: .bottom) {
             if showDateUndoToast, let deleted = recentlyDeletedDateTransaction {
                 dateUndoToast(for: deleted)
@@ -70,9 +69,15 @@ struct DateTabView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .onDisappear { undoDateTask?.cancel() }
+        .onDisappear {
+            undoDateTask?.cancel()
+            modalBlurCoordinator.set("date", isPresented: false)
+        }
         .onAppear(perform: loadWishlist)
         .onChange(of: wishlist) { _, value in saveWishlist(value) }
+        .onChange(of: activeSheet != nil) { _, presented in
+            modalBlurCoordinator.set("date", isPresented: presented)
+        }
                 .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .wishlist:
