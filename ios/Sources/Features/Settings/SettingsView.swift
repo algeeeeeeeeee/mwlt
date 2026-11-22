@@ -660,10 +660,12 @@ private struct SettingsNotificationsSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var financeStore: FinanceStore
     @State private var showReminderSettings = false
     @State private var permissionMessage: String?
     @State private var isRequestingPermission = false
+    @State private var authorizationStatus: UNAuthorizationStatus = .notDetermined
 
     private var isDark: Bool { colorScheme == .dark }
     private var primary: Color { AppAppearance.primary }
@@ -676,6 +678,27 @@ private struct SettingsNotificationsSheet: View {
     }
     private var selectedDayLabel: String {
         dayLabels[min(6, max(0, Int(day) ?? 0))]
+    }
+
+    private var permissionSummary: String {
+        switch authorizationStatus {
+        case .authorized:
+            return enabled
+                ? (isEnglish ? "Allowed by iPhone" : "Diizinkan oleh iPhone")
+                : (isEnglish ? "Permission is available" : "Izin notifikasi tersedia")
+        case .provisional:
+            return isEnglish ? "Quiet notifications are allowed" : "Notifikasi senyap diizinkan"
+        case .ephemeral:
+            return isEnglish ? "Temporary notification permission" : "Izin notifikasi sementara"
+        case .denied:
+            return isEnglish ? "Blocked in iPhone Settings" : "Diblokir di Pengaturan iPhone"
+        case .notDetermined:
+            return isEnglish
+                ? "Enable to make Meowlett available in Focus app lists"
+                : "Aktifkan agar Meowlett tersedia di daftar aplikasi Fokus"
+        @unknown default:
+            return isEnglish ? "Notification permission unavailable" : "Izin notifikasi tidak diketahui"
+        }
     }
 
     var body: some View {
@@ -728,6 +751,10 @@ private struct SettingsNotificationsSheet: View {
                                  : (isEnglish ? "Inactive" : "Nonaktif"))
                                 .font(MeowlettTypography.font(size: 11, weight: .medium))
                                 .foregroundStyle(.secondary)
+                             Text(permissionSummary)
+                                 .font(MeowlettTypography.font(size: 10, weight: .medium))
+                                 .foregroundStyle(authorizationStatus == .denied ? Color.orange : Color.secondary)
+                                 .accessibilityIdentifier("mwlt.settings.notifications.permissionStatus")
                         }
                         Spacer(minLength: 8)
                         switchControl(isOn: enabled, isLoading: isRequestingPermission) {
@@ -824,6 +851,12 @@ private struct SettingsNotificationsSheet: View {
             }
         }
         .background(AppAppearance.card(dark: isDark))
+        .task { await refreshNotificationAuthorization() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await refreshNotificationAuthorization() }
+            }
+        }
         .blur(radius: showReminderSettings ? 8 : 0)
         .animation(.easeInOut(duration: 0.2), value: showReminderSettings)
         .sheet(isPresented: $showReminderSettings) { SettingsReminderSheet() }
@@ -834,6 +867,9 @@ private struct SettingsNotificationsSheet: View {
                 set: { if !$0 { permissionMessage = nil } }
             )
         ) {
+            Button(isEnglish ? "Open iPhone Settings" : "Buka Pengaturan iPhone") {
+                openNotificationSettings()
+            }
             Button("OK", role: .cancel) { permissionMessage = nil }
         } message: {
             Text(permissionMessage ?? "")
@@ -864,6 +900,29 @@ private struct SettingsNotificationsSheet: View {
     }
 
     @MainActor
+    private func refreshNotificationAuthorization() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        authorizationStatus = settings.authorizationStatus
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            break
+        case .notDetermined, .denied:
+            if enabled {
+                enabled = false
+                UserDefaults.standard.set("0", forKey: "gm_notif")
+            }
+        @unknown default:
+            enabled = false
+            UserDefaults.standard.set("0", forKey: "gm_notif")
+        }
+    }
+
+    private func openNotificationSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    @MainActor
     private func updateNotifications(to value: Bool) async {
         guard !isRequestingPermission else { return }
         isRequestingPermission = true
@@ -876,16 +935,33 @@ private struct SettingsNotificationsSheet: View {
         }
 
         do {
-            let granted = try await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .sound, .badge])
+            let center = UNUserNotificationCenter.current()
+            let current = await center.notificationSettings()
+            authorizationStatus = current.authorizationStatus
+
+            let granted: Bool
+            switch current.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                granted = true
+            case .denied:
+                granted = false
+            case .notDetermined:
+                granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+            @unknown default:
+                granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+            }
+
             guard granted else {
                 enabled = false
+                UserDefaults.standard.set("0", forKey: "gm_notif")
+                authorizationStatus = (await center.notificationSettings()).authorizationStatus
                 permissionMessage = isEnglish
-                    ? "Notification permission was denied. Enable it in iPhone Settings."
-                    : "Izin notifikasi ditolak. Aktifkan melalui Pengaturan iPhone."
+                    ? "Notification access is off. Open iPhone Settings > Notifications > Meowlett, allow notifications, then add Meowlett in Settings > Focus > Apps."
+                    : "Izin notifikasi belum aktif. Buka Pengaturan iPhone > Notifikasi > Meowlett, izinkan notifikasi, lalu tambahkan Meowlett di Pengaturan > Fokus > App."
                 return
             }
 
+            authorizationStatus = (await center.notificationSettings()).authorizationStatus
             enabled = true
             scheduleNotifications()
 
@@ -900,9 +976,10 @@ private struct SettingsNotificationsSheet: View {
                 content: confirmation,
                 trigger: nil
             )
-            try await UNUserNotificationCenter.current().add(request)
+            try await center.add(request)
         } catch {
             enabled = false
+            UserDefaults.standard.set("0", forKey: "gm_notif")
             MeowlettReminderScheduler.removePendingRequests()
             permissionMessage = error.localizedDescription
         }

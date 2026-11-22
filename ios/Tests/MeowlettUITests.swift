@@ -101,6 +101,27 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    func testSettingsNotificationsShowSystemPermissionStatus() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--mwlt-preview-mode"]
+        app.launch()
+
+        let settingsButton = app.buttons["mwlt.header.settings"]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
+        settingsButton.tap()
+        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+
+        let notificationsRow = app.buttons["mwlt.settings.notifications"]
+        XCTAssertTrue(notificationsRow.waitForExistence(timeout: 8))
+        notificationsRow.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["mwlt.settings.notifications.permissionStatus"].waitForExistence(timeout: 8),
+            "The Notifications sheet should show the current iOS authorization status."
+        )
+    }
+
+    @MainActor
     func testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss() {
         let app = XCUIApplication()
         app.launchArguments = ["--mwlt-preview-mode"]
