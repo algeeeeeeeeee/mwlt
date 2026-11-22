@@ -554,7 +554,7 @@ struct ReportsView: View {
                 Button {
                     exportData = Data(reportCSV.utf8)
                     exportContentType = .commaSeparatedText
-                    exportFilename = "meowlett-\(Date.now.formatted(.iso8601.year().month()))"
+                    exportFilename = "meowlett-\(MeowlettDateFormat.month(.now))"
                     showExporter = true
                 } label: {
                     Label(isEnglish ? "Export CSV" : "Ekspor CSV", systemImage: "tablecells")
@@ -568,7 +568,7 @@ struct ReportsView: View {
                 Button {
                     exportData = Data(reportHTML.utf8)
                     exportContentType = .html
-                    exportFilename = "laporan-\(Date.now.formatted(.iso8601.year().month()))"
+                    exportFilename = "laporan-\(MeowlettDateFormat.month(.now))"
                     showExporter = true
                 } label: {
                     Label(isEnglish ? "Export report" : "Ekspor laporan", systemImage: "doc.text")
@@ -1022,7 +1022,7 @@ struct ReportsView: View {
         guard let data = renderer.uiImage?.pngData() else { return }
         exportData = data
         exportContentType = .png
-        exportFilename = "meowlett-\(Date.now.formatted(.iso8601.year().month()))"
+        exportFilename = "meowlett-\(MeowlettDateFormat.month(.now))"
         showExporter = true
     }
 
@@ -1030,7 +1030,7 @@ struct ReportsView: View {
         var output = "Tanggal,Keterangan,Kategori,Lokasi,Jumlah\n"
         for item in store.transactions.sorted(by: { $0.date > $1.date }) {
             let fields = [
-                item.date.formatted(.iso8601.year().month().day()),
+                MeowlettDateFormat.day(item.date),
                 item.description,
                 MeowlettCategory.name(for: item.category, language: language),
                 item.location,
@@ -1042,7 +1042,7 @@ struct ReportsView: View {
     }
 
     private var reportHTML: String {
-        let monthKey = Date.now.formatted(.iso8601.year().month())
+        let monthKey = MeowlettDateFormat.month(.now)
         let monthTransactions = currentMonthTransactions.sorted { $0.date > $1.date }
         let categoryRows = Dictionary(grouping: monthTransactions, by: \.category)
             .map { key, values in (key, values.reduce(Int64(0)) { $0 + $1.amount }) }
@@ -1058,7 +1058,7 @@ struct ReportsView: View {
         }
         let transactionsHTML = monthTransactions.map { item in
             """
-            <tr><td>\(item.date.formatted(.iso8601.year().month().day()))</td><td>\(escaped(item.description))</td><td>\(escaped(MeowlettCategory.name(for: item.category, language: language)))</td><td class="amount">\(escaped(rupiah(item.amount)))</td></tr>
+            <tr><td>\(MeowlettDateFormat.day(item.date))</td><td>\(escaped(item.description))</td><td>\(escaped(MeowlettCategory.name(for: item.category, language: language)))</td><td class="amount">\(escaped(rupiah(item.amount)))</td></tr>
             """
         }.joined()
         let categoryHTML = categoryRows.map { key, amount in
