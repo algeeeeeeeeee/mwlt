@@ -44,11 +44,11 @@ private struct MeowlettTabSymbol: View {
     var body: some View {
         if tab == .dashboard {
             MeowlettCatShape()
-                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                .stroke(color, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                 .frame(width: size, height: size)
         } else {
             MeowlettTabShape(tab: tab)
-                .stroke(color, style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round))
+                .stroke(color, style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                 .frame(width: size, height: size)
         }
     }
@@ -390,7 +390,7 @@ struct MainTabView: View {
                             MeowlettTabSymbol(
                                 tab: tab,
                                 size: active ? 18 : 22,
-                                color: active ? activeColor : (isDate ? Color(hex: "#ec4899") : Color.primary.opacity(0.62))
+                                color: active ? activeColor : (isDate ? Color(hex: "#db2777") : Color.primary.opacity(colorSchemeIsDark ? 0.82 : 0.80))
                             )
                             .frame(width: 22, height: 22)
                             if active {
@@ -407,8 +407,8 @@ struct MainTabView: View {
                             if active {
                                 RoundedRectangle(cornerRadius: 20)
                                     .fill(isDate
-                                        ? Color(hex: "#be185d").opacity(colorSchemeIsDark ? 0.18 : 0.14)
-                                        : (colorSchemeIsDark ? tint.opacity(0.16) : primary.opacity(0.11)))
+                                        ? Color(hex: "#be185d").opacity(colorSchemeIsDark ? 0.20 : 0.18)
+                                        : (colorSchemeIsDark ? tint.opacity(0.18) : primary.opacity(0.16)))
                             }
                         }
                         .contentShape(RoundedRectangle(cornerRadius: 20))
@@ -420,7 +420,7 @@ struct MainTabView: View {
             .fixedSize(horizontal: true, vertical: false)
             .padding(5)
             .background(.regularMaterial, in: Capsule())
-            .overlay(Capsule().fill(colorSchemeIsDark ? Color.black.opacity(0.20) : Color.white.opacity(0.22)))
+            .overlay(Capsule().fill(colorSchemeIsDark ? Color.black.opacity(0.20) : Color.white.opacity(0.10)))
             .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.20 : 0.22), lineWidth: 1))
             .shadow(color: .black.opacity(colorSchemeIsDark ? 0.45 : 0.15), radius: colorSchemeIsDark ? 24 : 20, x: 0, y: colorSchemeIsDark ? 4 : 3)
             .fixedSize(horizontal: true, vertical: false)
