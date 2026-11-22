@@ -904,9 +904,10 @@ private struct SettingsNotificationsSheet: View {
                 content: confirmation,
                 trigger: nil
             )
-            UNUserNotificationCenter.current().add(request)
+            try await UNUserNotificationCenter.current().add(request)
         } catch {
             enabled = false
+            MeowlettReminderScheduler.removePendingRequests()
             permissionMessage = error.localizedDescription
         }
     }
