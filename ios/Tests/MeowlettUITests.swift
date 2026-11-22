@@ -2,33 +2,41 @@ import XCTest
 
 final class MeowlettUITests: XCTestCase {
     @MainActor
+    private func tapTab(_ tabID: String, app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        let tab = app.buttons["mwlt.tab.\(tabID)"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing navigation tab: \(tabID)", file: file, line: line)
+        tab.tap()
+
+        let selectedExpectation = expectation(
+            for: NSPredicate(format: "value == %@", "selected"),
+            evaluatedWith: tab,
+            handler: nil
+        )
+        wait(for: [selectedExpectation], timeout: 6)
+
+        XCTAssertTrue(
+            app.staticTexts["mwlt.screen.\(tabID)"].waitForExistence(timeout: 6),
+            "The \(tabID) screen heading did not appear after selecting its navigation item.",
+            file: file,
+            line: line
+        )
+    }
+
+    @MainActor
     func testMainTabsQuickAddAndCalculatorPresentation() {
         let app = XCUIApplication()
         app.launchArguments = ["--mwlt-preview-mode"]
         app.launch()
 
-        XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 10))
-
-        let tabChecks: [(String, String)] = [
-            ("transactions", "Transaksi"),
-            ("report", "Laporan"),
-            ("date", "Date")
-        ]
-
-        for (tabID, expectedHeading) in tabChecks {
-            let tab = app.buttons["mwlt.tab.\(tabID)"]
-            XCTAssertTrue(tab.waitForExistence(timeout: 10), "Missing navigation tab: \(tabID)")
-            tab.tap()
-            XCTAssertTrue(
-                app.staticTexts[expectedHeading].waitForExistence(timeout: 8),
-                "The \(tabID) screen did not appear after tapping its navigation item."
-            )
-        }
+        XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
+        tapTab("transactions", app: app)
+        tapTab("report", app: app)
+        tapTab("date", app: app)
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 10))
         settingsButton.tap()
-        XCTAssertTrue(app.staticTexts["Pengaturan"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
 
         let quickAddButton = app.buttons["mwlt.quickAdd"]
         XCTAssertTrue(quickAddButton.waitForExistence(timeout: 10))
@@ -58,12 +66,20 @@ final class MeowlettUITests: XCTestCase {
         app.launchArguments = ["--mwlt-preview-mode"]
         app.launch()
 
-        let dateTab = app.buttons["mwlt.tab.date"]
-        XCTAssertTrue(dateTab.waitForExistence(timeout: 10))
-        dateTab.tap()
+        XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
+        tapTab("date", app: app)
 
         let addWishlistButton = app.buttons["mwlt.date.addWishlist"]
-        XCTAssertTrue(addWishlistButton.waitForExistence(timeout: 10), "The Date wishlist Add action is missing.")
+        let dateScrollView = app.scrollViews.firstMatch
+        XCTAssertTrue(dateScrollView.waitForExistence(timeout: 8), "The Date screen scroll view is missing.")
+
+        for _ in 0..<4 {
+            if addWishlistButton.exists && addWishlistButton.isHittable { break }
+            dateScrollView.swipeUp()
+        }
+
+        XCTAssertTrue(addWishlistButton.waitForExistence(timeout: 8), "The Date wishlist Add action is missing after scrolling.")
+        XCTAssertTrue(addWishlistButton.isHittable, "The Date wishlist Add action is not hittable.")
         addWishlistButton.tap()
 
         XCTAssertTrue(
