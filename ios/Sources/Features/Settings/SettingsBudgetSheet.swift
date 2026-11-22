@@ -23,28 +23,28 @@ struct SettingsBudgetSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text(isEnglish ? "Spending Limits" : "Batas Pengeluaran")
-                    .font(MeowlettTypography.font(size: 16, weight: .black))
+                    .font(MeowlettTypography.font(size: 16, weight: .heavy))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
-                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                    .font(MeowlettTypography.font(size: 14, weight: .bold))
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                     .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 22)
+            .padding(.top, 22)
+            .padding(.bottom, 16)
 
             Text(isEnglish
-                 ? "Set a monthly spending limit for each category."
-                 : "Atur batas pengeluaran bulanan untuk setiap kategori.")
+                 ? "Set spending limits per category"
+                 : "Atur batas pengeluaran per kategori")
                 .font(MeowlettTypography.font(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 14)
+                .padding(.horizontal, 22)
+                .padding(.bottom, 16)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
@@ -52,16 +52,18 @@ struct SettingsBudgetSheet: View {
                         budgetRow(category)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 22)
                 .padding(.bottom, 26)
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .frame(maxWidth: 480)
+        .frame(maxWidth: .infinity)
         .background(AppAppearance.modal(dark: isDark))
         .onAppear(perform: loadBudgets)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
-        .presentationCornerRadius(24)
+        .presentationDetents([.fraction(0.88)])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(22)
     }
 
     private func budgetRow(_ category: (id: String, idName: String, enName: String, icon: String, color: String)) -> some View {
@@ -90,12 +92,12 @@ struct SettingsBudgetSheet: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(isEnglish ? category.enName : category.idName)
-                        .font(MeowlettTypography.font(size: 13, weight: .bold))
+                        .font(MeowlettTypography.font(size: 14, weight: .bold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if limit > 0 {
                         Text("\(rupiah(spent)) / \(rupiah(limit)) · \(percent)%")
-                            .font(MeowlettTypography.font(size: 10, weight: .semibold))
+                            .font(MeowlettTypography.font(size: 11, weight: .semibold))
                             .foregroundStyle(over ? Color(hex: "#ef4444") : Color.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
@@ -103,7 +105,7 @@ struct SettingsBudgetSheet: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                TextField(isEnglish ? "Set limit" : "Atur limit", text: Binding(
+                TextField(isEnglish ? "Limit" : "Batas", text: Binding(
                     get: { drafts[category.id] ?? "" },
                     set: { updateLimit($0, for: category.id) }
                 ))
@@ -111,12 +113,13 @@ struct SettingsBudgetSheet: View {
                 .multilineTextAlignment(.trailing)
                 .font(MeowlettTypography.font(size: 13, weight: .bold))
                 .foregroundStyle(.primary)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .frame(width: 110, height: 38)
                 .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(over ? Color(hex: "#f87171") : AppAppearance.inputBorder(dark: isDark), lineWidth: 1.3)
+                        .stroke(over ? Color(hex: "#f87171") : AppAppearance.inputBorder(dark: isDark), lineWidth: 1.5)
                 )
             }
 
@@ -136,7 +139,7 @@ struct SettingsBudgetSheet: View {
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(over ? Color(hex: "#f87171") : AppAppearance.border(dark: isDark), lineWidth: 1.3)
+                .stroke(over ? Color(hex: "#f87171") : AppAppearance.border(dark: isDark), lineWidth: 1.5)
         )
     }
 
