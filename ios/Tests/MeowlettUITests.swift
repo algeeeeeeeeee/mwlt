@@ -216,6 +216,48 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    func testQuickAddSavesTransactionAndShowsItInTransactionsList() {
+        let app = XCUIApplication()
+        let transactionName = "CI Flow " + String(UUID().uuidString.prefix(6))
+        app.launchArguments = ["--mwlt-preview-mode"]
+        app.launch()
+
+        let quickAddButton = app.buttons["mwlt.quickAdd"]
+        XCTAssertTrue(quickAddButton.waitForExistence(timeout: 15))
+        quickAddButton.tap()
+
+        let amountField = app.textFields["mwlt.transactionEditor.amount"]
+        let descriptionField = app.textFields["mwlt.transactionEditor.description"]
+        let saveButton = app.buttons["mwlt.transactionEditor.save"]
+
+        XCTAssertTrue(amountField.waitForExistence(timeout: 8))
+        XCTAssertTrue(descriptionField.waitForExistence(timeout: 8))
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 8))
+
+        amountField.tap()
+        amountField.typeText("24680")
+        descriptionField.tap()
+        descriptionField.typeText(transactionName)
+
+        XCTAssertTrue(saveButton.isEnabled, "Save should enable after a positive amount and description are entered.")
+        saveButton.tap()
+
+        let editorTitle = app.staticTexts["mwlt.transactionEditor.title"]
+        let editorClosed = expectation(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: editorTitle,
+            handler: nil
+        )
+        wait(for: [editorClosed], timeout: 8)
+
+        tapTab("transactions", app: app)
+        XCTAssertTrue(
+            app.staticTexts[transactionName].waitForExistence(timeout: 10),
+            "The saved transaction should appear in the Transactions list."
+        )
+    }
+
+    @MainActor
     func testDatePreviewLaunchStartsOnDateTab() {
         let app = XCUIApplication()
         app.launchArguments = ["--mwlt-preview-mode", "--mwlt-preview-tab=date"]

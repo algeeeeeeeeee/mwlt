@@ -58,6 +58,7 @@ struct TransactionEditorSheet: View {
                     categoryPicker
                     paymentPicker
                     styledField(isEnglish ? "Description" : "Keterangan", text: $descriptionText)
+                        .accessibilityIdentifier("mwlt.transactionEditor.description")
                     HStack(spacing: 8) {
                         styledField(isEnglish ? "Location" : "Lokasi", text: $location)
                         styledField(isEnglish ? "Note" : "Catatan", text: $note)
@@ -74,6 +75,7 @@ struct TransactionEditorSheet: View {
                         }
                         .disabled(descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || amount <= 0)
                         .opacity(descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || amount <= 0 ? 0.5 : 1)
+                        .accessibilityIdentifier("mwlt.transactionEditor.save")
 
                         Button(isEnglish ? "Cancel" : "Batal") { dismiss() }
                             .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -156,6 +158,7 @@ struct TransactionEditorSheet: View {
                     .font(MeowlettTypography.font(size: 14, weight: .heavy))
                     .foregroundStyle(.secondary)
                 TextField("0", text: $amountText)
+                    .accessibilityIdentifier("mwlt.transactionEditor.amount")
                     .keyboardType(.numberPad)
                     .font(MeowlettTypography.font(size: 22, weight: .black))
                     .foregroundStyle(.primary)
