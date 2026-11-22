@@ -73,13 +73,13 @@ final class MeowlettUITests: XCTestCase {
 
         func openAndClose(row: String, title: String, close: String) {
             let rowButton = app.buttons[row]
-            XCTAssertTrue(rowButton.waitForExistence(timeout: 10), "Missing Settings row: \\(row)")
+            XCTAssertTrue(rowButton.waitForExistence(timeout: 10), "Missing Settings row: \(row)")
             rowButton.tap()
-            XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "Settings sheet did not open: \\(title)")
+            XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "Settings sheet did not open: \(title)")
             let closeButton = app.buttons[close]
             XCTAssertTrue(closeButton.waitForExistence(timeout: 8), "Missing close control: \\(close)")
             closeButton.tap()
-            XCTAssertTrue(rowButton.waitForExistence(timeout: 8), "Settings root did not return after closing: \\(row)")
+            XCTAssertTrue(rowButton.waitForExistence(timeout: 8), "Settings root did not return after closing: \(row)")
         }
 
         openAndClose(
