@@ -1024,6 +1024,11 @@ private struct SettingsPlaceholderSheet: View {
 }
 
 private struct SettingsDataSheet: View {
+    private enum ConfirmationKind {
+        case restore
+        case reset
+    }
+
     let isEnglish: Bool
     @Binding var incomeRaw: String
     @EnvironmentObject private var store: FinanceStore
@@ -1037,8 +1042,7 @@ private struct SettingsDataSheet: View {
     @State private var backupFile: MeowlettBackupFile?
     @State private var showExporter = false
     @State private var showImporter = false
-    @State private var showResetConfirm = false
-    @State private var showRestoreConfirm = false
+    @State private var confirmation: ConfirmationKind?
     @State private var pendingRestore: MeowlettBackupPayload?
     @State private var importError = ""
 
@@ -1085,7 +1089,7 @@ private struct SettingsDataSheet: View {
 
             Rectangle().fill(cardBorder).frame(height: 1).padding(.vertical, 4)
 
-            Button { showResetConfirm = true } label: {
+            Button { confirmation = .reset } label: {
                 dataAction(
                     symbol: "trash",
                     title: isEnglish ? "Reset All Data" : "Atur Ulang Semua Data",
@@ -1127,32 +1131,83 @@ private struct SettingsDataSheet: View {
                 let payload = try JSONDecoder().decode(MeowlettBackupPayload.self, from: data)
                 guard payload.transactions != nil else { throw BackupFileError.invalid }
                 pendingRestore = payload
-                showRestoreConfirm = true
+                confirmation = .restore
                 importError = ""
             } catch {
                 importError = isEnglish ? "Invalid backup file." : "File backup tidak valid."
             }
         }
-        .confirmationDialog(
-            isEnglish ? "Restore this backup?" : "Pulihkan cadangan ini?",
-            isPresented: $showRestoreConfirm,
-            titleVisibility: .visible
-        ) {
-            Button(isEnglish ? "Restore data" : "Pulihkan data", role: .destructive) {
-                restorePendingBackup()
+        .overlay {
+            if let confirmation {
+                confirmationOverlay(confirmation)
             }
-            Button(isEnglish ? "Cancel" : "Batal", role: .cancel) { pendingRestore = nil }
-        } message: {
-            Text(isEnglish ? "Current data will be replaced." : "Data saat ini akan diganti.")
         }
-        .confirmationDialog(
-            isEnglish ? "Are you sure you want to delete all data? This cannot be undone." : "Yakin ingin menghapus semua data? Tidak bisa dibatalkan.",
-            isPresented: $showResetConfirm,
-            titleVisibility: .visible
-        ) {
-            Button(isEnglish ? "Reset All Data" : "Atur Ulang Semua Data", role: .destructive) { resetData() }
-            Button(isEnglish ? "Cancel" : "Batal", role: .cancel) {}
+    }
+
+    private func confirmationOverlay(_ kind: ConfirmationKind) -> some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { confirmation = nil }
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(kind == .restore
+                     ? (isEnglish ? "Restore this backup? Current data will be replaced." : "Pulihkan cadangan ini? Data saat ini akan diganti.")
+                     : (isEnglish ? "Are you sure you want to delete all data? This cannot be undone." : "Yakin ingin menghapus semua data? Tidak bisa dibatalkan."))
+                    .font(MeowlettTypography.font(size: 15, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .lineSpacing(3)
+                    .padding(.bottom, 20)
+
+                HStack(spacing: 10) {
+                    Button {
+                        confirmation = nil
+                        pendingRestore = nil
+                    } label: {
+                        Text("Batal")
+                            .font(MeowlettTypography.font(size: 14, weight: .bold))
+                            .foregroundStyle(AppAppearance.textSub(dark: isDark))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        let selected = confirmation
+                        confirmation = nil
+                        switch selected {
+                        case .restore:
+                            restorePendingBackup()
+                        case .reset:
+                            resetData()
+                        case .none:
+                            break
+                        }
+                    } label: {
+                        Text(isEnglish ? "Done" : "Selesai")
+                            .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color(hex: "#ef4444"), in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+            .frame(maxWidth: 320)
+            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 20))
+            .shadow(color: .black.opacity(0.4), radius: 24, x: 0, y: 16)
+            .padding(.horizontal, 32)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .transition(.opacity)
+        .zIndex(100)
     }
 
     private func makeBackupFile() -> MeowlettBackupFile? {
