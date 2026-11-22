@@ -25,8 +25,10 @@ struct SettingsBudgetSheet: View {
                 Text(isEnglish ? "Spending Limits" : "Batas Pengeluaran")
                     .font(MeowlettTypography.font(size: 16, weight: .heavy))
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.settings.sheet.budgets.title")
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
+                    .accessibilityIdentifier("mwlt.settings.sheet.budgets.close")
                     .font(MeowlettTypography.font(size: 14, weight: .bold))
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 14)
