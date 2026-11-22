@@ -201,11 +201,97 @@ jobs:
           echo "All native previews captured:"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
 
-      - name: Upload native app previews
+      - name: Assemble a single native preview image
+        run: |
+          cat > "$RUNNER_TEMP/MakeMeowlettPreview.swift" <<'SWIFT'
+          import AppKit
+          import Foundation
+
+          let directory = "(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
+          let output = "(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/Meowlett-Native-Preview.jpg"
+          let screens: [(String, String)] = [
+              ("01-onboarding.png", "Onboarding"),
+              ("02-dashboard.png", "Dashboard"),
+              ("03-transactions.png", "Transactions"),
+              ("03-report.png", "Reports"),
+              ("03-date.png", "Date"),
+              ("03-settings.png", "Settings"),
+              ("08-quick-add.png", "Quick Add")
+          ]
+
+          let columns = 2
+          let tileWidth = 390
+          let tileHeight = 844
+          let titleHeight = 44
+          let gap = 14
+          let rows = (screens.count + columns - 1) / columns
+          let canvasWidth = gap + columns * (tileWidth + gap)
+          let canvasHeight = gap + rows * (titleHeight + tileHeight + gap)
+
+          guard let bitmap = NSBitmapImageRep(
+              bitmapDataPlanes: nil,
+              pixelsWide: canvasWidth,
+              pixelsHigh: canvasHeight,
+              bitsPerSample: 8,
+              samplesPerPixel: 4,
+              hasAlpha: true,
+              isPlanar: false,
+              colorSpaceName: .deviceRGB,
+              bytesPerRow: 0,
+              bitsPerPixel: 0
+          ), let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
+              fatalError("Could not allocate preview contact sheet.")
+          }
+
+          NSGraphicsContext.saveGraphicsState()
+          NSGraphicsContext.current = context
+          NSColor(calibratedWhite: 0.95, alpha: 1).setFill()
+          NSRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight).fill()
+
+          for (index, screen) in screens.enumerated() {
+              let path = URL(fileURLWithPath: directory).appendingPathComponent(screen.0).path
+              guard let image = NSImage(contentsOfFile: path) else {
+                  fatalError("Missing preview screenshot: (path)")
+              }
+
+              let column = index % columns
+              let row = index / columns
+              let x = gap + column * (tileWidth + gap)
+              let top = gap + row * (titleHeight + tileHeight + gap)
+              let titleY = canvasHeight - top - titleHeight
+              let imageY = canvasHeight - top - titleHeight - tileHeight
+
+              NSColor.white.setFill()
+              NSRect(x: x, y: titleY, width: tileWidth, height: titleHeight).fill()
+              let attributes: [NSAttributedString.Key: Any] = [
+                  .font: NSFont.boldSystemFont(ofSize: 16),
+                  .foregroundColor: NSColor(calibratedWhite: 0.15, alpha: 1)
+              ]
+              NSString(string: screen.1).draw(
+                  in: NSRect(x: x + 14, y: titleY + 13, width: tileWidth - 28, height: 22),
+                  withAttributes: attributes
+              )
+
+              NSColor.white.setFill()
+              let imageRect = NSRect(x: x, y: imageY, width: tileWidth, height: tileHeight)
+              imageRect.fill()
+              image.draw(in: imageRect)
+          }
+
+          NSGraphicsContext.restoreGraphicsState()
+          guard let data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) else {
+              fatalError("Could not encode preview contact sheet.")
+          }
+          try data.write(to: URL(fileURLWithPath: output))
+          print("Single preview image created at (output)")
+          SWIFT
+          swift "$RUNNER_TEMP/MakeMeowlettPreview.swift"
+
+      - name: Upload single native app preview
         uses: actions/upload-artifact@v4
         with:
-          name: Meowlett-Native-Previews
-          path: ${{ runner.temp }}/MeowlettPreviews/*.png
+          name: Meowlett-Native-Preview
+          path: ${{ runner.temp }}/Meowlett-Native-Preview.jpg
           if-no-files-found: error
           retention-days: 7
 
