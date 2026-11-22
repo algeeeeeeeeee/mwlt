@@ -63,6 +63,17 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Run native UI smoke tests
+        run: |
+          xcodebuild test \
+            -project ios/Meowlett.xcodeproj \
+            -scheme Meowlett \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath "$RUNNER_TEMP/MeowlettUITests" \
+            -resultBundlePath "$RUNNER_TEMP/MeowlettUITests.xcresult" \
+            -parallel-testing-enabled NO \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Build iPhone device
         run: |
           xcodebuild \
