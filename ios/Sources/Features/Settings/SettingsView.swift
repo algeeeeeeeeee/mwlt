@@ -27,6 +27,7 @@ struct SettingsView: View {
     @AppStorage("mwlt.native.onboarded") private var isOnboarded = true
 
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var modalBlurCoordinator: ModalBlurCoordinator
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var nameDraft = ""
     @State private var showNameEditor = false
@@ -105,9 +106,11 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
-        .blur(radius: activeSheet == nil ? 0 : 8)
-        .animation(.easeInOut(duration: 0.2), value: activeSheet != nil)
         .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: activeSheet != nil) { _, presented in
+            modalBlurCoordinator.set("settings", isPresented: presented)
+        }
+        .onDisappear { modalBlurCoordinator.set("settings", isPresented: false) }
         .onChange(of: selectedPhoto) { _, item in
             Task {
                 guard let data = try? await item?.loadTransferable(type: Data.self) else { return }
