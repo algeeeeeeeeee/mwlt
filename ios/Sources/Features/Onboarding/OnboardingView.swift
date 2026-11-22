@@ -34,47 +34,39 @@ struct OnboardingView: View {
     }
 
     var body: some View {
-        ZStack {
-            Color(uiColor: .systemBackground).ignoresSafeArea()
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    HStack(spacing: 5) {
-                        ForEach(0..<4, id: \.self) { index in
-                            Capsule()
-                                .fill(index <= step ? accent : Color.secondary.opacity(0.2))
-                                .frame(width: index == step ? 25 : 7, height: 3)
-                        }
-                        Spacer()
-                        Text("MEOWLETT")
-                            .font(MeowlettTypography.font(size: 10, weight: .black))
-                            .tracking(1.5)
-                            .foregroundStyle(accent)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 5) {
+                    ForEach(0..<4, id: \.self) { index in
+                        Capsule()
+                            .fill(index <= step ? accent : Color.secondary.opacity(0.2))
+                            .frame(width: index == step ? 24 : 6, height: 3)
                     }
-                    .padding(.top, 16)
-
-                    Group {
-                        switch step {
-                        case 0: welcomeStep
-                        case 1: nameStep
-                        case 2: incomeStep
-                        default: appearanceStep
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .id(step)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
-
-                    Spacer(minLength: 24)
                 }
-                .frame(maxWidth: 430)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 30)
-                .frame(maxWidth: .infinity)
+                .padding(.bottom, 20)
+
+                Group {
+                    switch step {
+                    case 0: welcomeStep
+                    case 1: nameStep
+                    case 2: incomeStep
+                    default: appearanceStep
+                    }
+                }
+                .frame(maxWidth: 400, alignment: .leading)
+                .id(step)
+                .transition(.opacity.combined(with: .move(edge: .trailing)))
             }
-            .scrollDismissesKeyboard(.interactively)
+            .frame(maxWidth: 400, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 28)
+            .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .tint(accent)
         .animation(.easeInOut(duration: 0.2), value: step)
         .onAppear {
@@ -85,25 +77,30 @@ struct OnboardingView: View {
     }
 
     private var welcomeStep: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 0) {
             stepLabel(1)
+                .padding(.bottom, 6)
+
             Text(isEnglish ? "Welcome to\nMeowlett" : "Selamat datang\ndi Meowlett")
-                .font(MeowlettTypography.font(size: 31, weight: .black))
+                .font(MeowlettTypography.font(size: 28, weight: .black))
                 .lineSpacing(1)
                 .foregroundStyle(.primary)
+                .padding(.bottom, 4)
 
             Text(isEnglish
                  ? "Track expenses, monitor your budget, and reach your financial goals."
                  : "Catat pengeluaran, pantau budget,\ndan capai tujuan finansialmu.")
-                .font(MeowlettTypography.font(size: 15, weight: .regular))
+                .font(MeowlettTypography.font(size: 13, weight: .regular))
+                .lineSpacing(4)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.bottom, 20)
 
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 languageButton(code: "id", title: "ID  Indonesia")
                 languageButton(code: "en", title: "EN  English")
             }
-            .padding(.top, 6)
+            .padding(.bottom, 20)
 
             primaryButton(isEnglish ? "Start Setup →" : "Mulai Setup →") {
                 go(to: 1)
@@ -112,26 +109,35 @@ struct OnboardingView: View {
     }
 
     private var nameStep: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: 0) {
             stepLabel(2)
+                .padding(.bottom, 6)
+
             Text(isEnglish ? "What's your\nname?" : "Siapa\nnamamu?")
-                .font(MeowlettTypography.font(size: 30, weight: .black))
+                .font(MeowlettTypography.font(size: 26, weight: .black))
+                .lineSpacing(1)
                 .foregroundStyle(.primary)
+                .padding(.bottom, 4)
 
             Text(isEnglish ? "So greetings feel more personal." : "Biar sapaan lebih personal.")
-                .font(MeowlettTypography.font(size: 14, weight: .regular))
+                .font(MeowlettTypography.font(size: 13, weight: .regular))
                 .foregroundStyle(.secondary)
+                .padding(.bottom, 16)
 
             TextField(isEnglish ? "e.g. Pickles..." : "Contoh: Pickles...", text: $name)
                 .textContentType(.givenName)
                 .textInputAutocapitalization(.words)
-                .padding(16)
-                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
-                .overlay(RoundedRectangle(cornerRadius: 15).stroke(name.isEmpty ? Color.secondary.opacity(0.15) : accent, lineWidth: 1.5))
+                .font(MeowlettTypography.font(size: 16, weight: .regular))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(name.isEmpty ? AppAppearance.border(dark: isDark) : accent, lineWidth: 2))
+                .padding(.bottom, 12)
 
             primaryButton(isEnglish ? "Next →" : "Lanjut →") {
                 go(to: 2)
             }
+            .padding(.bottom, 8)
 
             secondaryButton(isEnglish ? "Skip" : "Lewati") {
                 go(to: 2)
@@ -140,37 +146,48 @@ struct OnboardingView: View {
     }
 
     private var incomeStep: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: 0) {
             stepLabel(3)
+                .padding(.bottom, 6)
+
             Text(isEnglish ? "Monthly\nincome?" : "Pemasukan\nbulan ini?")
-                .font(MeowlettTypography.font(size: 30, weight: .black))
+                .font(MeowlettTypography.font(size: 26, weight: .black))
+                .lineSpacing(1)
                 .foregroundStyle(.primary)
+                .padding(.bottom, 4)
 
             Text(isEnglish ? "You can change this anytime." : "Bisa diubah kapan saja di Pengaturan.")
-                .font(MeowlettTypography.font(size: 14, weight: .regular))
+                .font(MeowlettTypography.font(size: 13, weight: .regular))
                 .foregroundStyle(.secondary)
+                .padding(.bottom, 16)
 
             HStack(spacing: 8) {
                 Text("Rp")
-                    .font(MeowlettTypography.font(size: 15, weight: .bold))
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(.secondary)
                 TextField("5.000.000", text: $income)
                     .keyboardType(.numberPad)
-                    .font(MeowlettTypography.font(size: 19, weight: .semibold))
+                    .font(MeowlettTypography.font(size: 16, weight: .regular))
             }
-            .padding(16)
-            .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
-            .overlay(RoundedRectangle(cornerRadius: 15).stroke(income.isEmpty ? Color.secondary.opacity(0.15) : accent, lineWidth: 1.5))
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(income.isEmpty ? AppAppearance.border(dark: isDark) : accent, lineWidth: 2))
+            .padding(.bottom, 8)
 
             if let value = parsedIncome, value > 0 {
                 Text("= \(rupiah(value))")
-                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                    .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(accent)
+                    .padding(.bottom, 8)
+            } else {
+                Color.clear.frame(height: 8)
             }
 
             primaryButton(isEnglish ? "Next →" : "Lanjut →") {
                 go(to: 3)
             }
+            .padding(.bottom, 8)
 
             secondaryButton(isEnglish ? "← Back" : "← Kembali") {
                 go(to: 1)
