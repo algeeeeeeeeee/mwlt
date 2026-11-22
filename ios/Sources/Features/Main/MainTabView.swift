@@ -354,7 +354,7 @@ struct MainTabView: View {
 
             HStack(spacing: 0) {
                 ForEach([MeowlettTab.dashboard, .transactions, .report, .date], id: \.self) { tab in
-                    let active = selected == tab
+                    let active = selected == tab && !showQuickAdd
                     let isDate = tab == .date
                     let activeColor = isDate ? Color(hex: "#be185d") : (colorSchemeIsDark ? tint.opacity(0.9) : primary)
                     Button {
@@ -382,7 +382,9 @@ struct MainTabView: View {
                         .background {
                             if active {
                                 RoundedRectangle(cornerRadius: 20)
-                                    .fill(isDate ? Color(hex: "#be185d").opacity(colorSchemeIsDark ? 0.15 : 0.08) : tint.opacity(colorSchemeIsDark ? 0.11 : 0.063))
+                                    .fill(isDate
+                                        ? Color(hex: "#be185d").opacity(colorSchemeIsDark ? 0.15 : 0.08)
+                                        : (colorSchemeIsDark ? tint.opacity(0.11) : primary.opacity(0.063)))
                             }
                         }
                         .contentShape(RoundedRectangle(cornerRadius: 20))
