@@ -203,7 +203,7 @@ struct DashboardView: View {
                     paymentMethodStatsCard
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 16)
+                .padding(.top, 77)
                 .padding(.bottom, 90)
                 .frame(maxWidth: 560)
                 .frame(maxWidth: .infinity)

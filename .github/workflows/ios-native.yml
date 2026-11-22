@@ -69,6 +69,7 @@ jobs:
             -project ios/Meowlett.xcodeproj \
             -scheme Meowlett \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -parallel-testing-enabled NO \
             -derivedDataPath "$RUNNER_TEMP/MeowlettUITests" \
             -resultBundlePath "$RUNNER_TEMP/MeowlettUITests.xcresult" \
             -parallel-testing-enabled NO \
@@ -87,6 +88,19 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             build
+
+      - name: Verify compiled Home Screen label is visually blank
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/MeowlettDevice/Build/Products/Release-iphoneos/Meowlett.app"
+          test -d "$APP_PATH"
+          DISPLAY_NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$APP_PATH/Info.plist")
+          DISPLAY_NAME_HEX=$(printf '%s' "$DISPLAY_NAME" | /usr/bin/xxd -p | tr -d '\n')
+          if [ "$DISPLAY_NAME_HEX" != "e2808b" ]; then
+            echo "::error::Expected a zero-width Home Screen label (e2808b), got $DISPLAY_NAME_HEX"
+            exit 1
+          fi
+          echo "Verified compiled iOS app has a visually blank Home Screen label (U+200B)."
 
       - name: Package unsigned IPA
         run: |

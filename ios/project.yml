@@ -24,7 +24,7 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: Meowlett
+        INFOPLIST_KEY_CFBundleDisplayName: "​"
         INFOPLIST_KEY_NSCameraUsageDescription: Meowlett menggunakan kamera untuk mengambil foto struk dan melampirkannya ke transaksi.
         INFOPLIST_KEY_UIRequiresFullScreen: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES

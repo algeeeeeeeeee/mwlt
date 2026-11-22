@@ -201,9 +201,7 @@ struct MainTabView: View {
         GeometryReader { geometry in
             ZStack {
                 AppAppearance.background(dark: colorSchemeIsDark).ignoresSafeArea()
-                VStack(spacing: 0) {
-                    topHeader
-                        .frame(width: geometry.size.width, alignment: .leading)
+                ZStack(alignment: .top) {
                     Group {
                         switch selected {
                         case .dashboard:
@@ -223,7 +221,14 @@ struct MainTabView: View {
                     .environmentObject(store)
                     .environmentObject(modalBlurCoordinator)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .frame(width: geometry.size.width)
+                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
+
+                    // The PWA uses a fixed 20pt backdrop blur over scrolling content.
+                    // Keep the native header layered above the scroll views so cards
+                    // move underneath its translucent material while scrolling.
+                    topHeader
+                        .frame(width: geometry.size.width, alignment: .leading)
+                        .zIndex(10)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             }
@@ -343,12 +348,15 @@ struct MainTabView: View {
         .padding(.bottom, 10)
         .frame(maxWidth: .infinity)
         .background {
-            AppAppearance.background(dark: colorSchemeIsDark)
-                .opacity(colorSchemeIsDark ? 0.65 : 0.60)
-                .background(.ultraThinMaterial)
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    AppAppearance.background(dark: colorSchemeIsDark)
+                        .opacity(colorSchemeIsDark ? 0.65 : 0.60)
+                }
                 .ignoresSafeArea(edges: .top)
         }
-        .shadow(color: Color.black.opacity(colorSchemeIsDark ? 0.5 : 0.06), radius: 2, x: 0, y: 1)
+        .shadow(color: Color.black.opacity(colorSchemeIsDark ? 0.28 : 0.045), radius: 4, x: 0, y: 1)
     }
 
     private var profileUIImage: UIImage? {

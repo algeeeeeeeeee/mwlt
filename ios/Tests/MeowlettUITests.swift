@@ -67,6 +67,14 @@ final class MeowlettUITests: XCTestCase {
         app.launch()
 
         XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
+        let dashboardScroll = app.scrollViews.firstMatch
+        XCTAssertTrue(dashboardScroll.waitForExistence(timeout: 8), "Dashboard scroll view is missing.")
+        dashboardScroll.swipeUp()
+        XCTAssertTrue(
+            app.buttons["mwlt.header.settings"].isHittable,
+            "The frosted header must remain pinned above dashboard content while scrolling."
+        )
+        dashboardScroll.swipeDown()
         tapTab("transactions", app: app)
         tapTab("report", app: app)
         tapTab("date", app: app)
