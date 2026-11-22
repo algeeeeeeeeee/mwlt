@@ -146,6 +146,7 @@ struct DateTabView: View {
                     .foregroundStyle(datePink)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.date.addWishlist")
             }
 
             if wishlist.isEmpty {
@@ -404,6 +405,7 @@ struct DateTabView: View {
                 Text(isEnglish ? "Add Date Wishlist" : "Tambah Wishlist Date")
                     .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.date.wishlist.title")
                 Spacer()
                 Button { activeSheet = nil } label: {
                     Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(.secondary)
