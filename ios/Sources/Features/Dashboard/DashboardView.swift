@@ -500,13 +500,13 @@ struct DashboardView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
         .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private var weeklyInsightCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: AppAppearance.accentHex).opacity(0.13))
@@ -521,7 +521,7 @@ struct DashboardView: View {
                     .tracking(0.3)
                     .foregroundStyle(.secondary)
             }
-            .padding(.bottom, 0)
+            .padding(.bottom, 6)
 
             if thisWeekSpent == 0 {
                 Text(isEnglish ? "No spending this week yet." : "Belum ada transaksi minggu ini.")
@@ -562,6 +562,7 @@ struct DashboardView: View {
                     card: AppAppearance.card(dark: isDark),
                     textSub: AppAppearance.textSub(dark: isDark)
                 )
+                .padding(.top, 4)
             }
         }
         .padding(14)
