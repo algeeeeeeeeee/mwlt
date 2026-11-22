@@ -39,6 +39,30 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    func testNativeOpeningSplashAppearsAndDismisses() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--mwlt-preview-mode"]
+        app.launch()
+
+        let splashTitle = app.staticTexts["mwlt.splash.title"]
+        XCTAssertTrue(
+            splashTitle.waitForExistence(timeout: 8),
+            "The native Meowlett opening splash should appear on cold launch."
+        )
+
+        let splashDismissed = expectation(
+            for: NSPredicate(format: "exists == false"),
+            evaluatedWith: splashTitle,
+            handler: nil
+        )
+        wait(for: [splashDismissed], timeout: 8)
+        XCTAssertTrue(
+            app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 8),
+            "The first app screen should be available after the splash finishes."
+        )
+    }
+
+    @MainActor
     func testMainTabsQuickAddAndCalculatorPresentation() {
         let app = XCUIApplication()
         app.launchArguments = ["--mwlt-preview-mode"]

@@ -18,6 +18,8 @@ struct RootView: View {
     @AppStorage("gm_dark_override") private var darkOverride = "system"
     @AppStorage("gm_follow_system") private var followSystem = "0"
     @StateObject private var financeStore = FinanceStore()
+    @State private var showNativeSplash = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var preferredScheme: ColorScheme? {
         if followSystem == "1" || darkOverride == "system" { return nil }
@@ -49,5 +51,17 @@ struct RootView: View {
         .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .environment(\.font, MeowlettTypography.font(size: 14, weight: .regular))
         .preferredColorScheme(preferredScheme)
+        .overlay {
+            if showNativeSplash {
+                NativeSplashView {
+                    withAnimation(reduceMotion ? .easeOut(duration: 0.18) : .easeOut(duration: 0.4)) {
+                        showNativeSplash = false
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1000)
+            }
+        }
+        .animation(reduceMotion ? .easeOut(duration: 0.18) : .easeOut(duration: 0.4), value: showNativeSplash)
     }
 }

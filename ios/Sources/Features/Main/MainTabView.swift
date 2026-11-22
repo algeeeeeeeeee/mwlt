@@ -147,6 +147,7 @@ struct MainTabView: View {
     @AppStorage("gm_profile_photo") private var profilePhoto = ""
     @AppStorage("gm_notif") private var notificationsEnabled = "0"
     @EnvironmentObject private var store: FinanceStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var modalBlurCoordinator = ModalBlurCoordinator()
     @State private var selected: MeowlettTab
     @State private var showQuickAdd: Bool
@@ -168,6 +169,20 @@ struct MainTabView: View {
     }
 
     private var isEnglish: Bool { language == "en" }
+    private var tabTransition: AnyTransition {
+        reduceMotion ? .identity : .opacity.combined(with: .offset(y: 10))
+    }
+
+    private func selectTab(_ tab: MeowlettTab) {
+        if reduceMotion {
+            selected = tab
+        } else {
+            withAnimation(.timingCurve(0.34, 1.1, 0.64, 1, duration: 0.22)) {
+                selected = tab
+            }
+        }
+    }
+
     private var tint: Color {
         themePreset == "custom"
             ? Color(hex: customAccent)
@@ -194,16 +209,15 @@ struct MainTabView: View {
                         case .dashboard:
                             DashboardView(
                                 onSeeAllTransactions: {
-                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                                        selected = .transactions
-                                    }
+                                    selectTab(.transactions)
                                 },
                                 onAddTransaction: { showQuickAdd = true }
                             )
-                        case .transactions: TransactionsView()
-                        case .report: ReportsView()
-                        case .date: DateTabView()
-                        case .settings: SettingsView()
+                            .transition(tabTransition)
+                        case .transactions: TransactionsView().transition(tabTransition)
+                        case .report: ReportsView().transition(tabTransition)
+                        case .date: DateTabView().transition(tabTransition)
+                        case .settings: SettingsView().transition(tabTransition)
                         }
                     }
                     .environmentObject(store)
@@ -219,8 +233,9 @@ struct MainTabView: View {
             bottomNavigation
         }
         .blur(radius: (showQuickAdd || modalBlurCoordinator.isBlurred) ? 8 : 0)
-        .animation(.easeInOut(duration: 0.2), value: showQuickAdd || modalBlurCoordinator.isBlurred)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: showQuickAdd || modalBlurCoordinator.isBlurred)
         .tint(tint)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: colorSchemeIsDark)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
             RecurringTransactionAutomation.processDueItems(store: store)
@@ -280,9 +295,7 @@ struct MainTabView: View {
             }
             .buttonStyle(.plain)
             Button {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                    selected = .settings
-                }
+                selectTab(.settings)
             } label: {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "gearshape")
@@ -391,9 +404,7 @@ struct MainTabView: View {
                             : primary)
                     Button {
                         print("[MeowlettNav] bottom tab tapped: \(tab.rawValue)")
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                            selected = tab
-                        }
+                        selectTab(tab)
                     } label: {
                         HStack(spacing: 6) {
                             MeowlettTabSymbol(
@@ -418,6 +429,7 @@ struct MainTabView: View {
                                     .fill(isDate
                                         ? Color(hex: "#be185d").opacity(colorSchemeIsDark ? 0.20 : 0.18)
                                         : (colorSchemeIsDark ? tint.opacity(0.18) : primary.opacity(0.16)))
+                                    .transition(.opacity.combined(with: .scale(scale: 0.90)))
                             }
                         }
                         .contentShape(RoundedRectangle(cornerRadius: 20))

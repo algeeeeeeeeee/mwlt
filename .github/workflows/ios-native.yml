@@ -26,7 +26,7 @@ permissions:
 concurrency:
   # Version the group so a runner cleanup from an older workflow cannot hold
   # a newer native build in the pending state.
-  group: meowlett-native-ios-v5-${{ github.ref }}
+  group: meowlett-native-ios-v6-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -211,13 +211,16 @@ jobs:
             local output="$RUNNER_TEMP/MeowlettPreviews/$filename"
             local attempt
             local launch_timeout=75
-            local settle_seconds=2
-            if [[ "$filename" == *"02-dashboard.png" ]]; then
+            local settle_seconds=3.25
+            if [[ "$filename" == *"01-splash.png" ]]; then
+              # Capture the native opening while the progress animation is visible.
+              settle_seconds=0.85
+            elif [[ "$filename" == *"02-dashboard.png" ]]; then
               launch_timeout=150
-              settle_seconds=6
+              settle_seconds=3.8
             elif [[ "$filename" == *"03-date.png" ]]; then
               launch_timeout=120
-              settle_seconds=6
+              settle_seconds=3.8
             fi
             for attempt in 1 2; do
               echo "Launching preview $filename (attempt $attempt)..."
@@ -255,6 +258,7 @@ jobs:
             simctl_with_timeout 20 ui "$DEVICE_ID" appearance "$MODE"
             sleep 2
 
+            capture_preview "$MODE-01-splash.png" --mwlt-preview-mode --mwlt-preview-seed-data
             capture_preview "$MODE-02-dashboard.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=dashboard
             capture_preview "$MODE-03-transactions.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=transactions
             capture_preview "$MODE-03-report.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=report
@@ -267,6 +271,7 @@ jobs:
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
 
           REQUIRED_PREVIEWS=(
+            "light-01-splash.png" "dark-01-splash.png"
             "light-02-dashboard.png" "dark-02-dashboard.png"
             "light-03-transactions.png" "dark-03-transactions.png"
             "light-03-report.png" "dark-03-report.png"
@@ -290,6 +295,7 @@ jobs:
 
           let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
           let screens: [(String, [String])] = [
+              ("01-splash", ["meowlett"]),
               ("02-dashboard", ["streak"]),
               ("03-transactions", ["transaksi", "transactions"]),
               ("03-report", ["laporan", "reports"]),
@@ -364,6 +370,7 @@ jobs:
           let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
           let output = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/Meowlett-Native-Preview.jpg"
           let screens: [(String, String)] = [
+              ("01-splash", "Opening"),
               ("02-dashboard", "Dashboard"),
               ("03-transactions", "Transactions"),
               ("03-report", "Reports"),
@@ -377,7 +384,7 @@ jobs:
           let tileHeight = 844
           let titleHeight = 46
           let gap = 14
-          let rows = 3
+          let rows = (screens.count + 1) / 2
           let canvasWidth = gap + columns * (tileWidth + gap)
           let canvasHeight = gap + rows * (titleHeight + tileHeight + gap)
 

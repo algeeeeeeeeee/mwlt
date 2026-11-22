@@ -31,3 +31,25 @@ cat > "$SET_DIR/Contents.json" <<'JSON'
 JSON
 
 echo "Generated the native app icon from public/meow.png."
+
+SPLASH_SET_DIR="$ROOT/ios/Resources/Assets.xcassets/MeowlettSplash.imageset"
+mkdir -p "$SPLASH_SET_DIR"
+sips -s format png -z 216 216 "$SOURCE" --out "$SPLASH_SET_DIR/meowlett-splash.png" >/dev/null
+
+cat > "$SPLASH_SET_DIR/Contents.json" <<'JSON'
+{
+  "images" : [
+    {
+      "filename" : "meowlett-splash.png",
+      "idiom" : "universal",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+JSON
+
+echo "Generated the native splash logo from public/meow.png."
