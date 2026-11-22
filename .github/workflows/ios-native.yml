@@ -107,28 +107,15 @@ jobs:
                   ordered.append(candidate)
           ordered.extend(item for item in available if item not in ordered)
 
-          errors = []
-          for candidate in ordered:
-              attempt = subprocess.run(
-                  ["xcrun", "simctl", "create",
-                   "MeowlettPreview-" + candidate["name"].replace(" ", ""),
-                   candidate["identifier"], runtime["identifier"]],
-                  text=True, capture_output=True
-              )
-              if attempt.returncode == 0:
-                  device_id = attempt.stdout.strip()
-                  print("Created Simulator: " + candidate["name"] + " / " + candidate["identifier"], file=sys.stderr)
-                  print("|".join([device_id, candidate["name"], candidate["identifier"], runtime["identifier"]]))
-                  break
-              errors.append(candidate.get("name", "iPhone") + ": " + attempt.stderr.strip())
-          else:
+          if not ordered:
               names = ", ".join(item.get("name", "?") for item in available)
-              raise SystemExit("Could not create an iPhone simulator. Available: " + names + ". Errors: " + " | ".join(errors))
+              raise SystemExit("No usable iPhone simulator device type. Available: " + names)
+          candidate = ordered[0]
+          print("Selected Simulator: " + candidate["name"] + " / " + candidate["identifier"], file=sys.stderr)
+          print("|".join([candidate["name"], candidate["identifier"], runtime["identifier"]]))
           ')"
-          DEVICE_ID="${SIM_SELECTION%%|*}"
+          DEVICE_NAME="${SIM_SELECTION%%|*}"
           SIM_REST="${SIM_SELECTION#*|}"
-          DEVICE_NAME="${SIM_REST%%|*}"
-          SIM_REST="${SIM_REST#*|}"
           DEVICE_TYPE_ID="${SIM_REST%%|*}"
           RUNTIME_ID="${SIM_REST#*|}"
           if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
@@ -138,7 +125,14 @@ jobs:
             exit 1
           fi
 
-          DEVICE_ID="$(xcrun simctl create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
+          # Create exactly one uniquely named simulator. All simctl operations below
+          # have explicit timeouts so a hung CoreSimulator service cannot stall CI.
+          DEVICE_ID="$(perl -e 'alarm shift; exec @ARGV' 90 xcrun simctl create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
+          simctl_with_timeout() {
+            local timeout_seconds="$1"
+            shift
+            perl -e 'alarm shift; exec @ARGV' "$timeout_seconds" xcrun simctl "$@"
+          }
           cleanup_simulator() {
             xcrun simctl shutdown "$DEVICE_ID" >/dev/null 2>&1 || true
             xcrun simctl delete "$DEVICE_ID" >/dev/null 2>&1 || true
@@ -153,49 +147,49 @@ jobs:
           trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
 
           echo "Fresh simulator: $DEVICE_ID ($DEVICE_NAME / $DEVICE_TYPE_ID / $RUNTIME_ID)"
-          perl -e 'alarm shift; exec @ARGV' 90 xcrun simctl boot "$DEVICE_ID"
+          simctl_with_timeout 90 boot "$DEVICE_ID"
           echo "Waiting for fresh Simulator boot (maximum 4 minutes)..."
-          if ! perl -e 'alarm shift; exec @ARGV' 240 xcrun simctl bootstatus "$DEVICE_ID" -b; then
+          if ! simctl_with_timeout 240 bootstatus "$DEVICE_ID" -b; then
             echo "::error::Simulator boot did not finish within 4 minutes."
             xcrun simctl list devices available
             exit 1
           fi
           echo "Simulator booted."
-          xcrun simctl status_bar "$DEVICE_ID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+          simctl_with_timeout 45 status_bar "$DEVICE_ID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
 
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
           echo "Installing Meowlett app..."
-          xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+          simctl_with_timeout 90 install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
 
           echo "Capturing onboarding preview..."
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett
+          simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett
           sleep 3
-          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
-          xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
-          xcrun simctl spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
+          simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
+          simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
+          simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
 
           echo "Capturing dashboard preview..."
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
+          simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
           sleep 3
-          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
+          simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
 
           # Capture every top-level native tab with representative simulator-only data.
           for TAB in transactions report date settings; do
-            xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
+            simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
             echo "Capturing $TAB preview..."
-            xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
+            simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
             sleep 2
-            xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
+            simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
           done
 
           # Capture the native quick-add sheet as a separate preview state.
-          xcrun simctl terminate "$DEVICE_ID" com.mwlt.meowlett || true
+          simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
           echo "Capturing quick-add preview..."
-          xcrun simctl launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
+          simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
           sleep 2
-          xcrun simctl io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
+          simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
 
           echo "All native previews captured:"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
