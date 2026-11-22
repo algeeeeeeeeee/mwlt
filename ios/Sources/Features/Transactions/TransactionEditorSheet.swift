@@ -131,6 +131,7 @@ struct TransactionEditorSheet: View {
         HStack {
             Text(transaction == nil ? (isEnglish ? "New Transaction" : "Transaksi Baru") : (isEnglish ? "Edit Transaction" : "Edit Transaksi"))
                 .font(MeowlettTypography.font(size: 14, weight: .black))
+                .accessibilityIdentifier("mwlt.transactionEditor.title")
                 .foregroundStyle(.white)
             Spacer()
             Button { dismiss() } label: {
@@ -176,6 +177,7 @@ struct TransactionEditorSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.transactionEditor.calculator")
         }
     }
 
@@ -416,6 +418,7 @@ private struct AmountCalculatorSheet: View {
             }
             HStack(spacing: 10) {
                 Button("Batal") { dismiss() }
+                    .accessibilityIdentifier("mwlt.calculator.cancel")
                     .frame(maxWidth: .infinity).frame(height: 46)
                 Button("Gunakan hasil") {
                     onApply(Int64(max(0, currentValue.rounded())))
