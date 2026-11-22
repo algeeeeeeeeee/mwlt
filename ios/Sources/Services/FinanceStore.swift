@@ -14,7 +14,13 @@ final class FinanceStore: ObservableObject {
         fileURL = directory.appendingPathComponent("transactions.json")
         load()
         seedPreviewDataIfRequested()
-        MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
+        // Defer UserNotifications service IPC until after the first app frame.
+        // Calling this synchronously from FinanceStore.init can stall cold launch
+        // on a freshly booted simulator while the notification daemon starts.
+        let startupTransactions = transactions
+        Task { @MainActor in
+            MeowlettReminderScheduler.scheduleFromDefaults(transactions: startupTransactions)
+        }
     }
 
     func add(_ transaction: MeowlettTransaction) {

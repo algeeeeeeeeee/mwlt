@@ -148,7 +148,7 @@ struct MainTabView: View {
     }
     private var settingsHeaderIconColor: Color {
         colorSchemeIsDark
-            ? AppAppearance.readableAccent()
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.55))
             : AppAppearance.readablePrimaryOnLight()
     }
 
@@ -356,7 +356,11 @@ struct MainTabView: View {
                 ForEach([MeowlettTab.dashboard, .transactions, .report, .date], id: \.self) { tab in
                     let active = selected == tab && !showQuickAdd
                     let isDate = tab == .date
-                    let activeColor = isDate ? Color(hex: "#be185d") : (colorSchemeIsDark ? tint.opacity(0.9) : primary)
+                    let activeColor = isDate
+                        ? Color(hex: "#be185d")
+                        : (colorSchemeIsDark
+                            ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.15))
+                            : primary)
                     Button {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                             selected = tab

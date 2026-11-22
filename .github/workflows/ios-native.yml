@@ -168,8 +168,10 @@ jobs:
           simctl_with_timeout 90 install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
 
-          echo "Capturing onboarding preview..."
-          simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett
+          echo "Capturing onboarding preview (first launch, maximum 120 seconds)..."
+          # The first cold launch after a new iOS runtime boot can take longer
+          # while SpringBoard and app services finish their first-run setup.
+          simctl_with_timeout 120 launch "$DEVICE_ID" com.mwlt.meowlett
           sleep 3
           simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
           simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
