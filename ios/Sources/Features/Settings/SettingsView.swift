@@ -69,6 +69,7 @@ struct SettingsView: View {
                         subtitle: "\(isDark ? (isEnglish ? "Dark mode active" : "Mode gelap aktif") : (isEnglish ? "Light mode active" : "Mode terang aktif")) · \(selectedThemeName)",
                         symbol: isDark ? "moon.fill" : "sun.max.fill"
                     ) { activeSheet = .appearance }
+                    .accessibilityIdentifier("mwlt.settings.appearance")
                 }
 
                 settingsCard {
@@ -80,6 +81,7 @@ struct SettingsView: View {
                         symbol: "bell",
                         statusDot: notificationsEnabled != "1"
                     ) { activeSheet = .notifications }
+                    .accessibilityIdentifier("mwlt.settings.notifications")
                 }
 
                 settingsCard {
@@ -88,6 +90,7 @@ struct SettingsView: View {
                         subtitle: isEnglish ? "Manage & organise categories" : "Atur & kelola kategori",
                         symbol: "square.grid.2x2"
                     ) { activeSheet = .categoryMenu }
+                    .accessibilityIdentifier("mwlt.settings.category")
                 }
 
                 settingsCard {
@@ -96,6 +99,7 @@ struct SettingsView: View {
                         subtitle: isEnglish ? "Backup, restore & reset" : "Cadangkan, pulihkan & atur ulang",
                         symbol: "externaldrive"
                     ) { activeSheet = .data }
+                    .accessibilityIdentifier("mwlt.settings.data")
                 }
 
             }
@@ -325,6 +329,7 @@ private struct SettingsAppearanceSheet: View {
                 Text(isEnglish ? "APPEARANCE" : "TAMPILAN")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.settings.sheet.appearance.title")
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -334,6 +339,7 @@ private struct SettingsAppearanceSheet: View {
                         .background(categoryBackground, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.settings.sheet.appearance.close")
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -688,6 +694,7 @@ private struct SettingsNotificationsSheet: View {
                         .foregroundStyle(enabled ? accent : Color.secondary))
                 Text(isEnglish ? "Notifications" : "Notifikasi")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
+                    .accessibilityIdentifier("mwlt.settings.sheet.notifications.title")
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -697,6 +704,7 @@ private struct SettingsNotificationsSheet: View {
                         .background(AppAppearance.card2(dark: isDark), in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.settings.sheet.notifications.close")
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -939,6 +947,7 @@ private struct SettingsCategoryMenuSheet: View {
                 Text(isEnglish ? "Category" : "Kategori")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.settings.sheet.category.title")
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -948,6 +957,7 @@ private struct SettingsCategoryMenuSheet: View {
                         .background(categoryBackground, in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.settings.sheet.category.close")
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -961,6 +971,7 @@ private struct SettingsCategoryMenuSheet: View {
                     color: AppAppearance.accent,
                     action: onBudget
                 )
+                .accessibilityIdentifier("mwlt.settings.category.budgets")
 
                 Rectangle()
                     .fill(AppAppearance.border(dark: isDark))
@@ -974,6 +985,7 @@ private struct SettingsCategoryMenuSheet: View {
                     color: AppAppearance.primary,
                     action: onManage
                 )
+                .accessibilityIdentifier("mwlt.settings.category.manage")
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 32)
@@ -1066,9 +1078,12 @@ private struct SettingsDataSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Data").font(MeowlettTypography.font(size: 16, weight: .heavy))
+                Text("Data")
+                    .font(MeowlettTypography.font(size: 16, weight: .heavy))
+                    .accessibilityIdentifier("mwlt.settings.sheet.data.title")
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
+                    .accessibilityIdentifier("mwlt.settings.sheet.data.close")
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(Color.primary.opacity(0.72))
                     .padding(.horizontal, 14)
