@@ -187,6 +187,8 @@ struct MainTabView: View {
         .overlay(alignment: .bottom) {
             bottomNavigation
         }
+        .blur(radius: showQuickAdd ? 8 : 0)
+        .animation(.easeInOut(duration: 0.2), value: showQuickAdd)
         .tint(tint)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
@@ -371,7 +373,7 @@ struct MainTabView: View {
                             MeowlettTabSymbol(
                                 tab: tab,
                                 size: active ? 18 : 22,
-                                color: active ? activeColor : (isDate ? Color(hex: "#f9a8d4") : Color.primary.opacity(0.28))
+                                color: active ? activeColor : (isDate ? Color(hex: "#ec4899") : Color.primary.opacity(0.48))
                             )
                             .frame(width: 22, height: 22)
                             if active {
@@ -381,7 +383,7 @@ struct MainTabView: View {
                                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
                             }
                         }
-                        .foregroundStyle(active ? activeColor : (isDate ? Color(hex: "#f9a8d4") : Color.secondary.opacity(0.65)))
+                        .foregroundStyle(active ? activeColor : (isDate ? Color(hex: "#ec4899") : Color.secondary.opacity(0.82)))
                         .frame(minWidth: 54, minHeight: 54)
                         .padding(.horizontal, active ? 14 : 0)
                         .background {
@@ -400,9 +402,9 @@ struct MainTabView: View {
             }
             .fixedSize(horizontal: true, vertical: false)
             .padding(5)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(Capsule().fill(colorSchemeIsDark ? Color(red: 10.0 / 255, green: 10.0 / 255, blue: 10.0 / 255).opacity(0.72) : Color.white.opacity(0.72)))
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.10 : 0.08), lineWidth: 1))
+            .background(.regularMaterial, in: Capsule())
+            .overlay(Capsule().fill(colorSchemeIsDark ? Color.black.opacity(0.16) : Color.white.opacity(0.10)))
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.16 : 0.12), lineWidth: 1))
             .shadow(color: .black.opacity(colorSchemeIsDark ? 0.45 : 0.10), radius: colorSchemeIsDark ? 24 : 20, x: 0, y: colorSchemeIsDark ? 4 : 2)
             .fixedSize(horizontal: true, vertical: false)
             }
