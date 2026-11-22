@@ -55,10 +55,9 @@ enum MeowlettReminderScheduler {
 
     static func scheduleFromDefaults(transactions: [MeowlettTransaction]) {
         let defaults = UserDefaults.standard
-        guard defaults.string(forKey: "gm_notif") == "1" else {
-            removePendingRequests()
-            return
-        }
+        // Disabling notifications already removes pending requests from Settings.
+        // Avoid a UserNotifications IPC call on every transaction change while off.
+        guard defaults.string(forKey: "gm_notif") == "1" else { return }
         let daysRaw = defaults.string(forKey: "gm_reminder_days") ?? "[1,2,3,4,5]"
         let days = (try? JSONDecoder().decode([Int].self, from: Data(daysRaw.utf8))) ?? [1,2,3,4,5]
         let hour = Int(defaults.string(forKey: "gm_reminder_hour") ?? "21") ?? 21
