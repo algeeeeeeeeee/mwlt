@@ -1365,10 +1365,17 @@ struct DashboardView: View {
                 .padding(.vertical, 40)
             } else {
                 HStack(alignment: .center, spacing: 16) {
-                    DonutBreakdown(
-                        values: categoryTotals,
-                        totalText: rupiah(spent)
-                    )
+                    ZStack {
+                        DonutBreakdown(
+                            values: categoryTotals,
+                            totalText: rupiah(spent)
+                        )
+                        // The PWA SVG uses a 90pt outer radius inside a 200pt viewBox.
+                        // With a 140pt rendered chart, its path diameter is 126pt.
+                        // A 104pt SwiftUI circle plus its 11.2pt stroke inset/outset
+                        // reproduces the same 126pt outside diameter.
+                        .frame(width: 104, height: 104)
+                    }
                     .frame(width: 140, height: 140)
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -1942,9 +1949,6 @@ private struct DonutBreakdown: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(Color.primary.opacity(0.06), lineWidth: 22.4)
-
             ForEach(Array(values.enumerated()), id: \.offset) { index, item in
                 let previous = values.prefix(index).reduce(Int64(0)) { $0 + $1.amount }
                 let start = total > 0 ? CGFloat(Double(previous) / total) : 0
@@ -1959,12 +1963,12 @@ private struct DonutBreakdown: View {
                     .rotationEffect(.degrees(-90))
             }
 
-            VStack(spacing: 2) {
+            VStack(spacing: 0) {
                 Text("Total")
-                    .font(MeowlettTypography.font(size: 13, weight: .semibold))
+                    .font(MeowlettTypography.font(size: 9, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Text(totalText)
-                    .font(MeowlettTypography.font(size: 15, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 11, weight: .heavy))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
