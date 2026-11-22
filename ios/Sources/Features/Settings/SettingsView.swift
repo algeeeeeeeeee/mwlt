@@ -59,9 +59,8 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 profileCard
-                    .padding(.bottom, 4)
 
                 settingsCard {
                     settingsRow(
@@ -163,7 +162,7 @@ struct SettingsView: View {
                                     .frame(width: 27, height: 27)
                             }
                         }
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 2.5))
+                        .overlay(Circle().strokeBorder(AppAppearance.border(dark: isDark), lineWidth: 2.5))
                     Circle().fill(primary).frame(width: 18, height: 18)
                         .overlay(Image(systemName: "camera").font(.system(size: 8, weight: .medium)).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(AppAppearance.background(dark: isDark), lineWidth: 2))
@@ -202,7 +201,7 @@ struct SettingsView: View {
                         showNameEditor = true
                     } label: {
                         HStack(spacing: 5) {
-                            Text(userName.isEmpty ? (isEnglish ? "Tap to add your name" : "Ketuk untuk isi nama") : userName)
+                            Text(userName.isEmpty ? (isEnglish ? "Tap to set name" : "Tap untuk isi nama") : userName)
                                 .font(MeowlettTypography.font(size: 17, weight: .black))
                                 .foregroundStyle(.primary)
                             Image(systemName: "pencil")
@@ -219,7 +218,7 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(cardColor, in: RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(cardBorder, lineWidth: 1))
-        .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private func saveProfileName() {
@@ -230,7 +229,7 @@ struct SettingsView: View {
     private var cardColor: Color {
         isDark ? AppAppearance.card(dark: isDark) : .white
     }
-    private var cardBorder: Color { Color.primary.opacity(isDark ? 0.10 : 0.07) }
+    private var cardBorder: Color { AppAppearance.border(dark: isDark) }
     private var rowDivider: some View { Rectangle().fill(cardBorder).frame(height: 1).padding(.leading, 16) }
 
     private func settingsCard<Content: View>(spacing: CGFloat = 0, @ViewBuilder content: () -> Content) -> some View {
