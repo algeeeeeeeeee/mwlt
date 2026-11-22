@@ -304,7 +304,8 @@ struct MainTabView: View {
                 return image
             }
         }
-        guard let url = Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64")\n            ?? Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64", subdirectory: "Images"),
+        guard let url = Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64")
+            ?? Bundle.main.url(forResource: "meow-avatar.jpg", withExtension: "b64", subdirectory: "Images"),
               let encoded = try? String(contentsOf: url, encoding: .utf8),
               let data = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters) else {
             return nil
