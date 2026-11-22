@@ -1007,12 +1007,12 @@ struct DashboardView: View {
                     .background(color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(goal.label).font(MeowlettTypography.font(size: 13, weight: .bold))
-                    Text("\\(rupiah(goal.saved)) / \\(rupiah(goal.target))")
+                    Text("\(rupiah(goal.saved)) / \(rupiah(goal.target))")
                         .font(MeowlettTypography.font(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("\\(percentage)%")
+                Text("\(percentage)%")
                     .font(MeowlettTypography.font(size: 13, weight: .black))
                     .foregroundStyle(percentage >= 100 ? Color(hex: "#4ade80") : color)
                 Button {
@@ -1488,7 +1488,6 @@ private struct GoalConfettiStrip: View {
                     )
             }
         }
-        .clipped(false)
         .onAppear { falling = true }
     }
 }
