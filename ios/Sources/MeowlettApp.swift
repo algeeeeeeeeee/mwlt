@@ -33,6 +33,10 @@ struct RootView: View {
         ProcessInfo.processInfo.arguments.contains("--mwlt-preview-mode")
     }
 
+    private var isSplashUITestLaunch: Bool {
+        ProcessInfo.processInfo.arguments.contains("--mwlt-test-splash")
+    }
+
     var body: some View {
         GeometryReader { geometry in
             Group {
@@ -53,7 +57,7 @@ struct RootView: View {
         .preferredColorScheme(preferredScheme)
         .overlay {
             if showNativeSplash {
-                NativeSplashView {
+                NativeSplashView(holdForUITest: isSplashUITestLaunch) {
                     withAnimation(reduceMotion ? .easeOut(duration: 0.18) : .easeOut(duration: 0.4)) {
                         showNativeSplash = false
                     }

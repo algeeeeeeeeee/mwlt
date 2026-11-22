@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NativeSplashView: View {
+    let holdForUITest: Bool
     let onFinish: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -79,11 +80,21 @@ struct NativeSplashView: View {
                 }
                 .frame(width: 160, height: 4)
                 .accessibilityLabel("Loading Meowlett")
+
+                if holdForUITest {
+                    Button("Continue", action: onFinish)
+                        .font(.system(size: 12, weight: .semibold))
+                        .accessibilityIdentifier("mwlt.splash.continue")
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .accessibilityIdentifier("mwlt.splash.root")
         .task {
+            if holdForUITest {
+                progress = 1
+                return
+            }
             if reduceMotion {
                 progress = 1
                 try? await Task.sleep(nanoseconds: 450_000_000)

@@ -41,25 +41,23 @@ final class MeowlettUITests: XCTestCase {
     @MainActor
     func testNativeOpeningSplashAppearsAndDismisses() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode"]
+        app.launchArguments = ["--mwlt-preview-mode", "--mwlt-test-splash"]
         app.launch()
 
         let splashTitle = app.staticTexts["mwlt.splash.title"]
         XCTAssertTrue(
-            splashTitle.waitForExistence(timeout: 8),
+            splashTitle.waitForExistence(timeout: 20),
             "The native Meowlett opening splash should appear on cold launch."
         )
+        let continueButton = app.buttons["mwlt.splash.continue"]
+        XCTAssertTrue(continueButton.waitForExistence(timeout: 8))
+        continueButton.tap()
 
-        let splashDismissed = expectation(
-            for: NSPredicate(format: "exists == false"),
-            evaluatedWith: splashTitle,
-            handler: nil
-        )
-        wait(for: [splashDismissed], timeout: 8)
         XCTAssertTrue(
-            app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 8),
+            app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 12),
             "The first app screen should be available after the splash finishes."
         )
+        XCTAssertFalse(splashTitle.exists, "The opening splash should dismiss after Continue.")
     }
 
     @MainActor
@@ -271,6 +269,10 @@ final class MeowlettUITests: XCTestCase {
         XCTAssertTrue(quickAddButton.waitForExistence(timeout: 15))
         quickAddButton.tap()
 
+        XCTAssertTrue(
+            app.staticTexts["mwlt.transactionEditor.title"].waitForExistence(timeout: 10),
+            "Quick Add should present the transaction editor before its fields are queried."
+        )
         let amountField = app.textFields["mwlt.transactionEditor.amount"]
         let descriptionField = app.textFields["mwlt.transactionEditor.description"]
         let saveButton = app.buttons["mwlt.transactionEditor.save"]

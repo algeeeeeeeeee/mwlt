@@ -170,14 +170,14 @@ struct MainTabView: View {
 
     private var isEnglish: Bool { language == "en" }
     private var tabTransition: AnyTransition {
-        reduceMotion ? .identity : .opacity.combined(with: .offset(y: 10))
+        reduceMotion ? .identity : .opacity
     }
 
     private func selectTab(_ tab: MeowlettTab) {
         if reduceMotion {
             selected = tab
         } else {
-            withAnimation(.timingCurve(0.34, 1.1, 0.64, 1, duration: 0.22)) {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                 selected = tab
             }
         }
