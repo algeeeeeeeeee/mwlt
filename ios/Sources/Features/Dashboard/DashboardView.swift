@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct DashboardView: View {
+    var onSeeAllTransactions: () -> Void = {}
+    var onAddTransaction: () -> Void = {}
+
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("gm_lang") private var language = "id"
@@ -1306,40 +1309,166 @@ struct DashboardView: View {
     }
 
     private var recentTransactionsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                sectionHeading(isEnglish ? "Recent transactions" : "Transaksi Terbaru", icon: "clock.arrow.circlepath")
+        let recent = Array(store.transactions.prefix(recentCount))
+        let primaryText = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.45))
+            : AppAppearance.readablePrimaryOnLight()
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(primaryText.opacity(0.10))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "receipt")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(primaryText)
+                    )
+                Text(isEnglish ? "Recent Transactions" : "Transaksi Terbaru")
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                    .foregroundStyle(.primary)
                 Spacer()
-                Text("\(store.transactions.count)")
-                    .font(MeowlettTypography.font(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
+                Button(action: onSeeAllTransactions) {
+                    HStack(spacing: 3) {
+                        Text(isEnglish ? "See All" : "Lihat Semua")
+                            .font(MeowlettTypography.font(size: 12, weight: .bold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(primaryText)
+                }
+                .buttonStyle(.plain)
             }
-            if store.transactions.isEmpty {
-                Text(isEnglish ? "Your recent transactions will appear here." : "Transaksi terbarumu akan muncul di sini.")
-                    .font(MeowlettTypography.font(size: 12, weight: .regular))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
+            .padding(.bottom, 14)
+
+            if recent.isEmpty {
+                VStack(spacing: 0) {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(hex: AppAppearance.accentHex).opacity(0.13),
+                                    Color(hex: AppAppearance.primaryHex).opacity(0.10)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 72, height: 72)
+                        .overlay(Circle().stroke(Color(hex: AppAppearance.accentHex).opacity(0.22), lineWidth: 1.5))
+                        .overlay(
+                            Image(systemName: "hand.coins")
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundStyle(primaryText)
+                        )
+                        .padding(.bottom, 14)
+
+                    Text(isEnglish ? "No transactions yet" : "Belum ada transaksi")
+                        .font(MeowlettTypography.font(size: 15, weight: .black))
+                        .foregroundStyle(.primary)
+                        .padding(.bottom, 6)
+
+                    Text(isEnglish
+                         ? "Start recording your first transaction today!"
+                         : "Yuk, mulai catat pengeluaran pertamamu hari ini!")
+                        .font(MeowlettTypography.font(size: 12, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .padding(.bottom, 18)
+
+                    Button(action: onAddTransaction) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(isEnglish ? "Record Now" : "Catat Sekarang")
+                                .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 11)
+                        .background(Color(hex: AppAppearance.accentHex), in: RoundedRectangle(cornerRadius: 16))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+                .padding(.horizontal, 16)
             } else {
-                ForEach(store.transactions.prefix(recentCount)) { transaction in
-                    TransactionRow(transaction: transaction, language: language)
-                    if transaction.id != store.transactions.prefix(recentCount).last?.id {
-                        Divider().opacity(0.55)
+                VStack(spacing: 10) {
+                    ForEach(recent) { transaction in
+                        recentTransactionRow(transaction)
                     }
                 }
-                if store.transactions.count > recentCount {
-                    Button(isEnglish ? "Show more" : "Tampilkan lainnya") {
-                        recentCount += 5
-                    }
-                    .font(.system(size: 12, weight: .bold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 9)
-                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
+            }
+
+            if store.transactions.count > recentCount {
+                Button {
+                    recentCount += 5
+                } label: {
+                    Text(isEnglish ? "Show More" : "Lihat Lebih")
+                        .font(MeowlettTypography.font(size: 14, weight: .bold))
+                        .foregroundStyle(isDark ? Color(hex: "#e5e7eb") : Color(hex: "#374151"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 13)
+                        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
                 }
+                .buttonStyle(.plain)
+                .padding(.top, 12)
             }
         }
         .padding(16)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
+    }
+
+    private func recentTransactionRow(_ transaction: MeowlettTransaction) -> some View {
+        let category = MeowlettCategory.all.first(where: { $0.id == transaction.category })
+        let categoryColor = Color(hex: category?.color ?? "#94a3b8")
+        let dateText: String = {
+            if Calendar.current.isDateInToday(transaction.date) {
+                return isEnglish ? "Today" : "Hari ini"
+            }
+            if Calendar.current.isDateInYesterday(transaction.date) {
+                return isEnglish ? "Yesterday" : "Kemarin"
+            }
+            return transaction.date.formatted(
+                .dateTime.weekday(.wide).day().month(.wide)
+                    .locale(Locale(identifier: isEnglish ? "en_GB" : "id_ID"))
+            )
+        }()
+
+        return HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(categoryColor.opacity(0.10))
+                .frame(width: 40, height: 40)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(categoryColor.opacity(0.15), lineWidth: 1))
+                .overlay(
+                    Image(systemName: category?.icon ?? "shippingbox")
+                        .font(.system(size: 21, weight: .regular))
+                        .foregroundStyle(categoryColor)
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(transaction.description)
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Text("\(MeowlettCategory.name(for: transaction.category, language: language)) · \(dateText)")
+                    .font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("-\(rupiah(transaction.amount))")
+                .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                .foregroundStyle(Color(hex: "#f87171"))
+                .lineLimit(1)
+        }
     }
 
     private func sectionHeading(_ title: String, icon: String) -> some View {
