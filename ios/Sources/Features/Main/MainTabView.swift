@@ -294,6 +294,7 @@ struct MainTabView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.header.settings")
             PhotosPicker(selection: $selectedHeaderPhoto, matching: .images) {
                 ZStack(alignment: .bottomTrailing) {
                     Circle()
@@ -371,6 +372,7 @@ struct MainTabView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isEnglish ? "Add transaction" : "Tambah transaksi")
+            .accessibilityIdentifier("mwlt.quickAdd")
 
             HStack(spacing: 0) {
                 ForEach([MeowlettTab.dashboard, .transactions, .report, .date], id: \.self) { tab in
@@ -414,6 +416,7 @@ struct MainTabView: View {
                         .contentShape(RoundedRectangle(cornerRadius: 20))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.tab.\(tab.rawValue)")
                     .fixedSize(horizontal: true, vertical: false)
                 }
             }
