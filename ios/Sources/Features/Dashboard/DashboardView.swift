@@ -24,6 +24,7 @@ struct DashboardView: View {
     @AppStorage("gm_budgets") private var budgetsRaw = "{}"
     @AppStorage("gm_overall_budget") private var overallBudgetRaw = "0"
     @AppStorage("gm_savings_goals") private var savingsGoalsRaw = "[]"
+    @AppStorage("gm_cicilan") private var installmentsRaw = "[]"
     @State private var budgets: [String: Int64] = [:]
     @State private var savingsGoals: [DashboardSavingsGoal] = []
     @State private var storageLoaded = false
@@ -38,7 +39,22 @@ struct DashboardView: View {
         store.transactions.filter { Calendar.current.isDate($0.date, equalTo: .now, toGranularity: .month) }
     }
     private var spent: Int64 { monthTransactions.reduce(0) { $0 + $1.amount } }
-    private var remaining: Int64 { income - spent }
+    private var totalCicilanMonthly: Int64 {
+        guard let data = installmentsRaw.data(using: .utf8),
+              let items = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return 0 }
+        return items.reduce(Int64(0)) { total, item in
+            let value: Int64
+            if let number = item["monthly"] as? NSNumber {
+                value = number.int64Value
+            } else if let string = item["monthly"] as? String {
+                value = Int64(string.filter(\\.isNumber)) ?? 0
+            } else {
+                value = 0
+            }
+            return total + value
+        }
+    }
+    private var remaining: Int64 { income - spent - totalCicilanMonthly }
     private var todaySpent: Int64 {
         store.transactions.filter { Calendar.current.isDateInToday($0.date) }.reduce(0) { $0 + $1.amount }
     }
