@@ -22,6 +22,7 @@ struct DashboardView: View {
     @State private var editingGoal: DashboardSavingsGoal?
     @State private var quickAddGoalID: Int64?
     @State private var quickAddAmount = ""
+    @State private var quickAddAmountDisplay = ""
 
     private var isEnglish: Bool { language == "en" }
     private var income: Int64 { Int64(incomeRaw) ?? 0 }
@@ -1028,14 +1029,20 @@ struct DashboardView: View {
                 }
                 .buttonStyle(.plain)
             }
+            if percentage >= 100 {
+                GoalConfettiStrip(goalColor: color)
+                    .frame(height: 20)
+                    .padding(.bottom, 2)
+            }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.primary.opacity(isDark ? 0.07 : 0.06))
+                    Capsule().fill(Color.primary.opacity(isDark ? 0.06 : 0.06))
                     Capsule().fill(percentage >= 100 ? Color(hex: "#4ade80") : color)
                         .frame(width: proxy.size.width * CGFloat(percentage) / 100)
                 }
             }
             .frame(height: 6)
+            .padding(.bottom, 4)
             if remaining > 0 {
                 HStack(spacing: 4) {
                     Text((isEnglish ? "Remaining " : "Sisa ") + rupiah(remaining))
@@ -1080,38 +1087,54 @@ struct DashboardView: View {
             if percentage < 100 {
                 if quickAddGoalID == goal.id {
                     HStack(spacing: 6) {
-                        TextField(isEnglish ? "Savings amount" : "Nominal tabungan", text: $quickAddAmount)
-                            .keyboardType(.numberPad)
-                            .font(MeowlettTypography.font(size: 13, weight: .semibold))
-                            .padding(.horizontal, 12)
-                            .frame(height: 38)
-                            .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.45), lineWidth: 1.5))
-                        Button(isEnglish ? "Save" : "Simpan") {
-                            let value = Int64(quickAddAmount.filter(\.isNumber)) ?? 0
+                        TextField(isEnglish ? "Savings amount" : "Nominal tabungan", text: Binding(
+                            get: { quickAddAmountDisplay },
+                            set: { value in
+                                let digits = value.filter(\.isNumber)
+                                quickAddAmount = digits
+                                quickAddAmountDisplay = formattedNumber(digits)
+                            }
+                        ))
+                        .keyboardType(.numberPad)
+                        .font(MeowlettTypography.font(size: 13, weight: .regular))
+                        .padding(.horizontal, 12)
+                        .frame(height: 38)
+                        .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(color.opacity(0.27), lineWidth: 1.5))
+
+                        Button {
+                            let value = Int64(quickAddAmount) ?? 0
                             guard value > 0, let index = savingsGoals.firstIndex(where: { $0.id == goal.id }) else {
                                 quickAddGoalID = nil
                                 quickAddAmount = ""
+                                quickAddAmountDisplay = ""
                                 return
                             }
                             savingsGoals[index].saved += value
                             quickAddGoalID = nil
                             quickAddAmount = ""
+                            quickAddAmountDisplay = ""
+                        } label: {
+                            Text(isEnglish ? "Save" : "Simpan")
+                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(color, in: RoundedRectangle(cornerRadius: 10))
                         }
-                        .font(.system(size: 11, weight: .heavy))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 13)
-                        .frame(height: 38)
-                        .background(color, in: RoundedRectangle(cornerRadius: 10))
+                        .buttonStyle(.plain)
+
                         Button {
                             quickAddGoalID = nil
                             quickAddAmount = ""
+                            quickAddAmountDisplay = ""
                         } label: {
                             Image(systemName: "xmark")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(.secondary)
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundStyle(AppAppearance.textSub(dark: isDark))
                                 .frame(width: 34, height: 38)
-                                .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
+                                .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
                     }
@@ -1119,18 +1142,29 @@ struct DashboardView: View {
                     Button {
                         quickAddGoalID = goal.id
                         quickAddAmount = ""
+                        quickAddAmountDisplay = ""
                     } label: {
-                        Label(isEnglish ? "Add savings" : "Tambah tabungan", systemImage: "plus")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(color)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text(isEnglish ? "Add savings" : "Tambah tabungan")
+                                .font(MeowlettTypography.font(size: 11, weight: .bold))
+                        }
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(color.opacity(0.27), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
+    }
+
+    private func formattedNumber(_ digits: String) -> String {
+        guard let value = Int64(digits), value > 0 else { return "" }
+        return NumberFormatter.localizedString(from: NSNumber(value: value), number: .decimal)
     }
 
     private func dateFromISO(_ value: String) -> Date? {
@@ -1421,6 +1455,41 @@ private struct NativeMoneyEntrySheet: View {
             formatter.numberStyle = .decimal
             amountText = initialValue > 0 ? (formatter.string(from: NSNumber(value: initialValue)) ?? String(initialValue)) : ""
         }
+    }
+}
+
+private struct GoalConfettiStrip: View {
+    let goalColor: Color
+    private let confettiColors: [Color] = [
+        Color(hex: "#fbbf24"),
+        Color(hex: "#34d399"),
+        Color(hex: "#f87171"),
+        Color(hex: "#c084fc")
+    ]
+    @State private var falling = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            ForEach(0..<5, id: \.self) { index in
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(index == 0 ? goalColor : confettiColors[(index - 1) % confettiColors.count])
+                    .frame(width: 6, height: 6)
+                    .rotationEffect(.degrees(falling ? 720 : 0))
+                    .position(
+                        x: geometry.size.width * CGFloat(0.08 + Double(index) * 0.18),
+                        y: falling ? 54 : 0
+                    )
+                    .opacity(falling ? 0 : 1)
+                    .animation(
+                        .easeOut(duration: 0.8)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double(index) * 0.12),
+                        value: falling
+                    )
+            }
+        }
+        .clipped(false)
+        .onAppear { falling = true }
     }
 }
 
