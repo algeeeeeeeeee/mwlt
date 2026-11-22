@@ -63,6 +63,39 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
+      - name: Build iPhone device
+        run: |
+          xcodebuild \
+            -project ios/Meowlett.xcodeproj \
+            -scheme Meowlett \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/MeowlettDevice" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH="$RUNNER_TEMP/MeowlettDevice/Build/Products/Release-iphoneos/Meowlett.app"
+          test -d "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/MeowlettIPA/Payload"
+          ditto "$APP_PATH" "$RUNNER_TEMP/MeowlettIPA/Payload/Meowlett.app"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/MeowlettIPA/Payload" \
+            "$GITHUB_WORKSPACE/Meowlett-Swift-unsigned.ipa"
+          unzip -l "$GITHUB_WORKSPACE/Meowlett-Swift-unsigned.ipa" | grep 'Payload/Meowlett.app/Info.plist'
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowlett-Swift-unsigned-IPA
+          path: Meowlett-Swift-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Capture native app previews
         run: |
           set -euo pipefail
@@ -297,35 +330,3 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Build iPhone device
-        run: |
-          xcodebuild \
-            -project ios/Meowlett.xcodeproj \
-            -scheme Meowlett \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath "$RUNNER_TEMP/MeowlettDevice" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build
-
-      - name: Package unsigned IPA
-        run: |
-          APP_PATH="$RUNNER_TEMP/MeowlettDevice/Build/Products/Release-iphoneos/Meowlett.app"
-          test -d "$APP_PATH"
-          mkdir -p "$RUNNER_TEMP/MeowlettIPA/Payload"
-          ditto "$APP_PATH" "$RUNNER_TEMP/MeowlettIPA/Payload/Meowlett.app"
-          ditto -c -k --sequesterRsrc --keepParent \
-            "$RUNNER_TEMP/MeowlettIPA/Payload" \
-            "$GITHUB_WORKSPACE/Meowlett-Swift-unsigned.ipa"
-          unzip -l "$GITHUB_WORKSPACE/Meowlett-Swift-unsigned.ipa" | grep 'Payload/Meowlett.app/Info.plist'
-
-      - name: Upload unsigned IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: Meowlett-Swift-unsigned-IPA
-          path: Meowlett-Swift-unsigned.ipa
-          if-no-files-found: error
-          retention-days: 7
