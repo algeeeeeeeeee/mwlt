@@ -174,11 +174,13 @@ struct DashboardView: View {
                         weeklyInsightCard
                     }
 
+                    financialHealthCard
                     predictionCard
                     budgetCard
                     savingsGoalsCard
                     recentTransactionsCard
                     categoryBreakdownCard
+                    paymentMethodStatsCard
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
