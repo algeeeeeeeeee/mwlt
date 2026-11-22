@@ -59,6 +59,8 @@ struct DateTabView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
+        .blur(radius: activeSheet == nil ? 0 : 8)
+        .animation(.easeInOut(duration: 0.2), value: activeSheet != nil)
         .overlay(alignment: .bottom) {
             if showDateUndoToast, let deleted = recentlyDeletedDateTransaction {
                 dateUndoToast(for: deleted)
