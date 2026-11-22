@@ -26,7 +26,7 @@ permissions:
 concurrency:
   # Version the group so a runner cleanup from an older workflow cannot hold
   # a newer native build in the pending state.
-  group: meowlett-native-ios-v4-${{ github.ref }}
+  group: meowlett-native-ios-v5-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -107,7 +107,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Capture native app previews
+      - name: Capture native app previews (Light + Dark)
         run: |
           set -euo pipefail
 
@@ -123,7 +123,6 @@ jobs:
               simctl_with_timeout 15 delete "$DEVICE_ID" >/dev/null 2>&1 || true
             fi
           }
-          # Cover simulator discovery and creation too, not only boot/capture.
           (
             sleep 1080
             echo "::error::Native preview capture exceeded 18 minutes."
@@ -132,8 +131,6 @@ jobs:
           WATCHDOG_PID=$!
           trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
 
-          # Create a brand-new full-size simulator. Reusing a previously resized
-          # simulator can produce a short, window-like screenshot with black bars.
           SIM_SELECTION="$(python3 -c '
           import json, subprocess, sys, re
 
@@ -161,7 +158,6 @@ jobs:
               item for item in types
               if item.get("identifier", "").startswith("com.apple.CoreSimulator.SimDeviceType.iPhone")
           ]
-
           priorities = [
               "iPhone XR", "iPhone 11", "iPhone 11 Pro", "iPhone 12",
               "iPhone 13", "iPhone 14", "iPhone SE (3rd generation)",
@@ -173,7 +169,6 @@ jobs:
               if candidate and candidate not in ordered:
                   ordered.append(candidate)
           ordered.extend(item for item in available if item not in ordered)
-
           if not ordered:
               names = ", ".join(item.get("name", "?") for item in available)
               raise SystemExit("No usable iPhone simulator device type. Available: " + names)
@@ -192,10 +187,7 @@ jobs:
             exit 1
           fi
 
-          # Create exactly one uniquely named simulator. All simctl operations below
-          # have explicit timeouts so a hung CoreSimulator service cannot stall CI.
           DEVICE_ID="$(simctl_with_timeout 90 create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
-
           echo "Fresh simulator: $DEVICE_ID ($DEVICE_NAME / $DEVICE_TYPE_ID / $RUNTIME_ID)"
           simctl_with_timeout 90 boot "$DEVICE_ID"
           echo "Waiting for fresh Simulator boot (maximum 4 minutes)..."
@@ -205,8 +197,6 @@ jobs:
             exit 1
           fi
           echo "Simulator booted."
-          # Skip status_bar override: CoreSimulator can hang on this cosmetic command
-          # after a fresh iOS runtime migration. Screenshots remain valid without it.
 
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
@@ -215,7 +205,6 @@ jobs:
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
 
           CAPTURED_COUNT=0
-
           capture_preview() {
             local filename="$1"
             shift
@@ -223,14 +212,10 @@ jobs:
             local attempt
             local launch_timeout=75
             local settle_seconds=2
-            if [ "$filename" = "02-dashboard.png" ]; then
-              # Dashboard is the first native screen opened after a fresh install.
-              # Give its initial app/store setup more time than warm tab switches.
+            if [[ "$filename" == *"02-dashboard.png" ]]; then
               launch_timeout=150
               settle_seconds=6
-            elif [ "$filename" = "03-date.png" ]; then
-              # The Date tab has its own initial data/layout pass; allow it to settle
-              # before capturing the first-frame preview.
+            elif [[ "$filename" == *"03-date.png" ]]; then
               launch_timeout=120
               settle_seconds=6
             fi
@@ -249,35 +234,45 @@ jobs:
               simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett >/dev/null 2>&1 || true
               sleep 2
             done
-            echo "::warning::Skipping $filename after two failed attempts."
+            echo "::error::Could not capture required preview $filename after two attempts."
             return 1
           }
 
-          # Skip onboarding in this capture run: the previous build already
-          # includes an onboarding reference. Focus on active tabs and popups.
-          if ! simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES; then
-            echo "::warning::Could not set onboarding preference before preview launch."
-          fi
+          # This launch-only flag bypasses onboarding and leaves the user's
+          # persisted onboarding preference untouched.
+          simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
 
-          # The app-level preview flag bypasses onboarding deterministically; it does not
-          # write to the user's persistent onboarding preference.
-          capture_preview "02-dashboard.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=dashboard || true
-          for TAB in transactions report date settings; do
-            capture_preview "03-$TAB.png" --mwlt-preview-mode --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB" || true
+          for MODE in light dark; do
+            if [ "$MODE" = "dark" ]; then
+              DARK_OVERRIDE="true"
+            else
+              DARK_OVERRIDE="false"
+            fi
+
+            echo "Preparing native $MODE appearance..."
+            simctl_with_timeout 20 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett gm_follow_system -string 0
+            simctl_with_timeout 20 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett gm_dark_override -string "$DARK_OVERRIDE"
+            simctl_with_timeout 20 ui "$DEVICE_ID" appearance "$MODE"
+            sleep 2
+
+            capture_preview "$MODE-02-dashboard.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=dashboard
+            capture_preview "$MODE-03-transactions.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=transactions
+            capture_preview "$MODE-03-report.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=report
+            capture_preview "$MODE-03-date.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=date
+            capture_preview "$MODE-03-settings.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=settings
+            capture_preview "$MODE-08-quick-add.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-quick-add
           done
-          capture_preview "08-quick-add.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-quick-add || true
 
-          echo "Captured $CAPTURED_COUNT native preview screen(s):"
+          echo "Captured $CAPTURED_COUNT native previews across Light and Dark Mode."
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
 
-          # A successful partial collage must not hide a missing core tab.
           REQUIRED_PREVIEWS=(
-            "02-dashboard.png"
-            "03-transactions.png"
-            "03-report.png"
-            "03-date.png"
-            "03-settings.png"
-            "08-quick-add.png"
+            "light-02-dashboard.png" "dark-02-dashboard.png"
+            "light-03-transactions.png" "dark-03-transactions.png"
+            "light-03-report.png" "dark-03-report.png"
+            "light-03-date.png" "dark-03-date.png"
+            "light-03-settings.png" "dark-03-settings.png"
+            "light-08-quick-add.png" "dark-08-quick-add.png"
           )
           for PREVIEW in "${REQUIRED_PREVIEWS[@]}"; do
             if [ ! -s "$RUNNER_TEMP/MeowlettPreviews/$PREVIEW" ]; then
@@ -286,47 +281,81 @@ jobs:
             fi
           done
 
-      - name: Validate native preview content
+      - name: Validate native previews (OCR + actual appearance)
         run: |
           cat > "$RUNNER_TEMP/ValidateMeowlettPreviews.swift" <<'SWIFT'
+          import AppKit
           import Foundation
           import Vision
 
           let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
-          let expectations: [(String, [String])] = [
-              ("02-dashboard.png", ["streak"]),
-              ("03-transactions.png", ["transaksi", "transactions"]),
-              ("03-report.png", ["laporan", "reports"]),
-              ("03-date.png", ["date"]),
-              ("03-settings.png", ["pengaturan", "settings"]),
-              ("08-quick-add.png", ["transaksi baru", "new transaction"])
+          let screens: [(String, [String])] = [
+              ("02-dashboard", ["streak"]),
+              ("03-transactions", ["transaksi", "transactions"]),
+              ("03-report", ["laporan", "reports"]),
+              ("03-date", ["date"]),
+              ("03-settings", ["pengaturan", "settings"]),
+              ("08-quick-add", ["transaksi baru", "new transaction"])
           ]
 
-          for (filename, expectedTerms) in expectations {
+          func luminance(of filename: String) throws -> Double {
               let url = URL(fileURLWithPath: directory).appendingPathComponent(filename)
-              let request = VNRecognizeTextRequest()
-              request.recognitionLevel = .accurate
-              request.usesLanguageCorrection = true
-              try VNImageRequestHandler(url: url, options: [:]).perform([request])
-              let recognized = (request.results ?? [])
-                  .compactMap { $0.topCandidates(1).first?.string }
-                  .joined(separator: " ")
-                  .lowercased()
+              let data = try Data(contentsOf: url)
+              guard let bitmap = NSBitmapImageRep(data: data) else {
+                  throw NSError(domain: "MeowlettPreview", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not decode \(filename)"])
+              }
+              var total = 0.0
+              var samples = 0
+              for y in stride(from: 0, to: bitmap.pixelsHigh, by: 6) {
+                  for x in stride(from: 0, to: bitmap.pixelsWide, by: 6) {
+                      guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+                      total += 0.2126 * color.redComponent + 0.7152 * color.greenComponent + 0.0722 * color.blueComponent
+                      samples += 1
+                  }
+              }
+              guard samples > 0 else {
+                  throw NSError(domain: "MeowlettPreview", code: 2, userInfo: [NSLocalizedDescriptionKey: "No pixels sampled in \(filename)"])
+              }
+              return total / Double(samples)
+          }
 
-              if recognized.contains("selamat datang") || recognized.contains("welcome to meowlett") {
-                  fputs("::error::\(filename) still shows onboarding instead of its requested screen.\n", stderr)
+          for (base, expectedTerms) in screens {
+              for mode in ["light", "dark"] {
+                  let filename = "\(mode)-\(base).png"
+                  let url = URL(fileURLWithPath: directory).appendingPathComponent(filename)
+                  let request = VNRecognizeTextRequest()
+                  request.recognitionLevel = .accurate
+                  request.usesLanguageCorrection = true
+                  try VNImageRequestHandler(url: url, options: [:]).perform([request])
+                  let recognized = (request.results ?? [])
+                      .compactMap { $0.topCandidates(1).first?.string }
+                      .joined(separator: " ")
+                      .lowercased()
+
+                  if recognized.contains("selamat datang") || recognized.contains("welcome to meowlett") {
+                      fputs("::error::\(filename) still shows onboarding instead of its requested screen.\n", stderr)
+                      exit(1)
+                  }
+                  if !expectedTerms.contains(where: { recognized.contains($0) }) {
+                      fputs("::error::\(filename) does not contain its expected screen title/content. OCR: \(recognized)\n", stderr)
+                      exit(1)
+                  }
+                  print("Validated \(filename): \(recognized.prefix(150))")
+              }
+
+              let light = try luminance(of: "light-\(base).png")
+              let dark = try luminance(of: "dark-\(base).png")
+              let difference = light - dark
+              print("Appearance check \(base): light=\(String(format: "%.3f", light)), dark=\(String(format: "%.3f", dark))")
+              if difference < 0.12 {
+                  fputs("::error::Light/Dark appearance is not visibly distinct for \(base) (difference \(difference)).\n", stderr)
                   exit(1)
               }
-              if !expectedTerms.contains(where: { recognized.contains($0) }) {
-                  fputs("::error::\(filename) does not contain its expected screen title/content. OCR: \(recognized)\n", stderr)
-                  exit(1)
-              }
-              print("Validated \(filename): \(recognized.prefix(180))")
           }
           SWIFT
           swift "$RUNNER_TEMP/ValidateMeowlettPreviews.swift"
 
-      - name: Assemble a single native preview image
+      - name: Assemble one Light + Dark comparison preview
         run: |
           cat > "$RUNNER_TEMP/MakeMeowlettPreview.swift" <<'SWIFT'
           import AppKit
@@ -335,28 +364,20 @@ jobs:
           let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
           let output = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/Meowlett-Native-Preview.jpg"
           let screens: [(String, String)] = [
-              ("01-onboarding.png", "Onboarding"),
-              ("02-dashboard.png", "Dashboard"),
-              ("03-transactions.png", "Transactions"),
-              ("03-report.png", "Reports"),
-              ("03-date.png", "Date"),
-              ("03-settings.png", "Settings"),
-              ("08-quick-add.png", "Quick Add")
+              ("02-dashboard", "Dashboard"),
+              ("03-transactions", "Transactions"),
+              ("03-report", "Reports"),
+              ("03-date", "Date"),
+              ("03-settings", "Settings"),
+              ("08-quick-add", "Quick Add")
           ]
-
-          let availableScreens = screens.filter {
-              FileManager.default.fileExists(atPath: URL(fileURLWithPath: directory).appendingPathComponent($0.0).path)
-          }
-          guard !availableScreens.isEmpty else {
-              fatalError("No preview screenshots are available.")
-          }
-
-          let columns = 2
+          let modes = ["light", "dark"]
+          let columns = 4
           let tileWidth = 390
           let tileHeight = 844
-          let titleHeight = 44
+          let titleHeight = 46
           let gap = 14
-          let rows = (availableScreens.count + columns - 1) / columns
+          let rows = 3
           let canvasWidth = gap + columns * (tileWidth + gap)
           let canvasHeight = gap + rows * (titleHeight + tileHeight + gap)
 
@@ -372,58 +393,61 @@ jobs:
               bytesPerRow: 0,
               bitsPerPixel: 0
           ), let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
-              fatalError("Could not allocate preview contact sheet.")
+              fatalError("Could not allocate Light/Dark comparison preview.")
           }
 
           NSGraphicsContext.saveGraphicsState()
           NSGraphicsContext.current = context
-          NSColor(calibratedWhite: 0.95, alpha: 1).setFill()
+          NSColor(calibratedWhite: 0.94, alpha: 1).setFill()
           NSRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight).fill()
 
-          for (index, screen) in availableScreens.enumerated() {
-              let path = URL(fileURLWithPath: directory).appendingPathComponent(screen.0).path
-              guard let image = NSImage(contentsOfFile: path) else {
-                  fatalError("Missing preview screenshot: \(path)")
+          for (index, screen) in screens.enumerated() {
+              let row = index / 2
+              let pairColumn = (index % 2) * 2
+              for (modeIndex, mode) in modes.enumerated() {
+                  let filename = "\(mode)-\(screen.0).png"
+                  let path = URL(fileURLWithPath: directory).appendingPathComponent(filename).path
+                  guard let image = NSImage(contentsOfFile: path) else {
+                      fatalError("Missing required preview screenshot: \(filename)")
+                  }
+
+                  let column = pairColumn + modeIndex
+                  let x = gap + column * (tileWidth + gap)
+                  let top = gap + row * (titleHeight + tileHeight + gap)
+                  let titleY = canvasHeight - top - titleHeight
+                  let imageY = canvasHeight - top - titleHeight - tileHeight
+
+                  NSColor.white.setFill()
+                  NSRect(x: x, y: titleY, width: tileWidth, height: titleHeight).fill()
+                  let attributes: [NSAttributedString.Key: Any] = [
+                      .font: NSFont.boldSystemFont(ofSize: 15),
+                      .foregroundColor: NSColor(calibratedWhite: 0.15, alpha: 1)
+                  ]
+                  NSString(string: "\(screen.1) / \(mode.capitalized)").draw(
+                      in: NSRect(x: x + 12, y: titleY + 14, width: tileWidth - 24, height: 20),
+                      withAttributes: attributes
+                  )
+
+                  let imageRect = NSRect(x: x, y: imageY, width: tileWidth, height: tileHeight)
+                  NSColor.white.setFill()
+                  imageRect.fill()
+                  image.draw(in: imageRect)
               }
-
-              let column = index % columns
-              let row = index / columns
-              let x = gap + column * (tileWidth + gap)
-              let top = gap + row * (titleHeight + tileHeight + gap)
-              let titleY = canvasHeight - top - titleHeight
-              let imageY = canvasHeight - top - titleHeight - tileHeight
-
-              NSColor.white.setFill()
-              NSRect(x: x, y: titleY, width: tileWidth, height: titleHeight).fill()
-              let attributes: [NSAttributedString.Key: Any] = [
-                  .font: NSFont.boldSystemFont(ofSize: 16),
-                  .foregroundColor: NSColor(calibratedWhite: 0.15, alpha: 1)
-              ]
-              NSString(string: screen.1).draw(
-                  in: NSRect(x: x + 14, y: titleY + 13, width: tileWidth - 28, height: 22),
-                  withAttributes: attributes
-              )
-
-              NSColor.white.setFill()
-              let imageRect = NSRect(x: x, y: imageY, width: tileWidth, height: tileHeight)
-              imageRect.fill()
-              image.draw(in: imageRect)
           }
 
           NSGraphicsContext.restoreGraphicsState()
-          guard let data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) else {
-              fatalError("Could not encode preview contact sheet.")
+          guard let data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.90]) else {
+              fatalError("Could not encode Light/Dark comparison preview.")
           }
           try data.write(to: URL(fileURLWithPath: output))
-          print("Single preview image created at \(output)")
+          print("Single Light + Dark comparison preview created at \(output)")
           SWIFT
           swift "$RUNNER_TEMP/MakeMeowlettPreview.swift"
 
-      - name: Upload single native app preview
+      - name: Upload one Light + Dark native preview
         uses: actions/upload-artifact@v4
         with:
-          name: Meowlett-Native-Preview
+          name: Meowlett-Native-Preview-Light-Dark
           path: ${{ runner.temp }}/Meowlett-Native-Preview.jpg
           if-no-files-found: error
           retention-days: 7
-
