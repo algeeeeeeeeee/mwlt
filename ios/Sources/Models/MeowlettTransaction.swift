@@ -35,6 +35,25 @@ struct MeowlettTransaction: Identifiable, Codable, Equatable {
     }
 }
 
+enum MeowlettDateFormat {
+    private static func formatter(_ pattern: String) -> DateFormatter {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = TimeZone.current
+        formatter.dateFormat = pattern
+        return formatter
+    }
+
+    static func day(_ date: Date) -> String {
+        formatter("yyyy-MM-dd").string(from: date)
+    }
+
+    static func month(_ date: Date) -> String {
+        formatter("yyyy-MM").string(from: date)
+    }
+}
+
 struct MeowlettCategoryDefinition: Codable, Equatable {
     var label: String
     var labelId: String?
