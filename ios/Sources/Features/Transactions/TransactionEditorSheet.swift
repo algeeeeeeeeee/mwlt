@@ -97,7 +97,9 @@ struct TransactionEditorSheet: View {
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
         .presentationBackground(AppAppearance.modal(dark: dark))
-                .sheet(item: $activeAuxiliarySheet) { sheet in
+        .blur(radius: activeAuxiliarySheet == nil ? 0 : 8)
+        .animation(.easeInOut(duration: 0.2), value: activeAuxiliarySheet != nil)
+        .sheet(item: $activeAuxiliarySheet) { sheet in
             switch sheet {
             case .calculator:
                 AmountCalculatorSheet(initialValue: amount, onApply: { amountText = Self.formatAmount($0) })
