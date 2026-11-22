@@ -1,6 +1,90 @@
 import XCTest
 
 final class MeowlettUITests: XCTestCase {
+
+    @MainActor
+    private func captureAccessibilitySnapshot(
+        named name: String,
+        app: XCUIApplication,
+        elements: [(String, XCUIElement)] = []
+    ) {
+        let elementDetails = elements.map { entry -> String in
+            let element = entry.1
+            let exists = element.exists
+            let hittable = exists && element.isHittable
+            let enabled = exists && element.isEnabled
+            let frame = exists ? String(describing: element.frame) : "unavailable"
+            let description = exists ? element.debugDescription : "<not in accessibility hierarchy>"
+            return "\(entry.0): exists=\(exists), hittable=\(hittable), enabled=\(enabled), frame=\(frame)\n\(description)"
+        }.joined(separator: "\n")
+
+        let report = """
+        SNAPSHOT: \(name)
+        ELEMENTS:
+        \(elementDetails)
+
+        OVERLAYS:
+        sheet=\(app.sheets.firstMatch.exists), alert=\(app.alerts.firstMatch.exists), keyboard=\(app.keyboards.firstMatch.exists)
+
+        ACCESSIBILITY HIERARCHY:
+        \(app.debugDescription)
+        """
+
+        print(report)
+        XCTContext.runActivity(named: "Accessibility snapshot — \(name)") { activity in
+            let attachment = XCTAttachment(string: report)
+            attachment.name = "Accessibility snapshot — \(name)"
+            attachment.lifetime = .keepAlways
+            activity.add(attachment)
+        }
+    }
+
+    @MainActor
+    private func waitForElement(
+        _ element: XCUIElement,
+        label: String,
+        app: XCUIApplication,
+        timeout: TimeInterval
+    ) -> Bool {
+        let exists = element.waitForExistence(timeout: timeout)
+        if !exists {
+            captureAccessibilitySnapshot(
+                named: "\(label)-missing",
+                app: app,
+                elements: [
+                    ("target", element),
+                    ("settingsHeader", app.buttons["mwlt.header.settings"]),
+                    ("settingsHeading", app.staticTexts["mwlt.screen.settings"]),
+                    ("quickAdd", app.buttons["mwlt.quickAdd"]),
+                    ("sheet", app.sheets.firstMatch),
+                    ("alert", app.alerts.firstMatch),
+                    ("keyboard", app.keyboards.firstMatch)
+                ]
+            )
+        }
+        return exists
+    }
+
+    @MainActor
+    private func assertSettingsScreenAppears(in app: XCUIApplication) {
+        let heading = app.staticTexts["mwlt.screen.settings"]
+        let appears = heading.waitForExistence(timeout: 8)
+        if !appears {
+            captureAccessibilitySnapshot(
+                named: "settings-screen-did-not-open",
+                app: app,
+                elements: [
+                    ("settingsHeader", app.buttons["mwlt.header.settings"]),
+                    ("settingsHeading", heading),
+                    ("quickAdd", app.buttons["mwlt.quickAdd"]),
+                    ("sheet", app.sheets.firstMatch),
+                    ("alert", app.alerts.firstMatch),
+                    ("keyboard", app.keyboards.firstMatch)
+                ]
+            )
+        }
+        XCTAssertTrue(appears, "Settings screen did not appear after tapping the Settings header.")
+    }
     @MainActor
     private func tapTab(_ tabID: String, app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
         let tab = app.buttons["mwlt.tab.\(tabID)"]
@@ -31,9 +115,33 @@ final class MeowlettUITests: XCTestCase {
             evaluatedWith: button,
             handler: nil
         )
-        wait(for: [hittable], timeout: 5)
-        // This header is fixed above the scroll view; a coordinate tap avoids
-        // XCTest's unreliable automatic ScrollToVisible action for overlay controls.
+        let hittableResult = XCTWaiter.wait(for: [hittable], timeout: 5)
+        if hittableResult != .completed {
+            captureAccessibilitySnapshot(
+                named: "settings-header-not-hittable",
+                app: app,
+                elements: [
+                    ("settingsHeader", button),
+                    ("settingsHeading", app.staticTexts["mwlt.screen.settings"]),
+                    ("sheet", app.sheets.firstMatch),
+                    ("alert", app.alerts.firstMatch),
+                    ("keyboard", app.keyboards.firstMatch)
+                ]
+            )
+        }
+        XCTAssertEqual(hittableResult, .completed, "Settings header did not become hittable before tap.")
+        // Coordinate fallback is used only after the normal accessibility element exists and is hittable.
+        captureAccessibilitySnapshot(
+            named: "settings-header-before-coordinate-fallback",
+            app: app,
+            elements: [
+                ("settingsHeader", button),
+                ("settingsHeading", app.staticTexts["mwlt.screen.settings"]),
+                ("sheet", app.sheets.firstMatch),
+                ("alert", app.alerts.firstMatch),
+                ("keyboard", app.keyboards.firstMatch)
+            ]
+        )
         button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
     }
 
@@ -45,10 +153,10 @@ final class MeowlettUITests: XCTestCase {
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
         tapSettingsHeader(in: app)
-        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+        assertSettingsScreenAppears(in: app)
 
         let dataRow = app.buttons["mwlt.settings.data"]
-        XCTAssertTrue(dataRow.waitForExistence(timeout: 10))
+        XCTAssertTrue(waitForElement(dataRow, label: "settings-data-row", app: app, timeout: 10), "Settings Data row is missing.")
         dataRow.tap()
         XCTAssertTrue(app.staticTexts["mwlt.settings.sheet.data.title"].waitForExistence(timeout: 10))
     }
@@ -97,7 +205,7 @@ final class MeowlettUITests: XCTestCase {
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 10))
         tapSettingsHeader(in: app)
-        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+        assertSettingsScreenAppears(in: app)
 
         let quickAddButton = app.buttons["mwlt.quickAdd"]
         XCTAssertTrue(quickAddButton.waitForExistence(timeout: 10))
@@ -130,10 +238,10 @@ final class MeowlettUITests: XCTestCase {
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
         tapSettingsHeader(in: app)
-        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+        assertSettingsScreenAppears(in: app)
 
         let notificationsRow = app.buttons["mwlt.settings.notifications"]
-        XCTAssertTrue(notificationsRow.waitForExistence(timeout: 8))
+        XCTAssertTrue(waitForElement(notificationsRow, label: "settings-notifications-row", app: app, timeout: 8), "Settings Notifications row is missing.")
         notificationsRow.tap()
 
         XCTAssertTrue(
@@ -151,11 +259,14 @@ final class MeowlettUITests: XCTestCase {
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
         tapSettingsHeader(in: app)
-        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+        assertSettingsScreenAppears(in: app)
 
         func openAndClose(row: String, title: String, close: String) {
             let rowButton = app.buttons[row]
-            XCTAssertTrue(rowButton.waitForExistence(timeout: 10), "Missing Settings row: \(row)")
+            XCTAssertTrue(
+                waitForElement(rowButton, label: "settings-row-\\(row)", app: app, timeout: 10),
+                "Missing Settings row: \\(row)"
+            )
             rowButton.tap()
             XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "Settings sheet did not open: \(title)")
             let closeButton = app.buttons[close]
@@ -289,13 +400,32 @@ final class MeowlettUITests: XCTestCase {
         app.launch()
 
         let quickAddButton = app.buttons["mwlt.quickAdd"]
-        XCTAssertTrue(quickAddButton.waitForExistence(timeout: 15))
+        XCTAssertTrue(waitForElement(quickAddButton, label: "quick-add-button", app: app, timeout: 15))
+        if !quickAddButton.isHittable {
+            captureAccessibilitySnapshot(named: "quick-add-not-hittable", app: app, elements: [("quickAdd", quickAddButton), ("sheet", app.sheets.firstMatch), ("alert", app.alerts.firstMatch), ("keyboard", app.keyboards.firstMatch)])
+        }
+        XCTAssertTrue(quickAddButton.isHittable, "Quick Add button is present but not hittable.")
         quickAddButton.tap()
 
-        XCTAssertTrue(
-            app.staticTexts["mwlt.transactionEditor.title"].waitForExistence(timeout: 10),
-            "Quick Add should present the transaction editor before its fields are queried."
-        )
+        let editorTitleBeforeSave = app.staticTexts["mwlt.transactionEditor.title"]
+        let editorPresented = editorTitleBeforeSave.waitForExistence(timeout: 10)
+        if !editorPresented {
+            captureAccessibilitySnapshot(
+                named: "quick-add-editor-did-not-present",
+                app: app,
+                elements: [
+                    ("quickAdd", quickAddButton),
+                    ("editorTitle", editorTitleBeforeSave),
+                    ("amountField", app.textFields["mwlt.transactionEditor.amount"]),
+                    ("descriptionField", app.textFields["mwlt.transactionEditor.description"]),
+                    ("saveButton", app.buttons["mwlt.transactionEditor.save"]),
+                    ("sheet", app.sheets.firstMatch),
+                    ("alert", app.alerts.firstMatch),
+                    ("keyboard", app.keyboards.firstMatch)
+                ]
+            )
+        }
+        XCTAssertTrue(editorPresented, "Quick Add should present the transaction editor before its fields are queried.")
         let amountField = app.textFields["mwlt.transactionEditor.amount"]
         let descriptionField = app.textFields["mwlt.transactionEditor.description"]
         let saveButton = app.buttons["mwlt.transactionEditor.save"]
