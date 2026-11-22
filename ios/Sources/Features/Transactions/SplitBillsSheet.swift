@@ -94,6 +94,8 @@ struct NativeSplitBillsSheet: View {
             }
         }
         .background(AppAppearance.background(dark: isDark))
+        .blur(radius: editorItem == nil ? 0 : 8)
+        .animation(.easeInOut(duration: 0.2), value: editorItem != nil)
         .sheet(item: $editorItem) { item in
             NativeSplitBillEditor(item: item) { saved in
                 if let index = bills.firstIndex(where: { $0.id == saved.id }) {
