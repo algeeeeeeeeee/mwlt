@@ -18,6 +18,9 @@ struct DateTabView: View {
     @State private var showWishlistForm = false
     @State private var wishlistInput = ""
     @State private var activeDateID: UUID?
+    @State private var recentlyDeletedDateTransaction: MeowlettTransaction?
+    @State private var showDateUndoToast = false
+    @State private var undoDateTask: Task<Void, Never>?
     @State private var showEditor = false
     @State private var editingTransaction: MeowlettTransaction?
 
@@ -51,7 +54,16 @@ struct DateTabView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
+        .overlay(alignment: .bottom) {
+            if showDateUndoToast, let deleted = recentlyDeletedDateTransaction {
+                dateUndoToast(for: deleted)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
+        .onDisappear { undoDateTask?.cancel() }
         .onAppear(perform: loadWishlist)
         .onChange(of: wishlist) { _, value in saveWishlist(value) }
         .sheet(isPresented: $showWishlistForm) {
@@ -291,7 +303,7 @@ struct DateTabView: View {
                     }
                     .buttonStyle(.plain)
                     Button {
-                        store.delete(transaction)
+                        deleteDateTransactionWithUndo(transaction)
                         activeDateID = nil
                     } label: {
                         Label(isEnglish ? "Delete" : "Hapus", systemImage: "trash")
@@ -312,6 +324,63 @@ struct DateTabView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(active ? datePink.opacity(0.45) : datePink.opacity(isDark ? 0.15 : 0.20), lineWidth: 1))
+    }
+
+    private func dateUndoToast(for transaction: MeowlettTransaction) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "trash")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color(hex: "#ef4444"))
+            Text(isEnglish ? "Transaction deleted" : "Transaksi dihapus")
+                .font(MeowlettTypography.font(size: 13, weight: .semibold))
+                .foregroundStyle(isDark ? Color(hex: "#fca5a5") : Color(hex: "#b91c1c"))
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            Button(isEnglish ? "Undo" : "Batal") {
+                undoDateDelete()
+            }
+            .font(MeowlettTypography.font(size: 12, weight: .heavy))
+            .foregroundStyle(Color(hex: "#ef4444"))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(Color(hex: "#ef4444").opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#ef4444").opacity(0.40), lineWidth: 1))
+            .buttonStyle(.plain)
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 320)
+        .background(Color(hex: isDark ? "#1a0d0d" : "#fff5f5"), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(hex: "#ef4444").opacity(0.35), lineWidth: 1))
+        .shadow(color: .black.opacity(0.25), radius: 16, x: 0, y: 8)
+    }
+
+    private func deleteDateTransactionWithUndo(_ transaction: MeowlettTransaction) {
+        undoDateTask?.cancel()
+        recentlyDeletedDateTransaction = transaction
+        store.delete(transaction)
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            showDateUndoToast = true
+        }
+        undoDateTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                showDateUndoToast = false
+            }
+            recentlyDeletedDateTransaction = nil
+        }
+    }
+
+    private func undoDateDelete() {
+        guard let transaction = recentlyDeletedDateTransaction else { return }
+        undoDateTask?.cancel()
+        store.restore(transaction)
+        withAnimation(.easeOut(duration: 0.2)) {
+            showDateUndoToast = false
+        }
+        recentlyDeletedDateTransaction = nil
     }
 
     private var wishlistAddSheet: some View {
