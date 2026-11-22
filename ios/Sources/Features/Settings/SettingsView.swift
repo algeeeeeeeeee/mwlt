@@ -1187,7 +1187,7 @@ private struct SettingsDataSheet: View {
                             break
                         }
                     } label: {
-                        Text(isEnglish ? "Done" : "Selesai")
+                        Text("Selesai")
                             .font(MeowlettTypography.font(size: 14, weight: .heavy))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
