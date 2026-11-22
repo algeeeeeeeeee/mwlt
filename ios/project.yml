@@ -35,3 +35,18 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
     scheme:
       gatherCoverageData: false
+      testTargets:
+        - MeowlettUITests
+
+  MeowlettUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Meowlett
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mwlt.meowlett.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Meowlett
