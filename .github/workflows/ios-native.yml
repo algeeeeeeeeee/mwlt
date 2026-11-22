@@ -69,7 +69,6 @@ jobs:
             -project ios/Meowlett.xcodeproj \
             -scheme Meowlett \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
-            -parallel-testing-enabled NO \
             -derivedDataPath "$RUNNER_TEMP/MeowlettUITests" \
             -resultBundlePath "$RUNNER_TEMP/MeowlettUITests.xcresult" \
             -parallel-testing-enabled NO \
