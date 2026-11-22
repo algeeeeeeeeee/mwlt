@@ -203,6 +203,7 @@ struct MainTabView: View {
             if arguments.contains("--mwlt-preview-quick-add") {
                 showQuickAdd = true
             }
+            RecurringTransactionAutomation.processDueItems(store: store)
         }
         .sheet(isPresented: $showQuickAdd) {
             TransactionEditorSheet(initialCategory: "food")
