@@ -549,6 +549,8 @@ struct SettingsCicilanSheet: View {
             }
         }
         .background(Color(uiColor: .systemBackground))
+        .blur(radius: editorItem == nil ? 0 : 8)
+        .animation(.easeInOut(duration: 0.2), value: editorItem != nil)
         .sheet(item: $editorItem) { item in
             NativeInstallmentEditor(item: item) { saved in
                 if let index = items.firstIndex(where: { $0.id == saved.id }) { items[index] = saved }
