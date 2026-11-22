@@ -1,6 +1,11 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    private enum OnboardingField: Hashable {
+        case name
+        case income
+    }
+
     let onComplete: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -17,6 +22,7 @@ struct OnboardingView: View {
     @State private var name = ""
     @State private var income = ""
     @State private var isDark = false
+    @FocusState private var focusedField: OnboardingField?
 
     private var isEnglish: Bool { language == "en" }
 
@@ -56,7 +62,7 @@ struct OnboardingView: View {
                 }
                 .frame(maxWidth: 400, alignment: .leading)
                 .id(step)
-                .transition(.opacity.combined(with: .move(edge: .trailing)))
+                .transition(.opacity.combined(with: .offset(y: 10)))
             }
             .frame(maxWidth: 400, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -67,13 +73,20 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(AppAppearance.background(dark: isDark).ignoresSafeArea())
         .tint(accent)
-        .animation(.easeInOut(duration: 0.2), value: step)
+        .animation(.easeInOut(duration: 0.18), value: step)
         .onAppear {
             name = savedName
-            income = savedIncome == "5000000" ? "" : savedIncome
+            income = savedIncome == "5000000" ? "" : formatIncomeInput(savedIncome)
             isDark = (followSystem == "1" || darkOverride == "system")
                 ? colorScheme == .dark
                 : darkOverride == "true"
+        }
+        .onChange(of: step) { _, newStep in
+            switch newStep {
+            case 1: focusedField = .name
+            case 2: focusedField = .income
+            default: focusedField = nil
+            }
         }
     }
 
@@ -126,6 +139,7 @@ struct OnboardingView: View {
                 .padding(.bottom, 16)
 
             TextField(isEnglish ? "e.g. Pickles..." : "Contoh: Pickles...", text: $name)
+                .focused($focusedField, equals: .name)
                 .foregroundStyle(AppAppearance.text(dark: isDark))
                 .textContentType(.givenName)
                 .textInputAutocapitalization(.words)
@@ -168,9 +182,16 @@ struct OnboardingView: View {
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 TextField("5.000.000", text: $income)
+                    .focused($focusedField, equals: .income)
                     .foregroundStyle(AppAppearance.text(dark: isDark))
                     .keyboardType(.numberPad)
                     .font(MeowlettTypography.font(size: 16, weight: .regular))
+                    .onChange(of: income) { _, newValue in
+                        let formatted = formatIncomeInput(newValue)
+                        if formatted != newValue {
+                            income = formatted
+                        }
+                    }
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
@@ -457,6 +478,17 @@ struct OnboardingView: View {
 
     private var parsedIncome: Int64? {
         Int64(income.filter(\.isNumber))
+    }
+
+    private func formatIncomeInput(_ value: String) -> String {
+        let digits = value.filter(\.isNumber)
+        guard let amount = Int64(digits), amount > 0 else {
+            return digits.isEmpty ? "" : digits
+        }
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "id_ID")
+        formatter.numberStyle = .decimal
+        return formatter.string(from: NSNumber(value: amount)) ?? digits
     }
 
     private var primaryBinding: Binding<Color> {
