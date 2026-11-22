@@ -1189,6 +1189,7 @@ private struct SettingsDataSheet: View {
                 Text(kind == .restore
                      ? (isEnglish ? "Restore this backup? Current data will be replaced." : "Pulihkan cadangan ini? Data saat ini akan diganti.")
                      : (isEnglish ? "Are you sure you want to delete all data? This cannot be undone." : "Yakin ingin menghapus semua data? Tidak bisa dibatalkan."))
+                    .accessibilityIdentifier("mwlt.settings.data.confirmation.message")
                     .font(MeowlettTypography.font(size: 15, weight: .bold))
                     .foregroundStyle(.primary)
                     .lineSpacing(3)
@@ -1208,6 +1209,7 @@ private struct SettingsDataSheet: View {
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.settings.data.confirmation.cancel")
 
                     Button {
                         let selected = confirmation
@@ -1229,6 +1231,7 @@ private struct SettingsDataSheet: View {
                             .background(Color(hex: "#ef4444"), in: RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.settings.data.confirmation.confirm")
                 }
             }
             .padding(.horizontal, 20)
