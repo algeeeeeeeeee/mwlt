@@ -113,7 +113,10 @@ struct RecurringTransactionsSection: View {
             recurringIncomeSection
         }
         .onAppear(perform: load)
-        .onChange(of: recurring) { _, value in persist(value, key: "gm_recurring") }
+        .onChange(of: recurring) { _, value in
+            persist(value, key: "gm_recurring")
+            RecurringTransactionAutomation.processDueItems(store: store)
+        }
         .onChange(of: recurringIncome) { _, value in persist(value, key: "gm_recurring_income") }
                 .sheet(item: $activeUtilitySheet, onDismiss: { isUtilitySheetPresented = false }) { sheet in
             switch sheet {
@@ -554,7 +557,14 @@ struct RecurringTransactionsSection: View {
     }
 
     private func recordRecurringExpense(_ item: NativeRecurringItem) {
-        store.add(MeowlettTransaction(date: .now, amount: item.amount, category: item.category, description: item.description, location: "Rutin", note: "Manual"))
+        // Match the PWA's manual Record action; only auto-generated rows carry
+        // the "Rutin" location marker.
+        store.add(MeowlettTransaction(
+            date: .now,
+            amount: item.amount,
+            category: item.category,
+            description: item.description
+        ))
     }
 
     private func recordRecurringIncome(_ item: NativeRecurringItem) {
