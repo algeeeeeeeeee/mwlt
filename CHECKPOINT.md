@@ -393,3 +393,63 @@ No app source or workflow changes are implied by this diagnosis. P0 remains open
 - Final assertions occur only after both activities. Both standard and coordinate gestures are required to open `mwlt.screen.settings`; a standard AX failure cannot be converted to a passing result.
 - Next run: verify both activity blocks are present even if standard `.tap()` fails, check both pre-wait/pre-tap `hittable` values, inspect the 15-line hierarchy context and midpoint-covering elements for both legs, and require `opened=true` independently for each. No CI was awaited in this commit.
 - **Not yet verified:** Swift compilation and simulator execution of the revised paired test; both legs passing.
+
+
+## ANTRIAN TUGAS
+
+T0 (IPA, kerjakan PERTAMA)
+ a) Baca ios-native.yml: cara proyek Xcode dihasilkan (xcodegen dari ios/project.yml?), versi Xcode, scheme, nama target, trigger. Kutip dari file, jangan berasumsi. Pastikan push TAG tidak memicu ios-native.yml; kalau memicu, atur filter-nya agar tag tidak memicu.
+ b) Buat .github/workflows/ios-ipa-rc.yml: trigger `push: tags: ['rc*']` + workflow_dispatch (input rc_label). Concurrency group sendiri (`ipa-rc-${{ github.ref }}`), cancel-in-progress: false. Tanpa UI test.
+ c) Build Release iphoneos unsigned: xcodebuild archive dengan CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="". Fallback: xcodebuild build -sdk iphoneos -configuration Release. Kemas Payload/Meowlett.app menjadi Meowlett-<label>-<short-sha>.ipa, upload artifact (retention 14 hari), tulis SHA/versi/build number/ukuran di job summary.
+ d) Verifikasi di workflow. GAGALKAN job bila: Info.plist tanpa CFBundleIdentifier/versi; ada WebKit di binary (otool -L). Hanya LAPORKAN: font Plus Jakarta Sans ada di bundle dan terdaftar di UIAppFonts; argumen -uitest-* aktif di Release.
+ e) Buat IPA-RC.md: status "preview, bukan paritas UI; P0 terbuka"; cara memicu (git tag rcN-preview <sha> && git push origin rcN-preview); cara pasang via Sideloadly/AltStore (Apple ID gratis kedaluwarsa 7 hari); IPA unsigned.
+ f) Commit (ci:), push branch SEKALI. Lalu buat dan push tag rc1-preview pada commit itu. Cek SEKALI apakah run IPA terpicu, laporkan nomor run, BERHENTI.
+
+T1 (P0) Baca run untuk commit 4ca24ab. Kutip [MeowlettTapComparison] kedua leg Settings dan daftar elemen yang mencakup titik (310,91). Bila ada view lain (bukan tombol Settings) di titik itu, perbaiki di app (urutan z, allowsHitTesting(false) pada overlay/background blur header, accessibilityElement). Bila tidak ada, tulis BELUM TERBUKTI dan jangan ubah app.
+T2 (P1) Target MeowlettTests (tanpa UI) + job CI terpisah "unit" untuk umpan balik cepat.
+T3 (P1) MeowTheme: port persis theme.js (darken, lighten, luminance, contrast, readable accent), Light dan Dark + preset (custom default rose #881337/#fb7185). Unit test membandingkan hex tiap token dengan spesifikasi.
+T4 (P1) Tanggal lokal: Clock yang bisa diinjeksi; hari ini/minggu (mulai Senin)/bulan dari zona waktu lokal; tanggal "yyyy-MM-dd". Rupiah dipaksa id-ID ("Rp" + NBSP + "1.163.000") walau locale en_US. Unit test untuk 23:30 dan 00:30 di WIB dan UTC.
+T5 (P1) Font Plus Jakarta Sans: bundel, UIAppFonts, helper font; unit test tersedia untuk bobot 400–900. Setelah selesai, tag rc2-preview (bila T0 sukses).
+T6 (P1) API .meowModal: blur 6 + dim 0.55 (Story card 8/0.75), hit-testing dan swipe-tab konten belakang mati, keyboard avoidance. Migrasikan Quick Add dulu, screenshot Light+Dark. (Setelah T1.)
+T7 (P1) Migrasikan modal lain ke .meowModal dalam 3 tugas: (a) Kalkulator, Konfirmasi, Wishlist; (b) Edit Pemasukan, Target Tabungan, Budget Bulanan, Pengingat; (c) Cicilan, Patungan, Tampilan, Notifikasi, Menu Kategori, Batas Pengeluaran, Kelola Kategori, Data, Story card. Setelah (c), tag rc3-preview.
+T8 (P1) PREVIEW.png otomatis (Light+Dark per layar/modal) sebagai artifact CI.
+T9+ (P2–P4) Susun dari tabel selisih di AUDIT.md sesuai urutan prioritas; tiap tugas maksimal satu layar atau komponen. Tambahkan ke antrian, kerjakan satu per satu.
+
+
+
+## Hasil giliran T0 — 23 November 2026 (basis `4ca24ab`)
+
+### Pemeriksaan awal yang diwajibkan
+- Run #292 untuk commit `4ca24ab0126993894cc7d27ec4add125c6127f35`: saat pemeriksaan tunggal berstatus `in_progress`; belum ada hasil akhir test maupun kutipan test failure yang dapat dicatat. Tidak dilakukan polling.
+- `ios-native.yml` menggunakan `runs-on: macos-15`, `brew install xcodegen`, `xcodegen generate --spec project.yml`, `xcodebuild -list -project ios/Meowlett.xcodeproj`, dan `-scheme Meowlett`. Build workflow menjalankan target app `Meowlett` serta UI test target `MeowlettUITests` pada job native.
+- Workflow tersebut tidak mem-pin versi Xcode. File hanya menyatakan runner `macos-15`; catatan AUDIT dari run lama merekam Xcode 16.4 (build 16F6), bukan deklarasi versi di YAML.
+- `ios/project.yml` menyebut `name: Meowlett`, app target `Meowlett`, test target `MeowlettUITests`, deployment iOS 17.0, Swift 5.0, bundle ID `com.mwlt.meowlett`, version/build `4.1.0 / 1`.
+- Trigger native: `push.branches` hanya `main` dan `native-swift-parity`; `pull_request.branches` hanya `main`. Tidak ada filter `push.tags`; karena push filter native membatasi branch, tag `rc*` tidak memicu workflow UI native. Tidak perlu mengubah workflow yang sudah ada.
+- Source app saat ini membaca argumen `-uitest-reset` melalui `ProcessInfo.processInfo.arguments` tanpa guard `DEBUG`; ini hanya dilaporkan pada IPA RC dan tidak diubah di T0.
+
+### Perubahan T0
+- Ditambahkan `.github/workflows/ios-ipa-rc.yml`: tag `rc*` + `workflow_dispatch(rc_label)`, concurrency `ipa-rc-${{ github.ref }}` dan `cancel-in-progress: false`. Job hanya membuat Xcode project, menjalankan unsigned Release archive dengan fallback build, verifikasi metadata dan WebKit, mengemas IPA, serta upload artifact 14 hari. Tidak ada perintah UI test.
+- Ditambahkan `IPA-RC.md` berstatus preview, bukan paritas UI; P0 terbuka; berisi cara trigger, instalasi Sideloadly/AltStore dan catatan expiry 7 hari Apple ID gratis.
+- Pemeriksaan metadata wajib: `CFBundleIdentifier`, `CFBundleShortVersionString`, `CFBundleVersion`, dan executable app. Dependensi WebKit diperiksa untuk setiap Mach-O di bundle dengan `otool -L`; salah satu temuan membuat job gagal.
+- Font Plus Jakarta Sans dan `UIAppFonts` serta string `-uitest-*` hanya dilaporkan, tidak menggagalkan job.
+- `ios-native.yml` tidak diubah.
+
+### Verifikasi / status T0
+- File workflow dan dokumentasi telah disiapkan, tetapi belum dieksekusi oleh GitHub Actions pada saat penulisan checkpoint.
+- Build IPA, validasi Info.plist/WebKit, deteksi font/flag dan ukuran/hash artifact: **BELUM TERVERIFIKASI** sampai workflow RC selesai.
+- Tag `rc1-preview` dan run IPA yang dipicunya: **BELUM TERVERIFIKASI**.
+- Tidak ada perubahan app source, test, atau status PR #2. PR #2 tetap Draft.
+
+### Status K1–K9 (tetap)
+| Kriteria | Status |
+|---|---|
+| K1 | VERIFIED |
+| K2 | BELUM TERVERIFIKASI |
+| K3 | PARTIAL |
+| K4 | PARTIAL |
+| K5 | BELUM TERVERIFIKASI |
+| K6 | BELUM TERVERIFIKASI |
+| K7 | PARTIAL |
+| K8 | BELUM TERVERIFIKASI |
+| K9 | BELUM TERVERIFIKASI |
+

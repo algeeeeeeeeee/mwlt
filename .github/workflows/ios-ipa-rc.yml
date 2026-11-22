@@ -1,0 +1,257 @@
+name: Meowlett IPA Release Candidate
+
+on:
+  push:
+    tags:
+      - 'rc*'
+  workflow_dispatch:
+    inputs:
+      rc_label:
+        description: Label used in the IPA filename for a manually started build
+        required: true
+        default: rc-manual
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ipa-rc-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-ipa:
+    name: Build unsigned Release IPA
+    runs-on: macos-15
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Generate app icon
+        run: bash ios/Scripts/GenerateAppIcon.sh
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate --spec project.yml
+
+      - name: Show generated schemes and targets
+        run: xcodebuild -list -project ios/Meowlett.xcodeproj
+
+      - name: Resolve RC label
+        env:
+          INPUT_RC_LABEL: ${{ inputs.rc_label }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            LABEL="$GITHUB_REF_NAME"
+          else
+            LABEL="$INPUT_RC_LABEL"
+          fi
+          SAFE_LABEL="$(printf '%s' "$LABEL" | /usr/bin/sed -E 's/[^A-Za-z0-9._-]+/-/g; s/^-+//; s/-+$//')"
+          if [[ -z "$SAFE_LABEL" ]]; then
+            echo "::error::RC label is empty after sanitization."
+            exit 1
+          fi
+          echo "RC_LABEL=$SAFE_LABEL" >> "$GITHUB_ENV"
+          echo "Resolved RC label: $SAFE_LABEL"
+
+      - name: Archive Release for generic iOS device (unsigned)
+        id: release-build
+        run: |
+          set -euo pipefail
+
+          ARCHIVE_PATH="$RUNNER_TEMP/Meowlett-Release.xcarchive"
+          DERIVED_DATA="$RUNNER_TEMP/MeowlettRelease"
+          ARCHIVE_LOG="$RUNNER_TEMP/MeowlettArchive.log"
+          BUILD_LOG="$RUNNER_TEMP/MeowlettReleaseBuild.log"
+          APP_PATH="$ARCHIVE_PATH/Products/Applications/Meowlett.app"
+          BUILD_MODE="archive"
+
+          if xcodebuild archive \
+            -project ios/Meowlett.xcodeproj \
+            -scheme Meowlett \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            -derivedDataPath "$DERIVED_DATA" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" > "$ARCHIVE_LOG" 2>&1; then
+            if [[ ! -d "$APP_PATH" ]]; then
+              echo "::warning::Archive command succeeded but the app bundle is missing; using build fallback."
+              BUILD_MODE="build-fallback"
+            fi
+          else
+            echo "::warning::Unsigned archive failed; using the requested Release build fallback."
+            tail -n 80 "$ARCHIVE_LOG" || true
+            BUILD_MODE="build-fallback"
+          fi
+
+          if [[ "$BUILD_MODE" == "build-fallback" ]]; then
+            xcodebuild build \
+              -project ios/Meowlett.xcodeproj \
+              -scheme Meowlett \
+              -configuration Release \
+              -sdk iphoneos \
+              -destination 'generic/platform=iOS' \
+              -derivedDataPath "$DERIVED_DATA" \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" > "$BUILD_LOG" 2>&1 || {
+                tail -n 120 "$BUILD_LOG" || true
+                exit 1
+              }
+            APP_PATH="$DERIVED_DATA/Build/Products/Release-iphoneos/Meowlett.app"
+          fi
+
+          if [[ ! -d "$APP_PATH" ]]; then
+            echo "::error::Release app bundle not found at $APP_PATH"
+            exit 1
+          fi
+
+          echo "MEOWLETT_APP_PATH=$APP_PATH" >> "$GITHUB_ENV"
+          echo "RELEASE_BUILD_MODE=$BUILD_MODE" >> "$GITHUB_ENV"
+          echo "Release output: $APP_PATH (mode: $BUILD_MODE)"
+
+      - name: Verify app metadata and report Release-only diagnostics
+        id: verify-app
+        run: |
+          set -euo pipefail
+
+          python3 - "$MEOWLETT_APP_PATH" "$GITHUB_ENV" <<'PY'
+          import os
+          import plistlib
+          import sys
+          from pathlib import Path
+
+          app_path = Path(sys.argv[1])
+          env_path = Path(sys.argv[2])
+          info_path = app_path / "Info.plist"
+          if not info_path.is_file():
+              raise SystemExit("::error::Info.plist is missing from Meowlett.app")
+
+          with info_path.open("rb") as source:
+              info = plistlib.load(source)
+
+          required = {
+              "CFBundleIdentifier": info.get("CFBundleIdentifier"),
+              "CFBundleShortVersionString": info.get("CFBundleShortVersionString"),
+              "CFBundleVersion": info.get("CFBundleVersion"),
+          }
+          missing = [key for key, value in required.items() if not str(value or "").strip()]
+          if missing:
+              raise SystemExit("::error::Info.plist is missing required metadata: " + ", ".join(missing))
+
+          executable = str(info.get("CFBundleExecutable") or "").strip()
+          if not executable or not (app_path / executable).is_file():
+              raise SystemExit("::error::CFBundleExecutable is missing or its binary is absent")
+
+          fonts = sorted(
+              path.name for path in app_path.rglob("*")
+              if path.is_file() and "plusjakartasans" in path.name.lower()
+          )
+          ui_fonts = info.get("UIAppFonts") or []
+          if not isinstance(ui_fonts, list):
+              ui_fonts = []
+          registered = [
+              name for name in fonts
+              if any(Path(str(entry)).name == name for entry in ui_fonts)
+          ]
+
+          with env_path.open("a", encoding="utf-8") as env:
+              env.write(f"APP_BUNDLE_ID={required['CFBundleIdentifier']}\n")
+              env.write(f"APP_MARKETING_VERSION={required['CFBundleShortVersionString']}\n")
+              env.write(f"APP_BUILD_NUMBER={required['CFBundleVersion']}\n")
+              env.write(f"APP_EXECUTABLE={executable}\n")
+              env.write(f"PLUS_JAKARTA_FILES={','.join(fonts) if fonts else 'none'}\n")
+              env.write(f"PLUS_JAKARTA_UIAPPFONTS={','.join(registered) if registered else 'none'}\n")
+
+          print("Verified Info.plist metadata:")
+          for key, value in required.items():
+              print(f"  {key}={value}")
+          print(f"Plus Jakarta Sans files in app bundle: {', '.join(fonts) if fonts else 'NOT FOUND'}")
+          print(f"Plus Jakarta Sans files listed in UIAppFonts: {', '.join(registered) if registered else 'NOT REGISTERED'}")
+          PY
+
+          WEBKIT_FOUND=0
+          while IFS= read -r -d '' BINARY; do
+            if /usr/bin/file -b "$BINARY" | /usr/bin/grep -q 'Mach-O'; then
+              DEPENDENCIES="$(/usr/bin/otool -L "$BINARY" | /usr/bin/tail -n +2)"
+              if printf '%s\n' "$DEPENDENCIES" | /usr/bin/grep -qi 'WebKit'; then
+                echo "::error::WebKit dependency found in bundled Mach-O binary: $BINARY"
+                printf '%s\n' "$DEPENDENCIES" | /usr/bin/grep -i 'WebKit'
+                WEBKIT_FOUND=1
+              fi
+            fi
+          done < <(/usr/bin/find "$MEOWLETT_APP_PATH" -type f -print0)
+
+          if [[ "$WEBKIT_FOUND" -ne 0 ]]; then
+            exit 1
+          fi
+          echo "Verified: no bundled Mach-O binary links WebKit (otool -L)."
+
+          UITEST_FLAGS="$(/usr/bin/strings -a "$MEOWLETT_APP_PATH/$APP_EXECUTABLE" | /usr/bin/grep -Eo -- '-uitest-[A-Za-z0-9_.-]+' | /usr/bin/sort -u | /usr/bin/paste -sd ',' - || true)"
+          if [[ -z "$UITEST_FLAGS" ]]; then
+            UITEST_FLAGS="none detected"
+          fi
+          echo "RELEASE_UITEST_FLAGS=$UITEST_FLAGS" >> "$GITHUB_ENV"
+          echo "Release binary -uitest-* strings (report only): $UITEST_FLAGS"
+
+      - name: Package unsigned IPA and write build summary
+        id: package-ipa
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          IPA_NAME="Meowlett-${RC_LABEL}-${SHORT_SHA}.ipa"
+          PACKAGE_ROOT="$RUNNER_TEMP/MeowlettIPA"
+          mkdir -p "$PACKAGE_ROOT/Payload"
+          ditto "$MEOWLETT_APP_PATH" "$PACKAGE_ROOT/Payload/Meowlett.app"
+          ditto -c -k --sequesterRsrc --keepParent "$PACKAGE_ROOT/Payload" "$GITHUB_WORKSPACE/$IPA_NAME"
+          unzip -t "$GITHUB_WORKSPACE/$IPA_NAME" >/dev/null
+          unzip -l "$GITHUB_WORKSPACE/$IPA_NAME" | grep -F 'Payload/Meowlett.app/Info.plist' >/dev/null
+
+          IPA_SHA256="$(/usr/bin/shasum -a 256 "$GITHUB_WORKSPACE/$IPA_NAME" | /usr/bin/awk '{print $1}')"
+          IPA_SIZE_BYTES="$(/usr/bin/stat -f%z "$GITHUB_WORKSPACE/$IPA_NAME")"
+          IPA_SIZE_HUMAN="$(/usr/bin/du -h "$GITHUB_WORKSPACE/$IPA_NAME" | /usr/bin/awk '{print $1}')"
+
+          {
+            echo "## Meowlett IPA Release Candidate"
+            echo
+            echo "- Status: unsigned preview build; UI parity is not claimed."
+            echo "- RC label: `$RC_LABEL`"
+            echo "- Commit SHA: `$GITHUB_SHA`"
+            echo "- IPA: `$IPA_NAME`"
+            echo "- SHA-256: `$IPA_SHA256`"
+            echo "- Version / build: `$APP_MARKETING_VERSION / $APP_BUILD_NUMBER`"
+            echo "- Bundle ID: `$APP_BUNDLE_ID`"
+            echo "- Size: `$IPA_SIZE_HUMAN ($IPA_SIZE_BYTES bytes)`"
+            echo "- Build path: `$RELEASE_BUILD_MODE`"
+            echo "- WebKit linked by bundled Mach-O binaries: **no** (checked with `otool -L`)."
+            echo "- Plus Jakarta Sans bundle files: `$PLUS_JAKARTA_FILES`"
+            echo "- Plus Jakarta Sans entries matched in `UIAppFonts`: `$PLUS_JAKARTA_UIAPPFONTS`"
+            echo "- `-uitest-*` strings in Release executable (report only): `$RELEASE_UITEST_FLAGS`"
+            echo "- UI tests: not run by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "IPA_NAME=$IPA_NAME" >> "$GITHUB_ENV"
+          echo "Created $IPA_NAME ($IPA_SIZE_HUMAN, SHA-256 $IPA_SHA256)"
+
+      - name: Upload unsigned IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowlett-IPA-RC-${{ github.run_number }}
+          path: ${{ github.workspace }}/${{ env.IPA_NAME }}
+          if-no-files-found: error
+          retention-days: 14
