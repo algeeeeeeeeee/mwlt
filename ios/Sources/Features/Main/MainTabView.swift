@@ -170,14 +170,22 @@ struct MainTabView: View {
 
     private var isEnglish: Bool { language == "en" }
     private var tabTransition: AnyTransition {
-        reduceMotion ? .identity : .opacity
+        reduceMotion
+            ? .identity
+            : .asymmetric(
+                insertion: .opacity
+                    .combined(with: .offset(y: 10))
+                    .combined(with: .scale(scale: 0.99)),
+                removal: .identity
+            )
     }
 
     private func selectTab(_ tab: MeowlettTab) {
         if reduceMotion {
             selected = tab
         } else {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+            // Match the PWA's .tab-enter timing curve (0.22s, cubic-bezier(0.34, 1.1, 0.64, 1)).
+            withAnimation(.timingCurve(0.34, 1.1, 0.64, 1, duration: 0.22)) {
                 selected = tab
             }
         }
