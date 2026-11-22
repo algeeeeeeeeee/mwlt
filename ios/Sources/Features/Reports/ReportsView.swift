@@ -551,7 +551,12 @@ struct ReportsView: View {
     private var exportCard: some View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
-                ShareLink(item: reportCSV) {
+                Button {
+                    exportData = Data(reportCSV.utf8)
+                    exportContentType = .commaSeparatedText
+                    exportFilename = "meowlett-\(Date.now.formatted(.iso8601.year().month()))"
+                    showExporter = true
+                } label: {
                     Label(isEnglish ? "Export CSV" : "Ekspor CSV", systemImage: "tablecells")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(primary)
@@ -559,6 +564,7 @@ struct ReportsView: View {
                         .padding(.vertical, 11)
                         .background(primary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
                 }
+                .buttonStyle(.plain)
                 Button {
                     exportData = Data(reportHTML.utf8)
                     exportContentType = .html
