@@ -1971,7 +1971,6 @@ private struct DonutBreakdown: View {
 
             VStack(spacing: 0) {
                 Text("Total")
-                    .font(MeowlettTypography.font(size: 9, weight: .semibold))
                     .font(MeowlettTypography.font(size: size * 13 / 200, weight: .semibold))
                     .foregroundStyle(textSub)
                 Text(totalText)
