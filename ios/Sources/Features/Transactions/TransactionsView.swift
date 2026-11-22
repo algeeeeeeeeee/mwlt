@@ -23,6 +23,17 @@ struct TransactionsView: View {
     private var accent: Color { Color(hex: AppAppearance.accentHex) }
     private var primary: Color { Color(hex: AppAppearance.primaryHex) }
 
+    private var currentWeekBounds: (start: Date, end: Date) {
+        var calendar = Calendar.current
+        calendar.firstWeekday = 2 // Monday, matching getWeek() in the PWA.
+        let today = calendar.startOfDay(for: .now)
+        let weekday = calendar.component(.weekday, from: today) // Sunday = 1
+        let daysSinceMonday = (weekday + 5) % 7
+        let start = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
+        let end = calendar.date(byAdding: .day, value: 7, to: start) ?? today
+        return (start, end)
+    }
+
     private var filtered: [MeowlettTransaction] {
         var items = store.transactions
         let calendar = Calendar.current
@@ -30,10 +41,8 @@ struct TransactionsView: View {
         case "daily":
             items = items.filter { calendar.isDateInToday($0.date) }
         case "weekly":
-            items = items.filter {
-                calendar.component(.weekOfYear, from: $0.date) == calendar.component(.weekOfYear, from: .now) &&
-                calendar.component(.yearForWeekOfYear, from: $0.date) == calendar.component(.yearForWeekOfYear, from: .now)
-            }
+            let bounds = currentWeekBounds
+            items = items.filter { $0.date >= bounds.start && $0.date < bounds.end }
         default:
             items = items.filter { calendar.isDate($0.date, equalTo: .now, toGranularity: .month) }
         }
@@ -48,13 +57,27 @@ struct TransactionsView: View {
                 $0.note.lowercased().contains(query)
             }
         }
-        switch sortOrder {
-        case "amt-desc": items.sort { $0.amount > $1.amount }
-        case "amt-asc": items.sort { $0.amount < $1.amount }
-        case "date-asc": items.sort { $0.date < $1.date }
-        default: items.sort { $0.date > $1.date }
+        let indexed = items.enumerated().sorted { lhs, rhs in
+            switch sortOrder {
+            case "amt-desc":
+                return lhs.element.amount == rhs.element.amount
+                    ? lhs.offset < rhs.offset
+                    : lhs.element.amount > rhs.element.amount
+            case "amt-asc":
+                return lhs.element.amount == rhs.element.amount
+                    ? lhs.offset < rhs.offset
+                    : lhs.element.amount < rhs.element.amount
+            case "date-asc":
+                return lhs.element.date == rhs.element.date
+                    ? lhs.offset < rhs.offset
+                    : lhs.element.date < rhs.element.date
+            default:
+                return lhs.element.date == rhs.element.date
+                    ? lhs.offset < rhs.offset
+                    : lhs.element.date > rhs.element.date
+            }
         }
-        return items
+        return indexed.map(\.element)
     }
 
     private var grouped: [(date: Date, items: [MeowlettTransaction])] {
