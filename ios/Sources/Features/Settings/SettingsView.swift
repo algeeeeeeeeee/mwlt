@@ -1178,7 +1178,7 @@ private struct SettingsDataSheet: View {
                         confirmation = nil
                         pendingRestore = nil
                     } label: {
-                        Text("Batal")
+                        Text(isEnglish ? "Cancel" : "Batal")
                             .font(MeowlettTypography.font(size: 14, weight: .bold))
                             .foregroundStyle(AppAppearance.textSub(dark: isDark))
                             .frame(maxWidth: .infinity)
@@ -1200,7 +1200,7 @@ private struct SettingsDataSheet: View {
                             break
                         }
                     } label: {
-                        Text("Selesai")
+                        Text(isEnglish ? "Done" : "Selesai")
                             .font(MeowlettTypography.font(size: 14, weight: .heavy))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -1295,6 +1295,8 @@ private struct SettingsDataSheet: View {
     }
 
     private func resetData() {
+        // Clear scheduled reminders once for an explicit full data reset.
+        MeowlettReminderScheduler.removePendingRequests()
         // Match the PWA localStorage.clear() while preserving native onboarding state.
         for key in UserDefaults.standard.dictionaryRepresentation().keys where key.hasPrefix("gm_") {
             UserDefaults.standard.removeObject(forKey: key)
