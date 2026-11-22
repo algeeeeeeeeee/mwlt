@@ -1,5 +1,58 @@
 import SwiftUI
 
+private struct TransactionSortGlyph: View {
+    let kind: String
+    let ascending: Bool
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geometry in
+            let scale = min(geometry.size.width, geometry.size.height) / 24
+            Path { path in
+                func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+                    CGPoint(x: x * scale, y: y * scale)
+                }
+
+                if kind == "calendar" {
+                    path.addRoundedRect(
+                        in: CGRect(x: 3 * scale, y: 4 * scale, width: 18 * scale, height: 18 * scale),
+                        cornerSize: CGSize(width: 2 * scale, height: 2 * scale)
+                    )
+                    path.move(to: point(16, 2))
+                    path.addLine(to: point(16, 6))
+                    path.move(to: point(8, 2))
+                    path.addLine(to: point(8, 6))
+                    path.move(to: point(3, 10))
+                    path.addLine(to: point(21, 10))
+
+                    if ascending {
+                        path.move(to: point(12, 14))
+                        path.addLine(to: point(12, 18))
+                        path.addLine(to: point(15, 18))
+                    } else {
+                        path.move(to: point(15, 14))
+                        path.addLine(to: point(12, 14))
+                        path.addLine(to: point(12, 18))
+                    }
+                } else {
+                    let lines: [(CGFloat, CGFloat, CGFloat, CGFloat)] = ascending
+                        ? [(4, 18, 20, 18), (4, 14, 16, 14), (4, 10, 12, 10), (4, 6, 8, 6)]
+                        : [(4, 6, 20, 6), (4, 10, 16, 10), (4, 14, 12, 14), (4, 18, 8, 18)]
+                    for line in lines {
+                        path.move(to: point(line.0, line.1))
+                        path.addLine(to: point(line.2, line.3))
+                    }
+                }
+            }
+            .stroke(
+                color,
+                style: StrokeStyle(lineWidth: 2.5 * scale, lineCap: .round, lineJoin: .round)
+            )
+        }
+        .frame(width: 14, height: 14)
+    }
+}
+
 struct TransactionsView: View {
     @EnvironmentObject private var store: FinanceStore
     @AppStorage("gm_lang") private var language = "id"
@@ -156,7 +209,9 @@ struct TransactionsView: View {
                 .autocorrectionDisabled()
             if !searchQuery.isEmpty {
                 Button { searchQuery = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -218,16 +273,14 @@ struct TransactionsView: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(active ? accent.opacity(0.13) : Color.primary.opacity(isDark ? 0.06 : 0.045))
+                    .fill(active ? accent.opacity(0.08) : Color.primary.opacity(0.05))
                 Circle()
-                    .stroke(active ? accent.opacity(0.55) : Color.primary.opacity(0.10), lineWidth: 1.2)
-                VStack(spacing: -3) {
-                    Image(systemName: symbol)
-                        .font(.system(size: 10, weight: .bold))
-                    Image(systemName: ascending ? "arrow.up" : "arrow.down")
-                        .font(.system(size: 8, weight: .black))
-                }
-                .foregroundStyle(active ? accent : Color.secondary)
+                    .stroke(active ? accent.opacity(0.38) : Color.primary.opacity(0.10), lineWidth: 1.2)
+                TransactionSortGlyph(
+                    kind: symbol,
+                    ascending: ascending,
+                    color: active ? accent : AppAppearance.textSub(dark: isDark)
+                )
             }
             .frame(width: 32, height: 32)
         }
@@ -251,7 +304,7 @@ struct TransactionsView: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: symbol)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: 11, weight: .semibold))
                 Text(title)
                     .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .lineLimit(1)
@@ -259,9 +312,9 @@ struct TransactionsView: View {
             }
             .foregroundStyle(selected ? accent : Color.secondary)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 7)
-            .background(selected ? accent.opacity(0.12) : Color.primary.opacity(isDark ? 0.045 : 0.035), in: Capsule())
-            .overlay(Capsule().stroke(selected ? accent.opacity(0.55) : Color.primary.opacity(0.08), lineWidth: selected ? 1.5 : 1))
+            .padding(.vertical, 6)
+            .background(selected ? accent.opacity(0.08) : Color.primary.opacity(0.04), in: Capsule())
+            .overlay(Capsule().stroke(selected ? accent.opacity(0.38) : Color.primary.opacity(0.08), lineWidth: selected ? 1.5 : 1))
         }
         .buttonStyle(.plain)
     }
@@ -503,8 +556,8 @@ struct TransactionsView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(active ? AppAppearance.accent.opacity(0.4) : AppAppearance.border(dark: isDark), lineWidth: 1))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(active ? AppAppearance.accent.opacity(0.4) : AppAppearance.border(dark: isDark), lineWidth: 1))
         .overlay(alignment: .leading) {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(categoryColor)
