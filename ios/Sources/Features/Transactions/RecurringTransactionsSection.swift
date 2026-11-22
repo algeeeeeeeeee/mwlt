@@ -6,7 +6,7 @@ private enum RecurringUtilitySheet: String, Identifiable {
     var id: String { rawValue }
 }
 
-private struct NativeRecurringItem: Codable, Identifiable, Equatable {
+struct NativeRecurringItem: Codable, Identifiable, Equatable {
     var id: Int64
     var description: String
     var amount: Int64
@@ -73,7 +73,6 @@ struct RecurringTransactionsSection: View {
     @AppStorage("gm_income") private var incomeRaw = "5000000"
     @AppStorage("gm_recurring") private var recurringRaw = "[]"
     @AppStorage("gm_recurring_income") private var recurringIncomeRaw = "[]"
-    @AppStorage("gm_notif") private var notificationsEnabled = "0"
 
     @State private var recurring: [NativeRecurringItem] = []
     @State private var recurringIncome: [NativeRecurringItem] = []
@@ -81,6 +80,7 @@ struct RecurringTransactionsSection: View {
     @State private var showRecurring = false
     @State private var showRecurringIncome = false
     @State private var activeUtilitySheet: RecurringUtilitySheet?
+    @Binding var isUtilitySheetPresented: Bool
 
     @State private var editingRecurringID: Int64?
     @State private var recurringName = ""
@@ -115,7 +115,7 @@ struct RecurringTransactionsSection: View {
         .onAppear(perform: load)
         .onChange(of: recurring) { _, value in persist(value, key: "gm_recurring") }
         .onChange(of: recurringIncome) { _, value in persist(value, key: "gm_recurring_income") }
-                .sheet(item: $activeUtilitySheet) { sheet in
+                .sheet(item: $activeUtilitySheet, onDismiss: { isUtilitySheetPresented = false }) { sheet in
             switch sheet {
             case .installments:
                 SettingsCicilanSheet()
@@ -128,7 +128,10 @@ struct RecurringTransactionsSection: View {
 
     private var utilityLinks: some View {
         HStack(spacing: 0) {
-            Button { activeUtilitySheet = .installments } label: {
+            Button {
+                activeUtilitySheet = .installments
+                isUtilitySheetPresented = true
+            } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "creditcard")
                         .font(.system(size: 11, weight: .semibold))
@@ -154,7 +157,10 @@ struct RecurringTransactionsSection: View {
                 .fill(AppAppearance.border(dark: isDark))
                 .frame(width: 1, height: 16)
 
-            Button { activeUtilitySheet = .splitBills } label: {
+            Button {
+                activeUtilitySheet = .splitBills
+                isUtilitySheetPresented = true
+            } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
                         .font(.system(size: 11, weight: .semibold))
@@ -538,7 +544,6 @@ struct RecurringTransactionsSection: View {
             recurringIncome = decoded
         }
         loaded = true
-        applyAutomaticRecurringExpenses()
     }
 
     private func persist(_ items: [NativeRecurringItem], key: String) {
@@ -546,34 +551,6 @@ struct RecurringTransactionsSection: View {
               let json = String(data: data, encoding: .utf8) else { return }
         if key == "gm_recurring" { recurringRaw = json }
         else { recurringIncomeRaw = json }
-    }
-
-    private func applyAutomaticRecurringExpenses() {
-        let now = Date.now
-        let day = Calendar.current.component(.day, from: now)
-        for item in recurring where item.autoApply && item.day == day {
-            let alreadyAdded = store.transactions.contains {
-                Calendar.current.isDate($0.date, inSameDayAs: now) &&
-                $0.description == item.description && $0.amount == item.amount &&
-                $0.location == "Rutin"
-            }
-            if !alreadyAdded {
-                store.add(MeowlettTransaction(date: now, amount: item.amount, category: item.category, description: item.description, location: "Rutin", note: "Otomatis"))
-                if notificationsEnabled == "1" {
-                    postNotification(title: isEnglish ? "Auto-recorded" : "Tercatat Otomatis",
-                                     body: isEnglish ? "\\(item.description) — \\(rupiah(item.amount)) recorded" : "\\(item.description) — \\(rupiah(item.amount)) dicatat")
-                }
-            }
-        }
-
-        if notificationsEnabled == "1" {
-            for item in recurring where !item.autoApply && item.day == day {
-                postNotification(
-                    title: isEnglish ? "Payment reminder" : "Pengingat Tagihan",
-                    body: isEnglish ? "Time to record: \\(item.description) — \\(rupiah(item.amount))" : "Waktunya catat: \\(item.description) — \\(rupiah(item.amount))"
-                )
-            }
-        }
     }
 
     private func recordRecurringExpense(_ item: NativeRecurringItem) {
@@ -652,12 +629,5 @@ struct RecurringTransactionsSection: View {
         return formatter.string(from: NSNumber(value: amount)) ?? "Rp \(amount)"
     }
 
-    private func postNotification(title: String, body: String) {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        let request = UNNotificationRequest(identifier: "meowlett-recurring-\(UUID().uuidString)", content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
-    }
+
 }
