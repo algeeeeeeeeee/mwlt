@@ -40,7 +40,7 @@ struct OnboardingView: View {
                 HStack(spacing: 5) {
                     ForEach(0..<4, id: \.self) { index in
                         Capsule()
-                            .fill(index <= step ? accent : Color.secondary.opacity(0.2))
+                            .fill(index <= step ? accent : (isDark ? Color.white.opacity(0.12) : Color.black.opacity(0.12)))
                             .frame(width: index == step ? 24 : 6, height: 3)
                     }
                 }
@@ -65,13 +65,15 @@ struct OnboardingView: View {
             .padding(.bottom, 32)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
+        .background(AppAppearance.background(dark: isDark).ignoresSafeArea())
         .tint(accent)
         .animation(.easeInOut(duration: 0.2), value: step)
         .onAppear {
             name = savedName
             income = savedIncome == "5000000" ? "" : savedIncome
-            isDark = darkOverride == "true" || (darkOverride == "system" && colorScheme == .dark)
+            isDark = (followSystem == "1" || darkOverride == "system")
+                ? colorScheme == .dark
+                : darkOverride == "true"
         }
     }
 
@@ -83,7 +85,7 @@ struct OnboardingView: View {
             Text(isEnglish ? "Welcome to\nMeowlett" : "Selamat datang\ndi Meowlett")
                 .font(MeowlettTypography.font(size: 28, weight: .black))
                 .lineSpacing(1)
-                .foregroundStyle(.primary)
+                .foregroundStyle(AppAppearance.text(dark: isDark))
                 .padding(.bottom, 4)
 
             Text(isEnglish
@@ -91,7 +93,7 @@ struct OnboardingView: View {
                  : "Catat pengeluaran, pantau budget,\ndan capai tujuan finansialmu.")
                 .font(MeowlettTypography.font(size: 13, weight: .regular))
                 .lineSpacing(4)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.bottom, 20)
 
@@ -124,6 +126,7 @@ struct OnboardingView: View {
                 .padding(.bottom, 16)
 
             TextField(isEnglish ? "e.g. Pickles..." : "Contoh: Pickles...", text: $name)
+                .foregroundStyle(AppAppearance.text(dark: isDark))
                 .textContentType(.givenName)
                 .textInputAutocapitalization(.words)
                 .font(MeowlettTypography.font(size: 16, weight: .regular))
@@ -165,6 +168,7 @@ struct OnboardingView: View {
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .foregroundStyle(.secondary)
                 TextField("5.000.000", text: $income)
+                    .foregroundStyle(AppAppearance.text(dark: isDark))
                     .keyboardType(.numberPad)
                     .font(MeowlettTypography.font(size: 16, weight: .regular))
             }
@@ -253,6 +257,12 @@ struct OnboardingView: View {
                                     lineWidth: 3
                                 )
                             )
+                            .overlay(
+                                Circle().stroke(
+                                    themePreset == preset.id ? Color(hex: preset.accent).opacity(0.33) : .clear,
+                                    lineWidth: 2
+                                ).padding(-2)
+                            )
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(isEnglish ? preset.nameEN : preset.nameID)
@@ -275,6 +285,12 @@ struct OnboardingView: View {
                                 lineWidth: 3
                             )
                         )
+                        .overlay(
+                            Circle().stroke(
+                                themePreset == "custom" ? Color(hex: customAccent).opacity(0.33) : .clear,
+                                lineWidth: 2
+                            ).padding(-2)
+                        )
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isEnglish ? "Custom color" : "Warna kustom")
@@ -282,7 +298,7 @@ struct OnboardingView: View {
             .padding(.bottom, 12)
 
             if themePreset == "custom" {
-                HStack(alignment: .top, spacing: 10) {
+                HStack(alignment: .top, spacing: 8) {
                     onboardingColorControl(
                         title: isEnglish ? "PRIMARY" : "WARNA UTAMA",
                         value: primaryBinding,
@@ -294,7 +310,8 @@ struct OnboardingView: View {
                         hex: customAccent
                     )
                 }
-                .padding(12)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
                 .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
@@ -352,7 +369,7 @@ struct OnboardingView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                        .stroke(AppAppearance.border(dark: isDark), lineWidth: 2)
                 )
 
                 Text(hex.uppercased())
@@ -384,11 +401,11 @@ struct OnboardingView: View {
                 }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(selected ? accent : Color.primary.opacity(0.65))
+            .foregroundStyle(selected ? accent : AppAppearance.textSub(dark: isDark))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(selected ? accent.opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.secondary.opacity(0.15), lineWidth: 2))
+            .background(selected ? accent.opacity(24.0 / 255.0) : AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : AppAppearance.border(dark: isDark), lineWidth: 2))
         }
         .buttonStyle(.plain)
     }
@@ -397,6 +414,8 @@ struct OnboardingView: View {
         let selected = isDark == dark
         return Button {
             isDark = dark
+            darkOverride = dark ? "true" : "false"
+            followSystem = "0"
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: dark ? "moon.fill" : "sun.max.fill")
@@ -404,7 +423,7 @@ struct OnboardingView: View {
                 if selected { Image(systemName: "checkmark.circle.fill") }
             }
             .font(.system(size: 13, weight: .bold))
-            .foregroundStyle(selected ? accent : Color.primary.opacity(0.7))
+            .foregroundStyle(selected ? accent : AppAppearance.textSub(dark: isDark))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
             .background(selected ? accent.opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
