@@ -243,11 +243,13 @@ jobs:
             echo "::warning::Could not set onboarding preference before preview launch."
           fi
 
-          capture_preview "02-dashboard.png" --mwlt-preview-seed-data --mwlt-preview-tab=dashboard || true
+          # The app-level preview flag bypasses onboarding deterministically; it does not
+          # write to the user's persistent onboarding preference.
+          capture_preview "02-dashboard.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=dashboard || true
           for TAB in transactions report date settings; do
-            capture_preview "03-$TAB.png" --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB" || true
+            capture_preview "03-$TAB.png" --mwlt-preview-mode --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB" || true
           done
-          capture_preview "08-quick-add.png" --mwlt-preview-seed-data --mwlt-preview-quick-add || true
+          capture_preview "08-quick-add.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-quick-add || true
 
           echo "Captured $CAPTURED_COUNT native preview screen(s):"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
@@ -267,6 +269,46 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Validate native preview content
+        run: |
+          cat > "$RUNNER_TEMP/ValidateMeowlettPreviews.swift" <<'SWIFT'
+          import Foundation
+          import Vision
+
+          let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
+          let expectations: [(String, [String])] = [
+              ("02-dashboard.png", ["streak"]),
+              ("03-transactions.png", ["transaksi", "transactions"]),
+              ("03-report.png", ["laporan", "reports"]),
+              ("03-date.png", ["date"]),
+              ("03-settings.png", ["pengaturan", "settings"]),
+              ("08-quick-add.png", ["transaksi baru", "new transaction"])
+          ]
+
+          for (filename, expectedTerms) in expectations {
+              let url = URL(fileURLWithPath: directory).appendingPathComponent(filename)
+              let request = VNRecognizeTextRequest()
+              request.recognitionLevel = .accurate
+              request.usesLanguageCorrection = true
+              try VNImageRequestHandler(url: url, options: [:]).perform([request])
+              let recognized = (request.results ?? [])
+                  .compactMap { $0.topCandidates(1).first?.string }
+                  .joined(separator: " ")
+                  .lowercased()
+
+              if recognized.contains("selamat datang") || recognized.contains("welcome to meowlett") {
+                  fputs("::error::\(filename) still shows onboarding instead of its requested screen.\n", stderr)
+                  exit(1)
+              }
+              if !expectedTerms.contains(where: { recognized.contains($0) }) {
+                  fputs("::error::\(filename) does not contain its expected screen title/content. OCR: \(recognized)\n", stderr)
+                  exit(1)
+              }
+              print("Validated \(filename): \(recognized.prefix(180))")
+          }
+          SWIFT
+          swift "$RUNNER_TEMP/ValidateMeowlettPreviews.swift"
 
       - name: Assemble a single native preview image
         run: |
