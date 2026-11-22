@@ -117,12 +117,12 @@ struct OnboardingView: View {
             Text(isEnglish ? "What's your\nname?" : "Siapa\nnamamu?")
                 .font(MeowlettTypography.font(size: 26, weight: .black))
                 .lineSpacing(1)
-                .foregroundStyle(.primary)
+                .foregroundStyle(AppAppearance.text(dark: isDark))
                 .padding(.bottom, 4)
 
             Text(isEnglish ? "So greetings feel more personal." : "Biar sapaan lebih personal.")
                 .font(MeowlettTypography.font(size: 13, weight: .regular))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 .padding(.bottom, 16)
 
             TextField(isEnglish ? "e.g. Pickles..." : "Contoh: Pickles...", text: $name)
@@ -155,18 +155,18 @@ struct OnboardingView: View {
             Text(isEnglish ? "Monthly\nincome?" : "Pemasukan\nbulan ini?")
                 .font(MeowlettTypography.font(size: 26, weight: .black))
                 .lineSpacing(1)
-                .foregroundStyle(.primary)
+                .foregroundStyle(AppAppearance.text(dark: isDark))
                 .padding(.bottom, 4)
 
             Text(isEnglish ? "You can change this anytime." : "Bisa diubah kapan saja di Pengaturan.")
                 .font(MeowlettTypography.font(size: 13, weight: .regular))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 .padding(.bottom, 16)
 
             HStack(spacing: 8) {
                 Text("Rp")
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 TextField("5.000.000", text: $income)
                     .foregroundStyle(AppAppearance.text(dark: isDark))
                     .keyboardType(.numberPad)
@@ -206,18 +206,18 @@ struct OnboardingView: View {
             Text(isEnglish ? "Choose your\nlook" : "Pilih\ntampilan")
                 .font(MeowlettTypography.font(size: 26, weight: .black))
                 .lineSpacing(1)
-                .foregroundStyle(.primary)
+                .foregroundStyle(AppAppearance.text(dark: isDark))
                 .padding(.bottom, 4)
 
             Text(isEnglish ? "You can change this anytime in Settings." : "Bisa diganti kapan saja di Pengaturan.")
                 .font(MeowlettTypography.font(size: 13, weight: .regular))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 .padding(.bottom, 14)
 
             Text(isEnglish ? "DISPLAY MODE" : "MODE TAMPILAN")
                 .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(1)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textMuted(dark: isDark))
                 .padding(.bottom, 8)
 
             HStack(spacing: 8) {
@@ -229,7 +229,7 @@ struct OnboardingView: View {
             Text(isEnglish ? "COLOR THEME" : "TEMA WARNA")
                 .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(1)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textMuted(dark: isDark))
                 .padding(.bottom, 8)
 
             LazyVGrid(
@@ -355,7 +355,7 @@ struct OnboardingView: View {
             Text(title)
                 .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(0.5)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textMuted(dark: isDark))
 
             HStack(spacing: 8) {
                 ZStack {
@@ -374,7 +374,7 @@ struct OnboardingView: View {
 
                 Text(hex.uppercased())
                     .font(MeowlettTypography.font(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppAppearance.textSub(dark: isDark))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -397,10 +397,10 @@ struct OnboardingView: View {
             HStack(spacing: 6) {
                 Text(title)
                 if selected {
-                    Image(systemName: "checkmark.circle.fill")
+                    Image(systemName: "checkmark")
                 }
             }
-            .font(.system(size: 13, weight: .bold))
+            .font(MeowlettTypography.font(size: 13, weight: .bold))
             .foregroundStyle(selected ? accent : AppAppearance.textSub(dark: isDark))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
@@ -417,17 +417,17 @@ struct OnboardingView: View {
             darkOverride = dark ? "true" : "false"
             followSystem = "0"
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: 7) {
                 Image(systemName: dark ? "moon.fill" : "sun.max.fill")
                 Text(title)
-                if selected { Image(systemName: "checkmark.circle.fill") }
+                if selected { Image(systemName: "checkmark") }
             }
-            .font(.system(size: 13, weight: .bold))
+            .font(MeowlettTypography.font(size: 13, weight: .bold))
             .foregroundStyle(selected ? accent : AppAppearance.textSub(dark: isDark))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
-            .background(selected ? accent.opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.secondary.opacity(0.15), lineWidth: 2))
+            .background(selected ? accent.opacity(24.0 / 255.0) : AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : AppAppearance.border(dark: isDark), lineWidth: 2))
         }
         .buttonStyle(.plain)
     }
@@ -448,7 +448,7 @@ struct OnboardingView: View {
         Button(action: action) {
             Text(title)
                 .font(MeowlettTypography.font(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
         }
