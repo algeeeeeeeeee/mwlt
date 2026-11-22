@@ -65,6 +65,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          DEVICE_ID=""
+          simctl_with_timeout() {
+            local timeout_seconds="$1"
+            shift
+            perl -e 'alarm shift; exec @ARGV' "$timeout_seconds" xcrun simctl "$@"
+          }
+          cleanup_simulator() {
+            if [ -n "$DEVICE_ID" ]; then
+              simctl_with_timeout 15 shutdown "$DEVICE_ID" >/dev/null 2>&1 || true
+              simctl_with_timeout 15 delete "$DEVICE_ID" >/dev/null 2>&1 || true
+            fi
+          }
+          # Cover simulator discovery and creation too, not only boot/capture.
+          (
+            sleep 720
+            echo "::error::Native preview capture exceeded 12 minutes."
+            kill -TERM "$PPID"
+          ) &
+          WATCHDOG_PID=$!
+          trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
+
           # Create a brand-new full-size simulator. Reusing a previously resized
           # simulator can produce a short, window-like screenshot with black bars.
           SIM_SELECTION="$(python3 -c '
@@ -73,7 +94,7 @@ jobs:
           def simctl_json(*args):
               result = subprocess.run(
                   ["xcrun", "simctl", "list", *args, "-j"],
-                  check=True, text=True, capture_output=True
+                  check=True, text=True, capture_output=True, timeout=45
               )
               return json.loads(result.stdout)
 
@@ -127,24 +148,7 @@ jobs:
 
           # Create exactly one uniquely named simulator. All simctl operations below
           # have explicit timeouts so a hung CoreSimulator service cannot stall CI.
-          DEVICE_ID="$(perl -e 'alarm shift; exec @ARGV' 90 xcrun simctl create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
-          simctl_with_timeout() {
-            local timeout_seconds="$1"
-            shift
-            perl -e 'alarm shift; exec @ARGV' "$timeout_seconds" xcrun simctl "$@"
-          }
-          cleanup_simulator() {
-            xcrun simctl shutdown "$DEVICE_ID" >/dev/null 2>&1 || true
-            xcrun simctl delete "$DEVICE_ID" >/dev/null 2>&1 || true
-          }
-          # Prevent a stuck simctl launch/screenshot from holding the macOS runner indefinitely.
-          (
-            sleep 720
-            echo "::error::Native preview capture exceeded 12 minutes."
-            kill -TERM "$PPID"
-          ) &
-          WATCHDOG_PID=$!
-          trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
+          DEVICE_ID="$(simctl_with_timeout 90 create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
 
           echo "Fresh simulator: $DEVICE_ID ($DEVICE_NAME / $DEVICE_TYPE_ID / $RUNTIME_ID)"
           simctl_with_timeout 90 boot "$DEVICE_ID"
