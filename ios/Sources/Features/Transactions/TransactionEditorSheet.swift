@@ -87,7 +87,7 @@ struct TransactionEditorSheet: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(AppAppearance.modal(dark: dark))
-        .presentationDetents([.height(490)])
+        .presentationDetents([.fraction(0.88)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
         .presentationBackground(AppAppearance.modal(dark: dark))
@@ -133,7 +133,7 @@ struct TransactionEditorSheet: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)
-        .background(LinearGradient(colors: [primary, primary.opacity(0.78)], startPoint: .topLeading, endPoint: .bottomTrailing))
+        .background(LinearGradient(colors: [primary, Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.25))], startPoint: .topLeading, endPoint: .bottomTrailing))
     }
 
     private var amountRow: some View {
@@ -152,14 +152,14 @@ struct TransactionEditorSheet: View {
                     }
             }
             .padding(.horizontal, 14)
-            .frame(height: 46)
+            .frame(height: 42)
             .background(inputBackground, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(inputBorder, lineWidth: 1.5))
             Button { showCalculator = true } label: {
                 Image(systemName: "function")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 46)
+                    .frame(width: 42, height: 42)
                     .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1))
             }
@@ -175,13 +175,10 @@ struct TransactionEditorSheet: View {
             DatePicker(isEnglish ? "Date" : "Tanggal", selection: $date, displayedComponents: .date)
                 .datePickerStyle(.compact)
                 .labelsHidden()
-            Spacer()
-            Text(date.formatted(date: .abbreviated, time: .omitted))
-                .font(MeowlettTypography.font(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+            Spacer(minLength: 0)
         }
         .padding(.horizontal, 12)
-        .frame(height: 43)
+        .frame(height: 42)
         .background(inputBackground, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(inputBorder, lineWidth: 1.5))
     }
@@ -202,9 +199,9 @@ struct TransactionEditorSheet: View {
                         }
                         .foregroundStyle(selected ? color : Color.secondary)
                         .padding(.horizontal, 11)
-                        .padding(.vertical, 7)
-                        .background(selected ? color.opacity(0.13) : AppAppearance.card2(dark: dark), in: Capsule())
-                        .overlay(Capsule().stroke(selected ? color : Color.primary.opacity(0.08), lineWidth: selected ? 2 : 1))
+                        .padding(.vertical, 6)
+                        .background(selected ? color.opacity(0.13) : categoryChipBackground, in: Capsule())
+                        .overlay(Capsule().stroke(selected ? color : AppAppearance.border(dark: dark), lineWidth: selected ? 2 : 1.5))
                     }
                     .buttonStyle(.plain)
                 }
@@ -229,24 +226,27 @@ struct TransactionEditorSheet: View {
             }
             .foregroundStyle(selected ? accent : Color.secondary)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(selected ? accent.opacity(0.10) : AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.primary.opacity(0.08), lineWidth: selected ? 2 : 1))
+            .frame(height: 47)
+            .background(selected ? accent.opacity(0.10) : categoryChipBackground, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : AppAppearance.border(dark: dark), lineWidth: selected ? 2 : 1.5))
         }
         .buttonStyle(.plain)
     }
 
     private func styledField(_ placeholder: String, text: Binding<String>) -> some View {
         TextField(placeholder, text: text)
-            .font(MeowlettTypography.font(size: 15, weight: .regular))
+            .font(MeowlettTypography.font(size: 16, weight: .regular))
             .padding(.horizontal, 16)
             .frame(height: 46)
             .background(inputBackground, in: RoundedRectangle(cornerRadius: 14))
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(inputBorder, lineWidth: 1.5))
     }
 
-    private var inputBackground: Color { dark ? Color.white.opacity(0.06) : AppAppearance.card2(dark: dark) }
-    private var inputBorder: Color { dark ? Color.white.opacity(0.12) : Color.primary.opacity(0.10) }
+    private var categoryChipBackground: Color {
+        dark ? AppAppearance.card2(dark: true) : AppAppearance.background(dark: false)
+    }
+    private var inputBackground: Color { AppAppearance.input(dark: dark) }
+    private var inputBorder: Color { AppAppearance.inputBorder(dark: dark) }
 
     private var receiptSection: some View {
         VStack(spacing: 8) {
@@ -277,8 +277,8 @@ struct TransactionEditorSheet: View {
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
-                            .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.10), style: StrokeStyle(lineWidth: 1.2, dash: [5, 3])))
+                            .background(categoryChipBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: dark), style: StrokeStyle(lineWidth: 1.5, dash: [5, 3])))
                     }
                     .buttonStyle(.plain)
 
