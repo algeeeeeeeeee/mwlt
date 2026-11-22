@@ -89,7 +89,6 @@ struct DashboardView: View {
         let streakPoints = min(15, Int((Double(currentStreak) / 7 * 15).rounded()))
         let goalPoints = savingsGoals.isEmpty ? 0 : (savingsGoals.contains(where: { $0.saved > 0 }) ? 15 : 8)
         let overBudgetCount = budgets.filter { key, limit in
-            guard limit > 0 else { return false }
             let categorySpent = monthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount }
             return categorySpent > limit
         }.count
@@ -119,7 +118,7 @@ struct DashboardView: View {
         ]
         let day = Calendar.current.ordinality(of: .day, in: .year, for: .now) ?? 1
         let tips = isEnglish ? tipsEN : tipsID
-        return tips[(day - 1) % tips.count]
+        return tips[day % tips.count]
     }
     private var expensePercent: Int {
         guard income > 0 else { return 0 }
@@ -577,91 +576,109 @@ struct DashboardView: View {
         let dayOfMonth = Calendar.current.component(.day, from: .now)
         let daysInMonth = Calendar.current.range(of: .day, in: .month, for: .now)?.count ?? 30
         if dayOfMonth >= 3 && spent > 0 && income > 0 {
-            let predicted = Int64(Double(spent) / Double(dayOfMonth) * Double(daysInMonth))
+            let predicted = Int64((Double(spent) / Double(dayOfMonth) * Double(daysInMonth)).rounded())
+            let isOver = predicted > income
+            let stateColor = isOver ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex)
             HStack(spacing: 12) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex))
+                    .foregroundStyle(stateColor)
                     .frame(width: 36, height: 36)
-                    .background((predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex)).opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-                VStack(alignment: .leading, spacing: 3) {
+                    .background(stateColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 2) {
                     Text(isEnglish ? "MONTH PREDICTION" : "PREDIKSI AKHIR BULAN")
-                        .font(MeowlettTypography.font(size: 10, weight: .heavy))
-                        .tracking(0.5)
+                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                        .tracking(0.3)
                         .foregroundStyle(.secondary)
-                    Text((isEnglish ? "Est. spending: " : "Est. pengeluaran: ") + rupiah(predicted))
-                        .font(MeowlettTypography.font(size: 12, weight: .bold))
-                        .foregroundStyle(predicted > income ? Color(hex: "#f87171") : .primary)
-                    Label(
-                        predicted > income
-                            ? (isEnglish ? "Likely over budget this month" : "Kemungkinan over budget bulan ini")
-                            : (isEnglish ? "On track · est. saving " + rupiah(income - predicted) : "Aman · estimasi sisa " + rupiah(income - predicted)),
-                        systemImage: predicted > income ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
+                    (
+                        Text(isEnglish ? "Est. spending: " : "Est. pengeluaran: ")
+                            .foregroundColor(AppAppearance.text(dark: isDark))
+                        + Text(rupiah(predicted))
+                            .fontWeight(.black)
+                            .foregroundColor(stateColor)
                     )
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(predicted > income ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex))
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                    .lineSpacing(1)
+                    HStack(spacing: 4) {
+                        Image(systemName: isOver ? "exclamationmark.triangle" : "checkmark.circle")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(isOver
+                             ? (isEnglish ? "Over budget this month" : "Kemungkinan over budget bulan ini")
+                             : (isEnglish ? "On track · est. saving " + rupiah(income - predicted) : "Aman · estimasi sisa " + rupiah(income - predicted)))
+                            .font(MeowlettTypography.font(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(stateColor)
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+            .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
         }
     }
 
     private var financialHealthCard: some View {
         let score = financialHealth
-        return VStack(alignment: .leading, spacing: 9) {
+        return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.text.square.fill")
-                        .font(.system(size: 14, weight: .bold))
+                    Image(systemName: "heart.text.square")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(score.color)
                         .frame(width: 28, height: 28)
                         .background(score.color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
                     Text(isEnglish ? "FINANCIAL HEALTH" : "KESEHATAN FINANSIAL")
-                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 12, weight: .heavy))
                         .tracking(0.5)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(score.score)")
-                        .font(MeowlettTypography.font(size: 25, weight: .black))
+                        .font(MeowlettTypography.font(size: 26, weight: .black))
                         .foregroundStyle(score.color)
                     Text("/100")
-                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
+                        .font(MeowlettTypography.font(size: 11, weight: .semibold))
                         .foregroundStyle(.secondary)
                 }
             }
+            .padding(.bottom, 10)
+
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(isDark ? 0.08 : 0.07))
                     Capsule()
-                        .fill(LinearGradient(colors: [score.color.opacity(0.55), score.color], startPoint: .leading, endPoint: .trailing))
+                        .fill(LinearGradient(colors: [score.color.opacity(0.53), score.color], startPoint: .leading, endPoint: .trailing))
                         .frame(width: proxy.size.width * CGFloat(score.score) / 100)
                 }
             }
             .frame(height: 8)
+            .padding(.bottom, 8)
+
             HStack(alignment: .center, spacing: 8) {
                 Text(score.label)
-                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                    .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(score.color)
                 Spacer(minLength: 3)
                 Text(dailyHealthTip)
-                    .font(MeowlettTypography.font(size: 9, weight: .bold))
+                    .font(MeowlettTypography.font(size: 10, weight: .bold))
                     .foregroundStyle(score.color)
                     .multilineTextAlignment(.trailing)
+                    .lineSpacing(1)
                     .lineLimit(2)
                     .frame(maxWidth: 190, alignment: .trailing)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(score.color.opacity(0.10), in: RoundedRectangle(cornerRadius: 8))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(score.color.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private var budgetCard: some View {
