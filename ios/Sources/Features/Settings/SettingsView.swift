@@ -1045,7 +1045,7 @@ private struct SettingsDataSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Data").font(MeowlettTypography.font(size: 16, weight: .bold))
+                Text("Data").font(MeowlettTypography.font(size: 16, weight: .heavy))
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -1053,8 +1053,8 @@ private struct SettingsDataSheet: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
-                    .padding(.bottom, 10)
             }
+            .padding(.bottom, 10)
             Button {
                 backupFile = makeBackupFile()
                 showExporter = backupFile != nil
@@ -1147,7 +1147,7 @@ private struct SettingsDataSheet: View {
             isPresented: $showResetConfirm,
             titleVisibility: .visible
         ) {
-            Button(isEnglish ? "Reset data" : "Reset data", role: .destructive) { resetData() }
+            Button(isEnglish ? "Reset All Data" : "Atur Ulang Semua Data", role: .destructive) { resetData() }
             Button(isEnglish ? "Cancel" : "Batal", role: .cancel) {}
         }
     }
@@ -1248,7 +1248,7 @@ private struct SettingsDataSheet: View {
             Image(systemName: symbol).font(.system(size: 18, weight: .regular)).foregroundStyle(foreground)
                 .frame(width: 38, height: 38).background(iconSurface, in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(foreground)
+                Text(title).font(MeowlettTypography.font(size: 14, weight: .heavy)).foregroundStyle(foreground)
                 Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular))
                     .foregroundStyle(isAccent || isDanger ? foreground.opacity(0.7) : Color.secondary)
             }
