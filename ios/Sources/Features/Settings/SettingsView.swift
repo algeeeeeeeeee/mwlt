@@ -813,6 +813,8 @@ private struct SettingsNotificationsSheet: View {
             }
         }
         .background(AppAppearance.card(dark: isDark))
+        .blur(radius: showReminderSettings ? 8 : 0)
+        .animation(.easeInOut(duration: 0.2), value: showReminderSettings)
         .sheet(isPresented: $showReminderSettings) { SettingsReminderSheet() }
         .alert(
             isEnglish ? "Notifications unavailable" : "Notifikasi tidak tersedia",
