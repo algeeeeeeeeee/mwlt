@@ -171,7 +171,7 @@ struct ReportsView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 12) {
                 if !budgetWarnings.isEmpty { budgetWarningCard }
-                categoryComparisonCard
+                if !categoryComparisons.isEmpty { categoryComparisonCard }
                 if !insights.isEmpty { insightsCard }
                 if !categoryTrendSeries.isEmpty { categoryTrendCard }
                 weeklyTrendCard
@@ -617,92 +617,306 @@ struct ReportsView: View {
     }
 
     private var selectedDayReportCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionHeading(isEnglish ? "Daily report" : "Laporan Harian", symbol: "calendar")
-            DatePicker(isEnglish ? "Choose date" : "Pilih tanggal", selection: $reportDate, displayedComponents: .date)
-                .datePickerStyle(.compact)
-                .tint(primary)
-                .font(.system(size: 12, weight: .semibold))
-            VStack(alignment: .leading, spacing: 3) {
-                Text(isEnglish ? "TOTAL EXPENSE" : "TOTAL PENGELUARAN")
-                    .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(1).foregroundStyle(.secondary)
-                Text(reportTotal > 0 ? "-\(rupiah(reportTotal))" : rupiah(0))
-                    .font(MeowlettTypography.font(size: 30, weight: .black))
-                    .foregroundStyle(reportTotal > 0 ? Color(hex: "#f87171") : Color.secondary)
-                Text("\(dayLabel) · \(reportTransactions.count) \(isEnglish ? "transactions" : "transaksi")")
-                    .font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(hex: "#f87171").opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+        VStack(spacing: 12) {
+            selectedDayPickerCard
+            selectedDayTotalCard
 
-            if dailyCategoryTotals.isEmpty {
-                emptyMessage(isEnglish ? "No transactions on this date." : "Tidak ada transaksi pada tanggal ini.")
-                    .frame(maxWidth: .infinity).padding(.vertical, 15)
+            if reportTransactions.isEmpty {
+                selectedDayEmptyCard
             } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(isEnglish ? "Per category" : "Per kategori")
-                        .font(MeowlettTypography.font(size: 13, weight: .heavy))
-                    ForEach(Array(dailyCategoryTotals.enumerated()), id: \.offset) { _, item in
-                        HStack(spacing: 8) {
-                            Circle().fill(MeowlettCategory.color(for: item.0)).frame(width: 8, height: 8)
-                            Text(MeowlettCategory.name(for: item.0, language: language))
-                                .font(MeowlettTypography.font(size: 12, weight: .semibold))
-                            Spacer()
-                            Text(rupiah(item.1)).font(MeowlettTypography.font(size: 12, weight: .bold))
-                        }
-                    }
-                }
-                Divider().opacity(0.5)
-                VStack(alignment: .leading, spacing: 9) {
-                    Text(isEnglish ? "Transaction details" : "Detail transaksi")
-                        .font(MeowlettTypography.font(size: 13, weight: .heavy))
-                    ForEach(reportTransactions) { transaction in
-                        HStack(spacing: 9) {
-                            RoundedRectangle(cornerRadius: 9).fill(MeowlettCategory.color(for: transaction.category).opacity(0.15))
-                                .frame(width: 32, height: 32)
-                                .overlay(Image(systemName: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "tag")
-                                    .font(.system(size: 13)).foregroundStyle(MeowlettCategory.color(for: transaction.category)))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(transaction.description).font(MeowlettTypography.font(size: 12, weight: .bold))
-                                if !transaction.location.isEmpty { Text(transaction.location).font(MeowlettTypography.font(size: 10, weight: .regular)).foregroundStyle(.secondary) }
-                            }
-                            Spacer()
-                            Text("-\(rupiah(transaction.amount))")
-                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
-                                .foregroundStyle(Color(hex: "#f87171"))
-                        }
-                    }
-                }
-            }
-            if !reportTransactions.isEmpty {
-                let daysInMonth = Calendar.current.range(of: .day, in: .month, for: reportDate)?.count ?? 30
-                let averageDailyAllowance = income > 0 ? income / Int64(max(daysInMonth, 1)) : 0
-                let aboveDailyAverage = reportTotal > averageDailyAllowance
-                Divider().opacity(0.5)
-                VStack(alignment: .leading, spacing: 8) {
-                    sectionHeading(isEnglish ? "Daily insight" : "Insight Hari Ini", symbol: "sparkles")
-                    if let top = dailyCategoryTotals.first {
-                        Text((isEnglish ? "Top spending: " : "Pengeluaran tertinggi: ") + MeowlettCategory.name(for: top.0, language: language) + " — " + rupiah(top.1))
-                            .font(MeowlettTypography.font(size: 11, weight: .medium))
-                            .foregroundStyle(primary)
-                    }
-                    Label(
-                        (aboveDailyAverage ? (isEnglish ? "Above daily average" : "Di atas rata-rata harian") : (isEnglish ? "Below daily average" : "Di bawah rata-rata harian"))
-                            + " (\(rupiah(averageDailyAllowance)))",
-                        systemImage: aboveDailyAverage ? "exclamationmark.triangle.fill" : "checkmark.circle.fill"
-                    )
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a"))
-                    Text((isEnglish ? "Average per transaction: " : "Rata-rata per transaksi: ") + rupiah(reportTotal / Int64(max(reportTransactions.count, 1))))
-                        .font(MeowlettTypography.font(size: 11, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(12)
-                .background(primary.opacity(isDark ? 0.12 : 0.06), in: RoundedRectangle(cornerRadius: 12))
+                selectedDayCategoryCard
+                selectedDayTransactionsCard
+                selectedDayInsightCard
             }
         }
-        .cardStyle(dark: isDark)
+    }
+
+    private var selectedDayPickerCard: some View {
+        HStack(spacing: 7) {
+            RoundedRectangle(cornerRadius: 9)
+                .fill(primary.opacity(0.10))
+                .frame(width: 28, height: 28)
+                .overlay(
+                    Image(systemName: "calendar")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(primary)
+                )
+            Text(isEnglish ? "Pick Date" : "Pilih Tanggal")
+                .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                .foregroundStyle(.primary)
+            Spacer()
+            DatePicker("", selection: $reportDate, displayedComponents: .date)
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .tint(primary)
+                .font(MeowlettTypography.font(size: 12, weight: .semibold))
+        }
+        .padding(16)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
+    }
+
+    private var selectedDayTotalCard: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(isEnglish ? "TOTAL SPENDING" : "TOTAL PENGELUARAN")
+                .font(MeowlettTypography.font(size: 11, weight: .bold))
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
+                .tracking(0.7)
+            Text(reportTotal > 0 ? "-\(rupiah(reportTotal))" : rupiah(0))
+                .font(MeowlettTypography.font(size: 30, weight: .black))
+                .foregroundStyle(reportTotal > 0 ? Color(hex: "#f87171") : AppAppearance.textSub(dark: isDark))
+                .padding(.vertical, 1)
+            Text("\(dayLabel) · \(reportTransactions.count) \(isEnglish ? "transactions" : "transaksi")")
+                .font(MeowlettTypography.font(size: 12, weight: .regular))
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(
+            isDark
+                ? Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.55)).opacity(0.80)
+                : primary.opacity(0.07),
+            in: RoundedRectangle(cornerRadius: 18)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(primary.opacity(isDark ? 0.27 : 0.20), lineWidth: 1)
+        )
+    }
+
+    private var selectedDayEmptyCard: some View {
+        VStack(spacing: 0) {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: AppAppearance.accentHex).opacity(0.13),
+                            Color(hex: AppAppearance.primaryHex).opacity(0.10)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 60, height: 60)
+                .overlay(Circle().stroke(accent.opacity(0.30), lineWidth: 1.5))
+                .overlay(
+                    Image(systemName: "nosign")
+                        .font(.system(size: 28, weight: .light))
+                        .foregroundStyle(isDark ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.45)) : primary)
+                )
+                .padding(.bottom, 10)
+            Text(isEnglish ? "No transactions on this date" : "Tidak ada transaksi pada tanggal ini")
+                .font(MeowlettTypography.font(size: 14, weight: .medium))
+                .foregroundStyle(AppAppearance.textSub(dark: isDark))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(40)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
+    }
+
+    private var selectedDayCategoryCard: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            Text(isEnglish ? "By Category" : "Per Kategori")
+                .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                .foregroundStyle(.primary)
+
+            ForEach(Array(dailyCategoryTotals.enumerated()), id: \.offset) { _, item in
+                let categoryColor = MeowlettCategory.color(for: item.0)
+                let percent = reportTotal > 0
+                    ? Int((Double(item.1) / Double(reportTotal) * 100).rounded())
+                    : 0
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 7) {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(categoryColor.opacity(0.14))
+                            .frame(width: 20, height: 20)
+                            .overlay(
+                                Image(systemName: MeowlettCategory.all.first(where: { $0.id == item.0 })?.icon ?? "tag")
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundStyle(categoryColor)
+                            )
+                        Text(MeowlettCategory.name(for: item.0, language: language))
+                            .font(MeowlettTypography.font(size: 12, weight: .bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        Spacer(minLength: 4)
+                        Text("\(percent)% · \(rupiah(item.1))")
+                            .font(MeowlettTypography.font(size: 12, weight: .bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                    }
+                    GeometryReader { proxy in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(AppAppearance.background(dark: isDark))
+                            Capsule()
+                                .fill(categoryColor)
+                                .frame(width: proxy.size.width * CGFloat(percent) / 100)
+                        }
+                    }
+                    .frame(height: 6)
+                }
+            }
+        }
+        .padding(16)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
+    }
+
+    private var selectedDayTransactionsCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(isEnglish ? "Transactions" : "Detail Transaksi")
+                .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                .foregroundStyle(.primary)
+                .padding(.bottom, 10)
+
+            ForEach(Array(reportTransactions.enumerated()), id: \.element.id) { index, transaction in
+                let color = MeowlettCategory.color(for: transaction.category)
+                HStack(spacing: 9) {
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(color.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Image(systemName: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "tag")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundStyle(color)
+                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(transaction.description)
+                            .font(MeowlettTypography.font(size: 12, weight: .bold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                        if !transaction.location.isEmpty {
+                            Text(transaction.location)
+                                .font(MeowlettTypography.font(size: 10, weight: .regular))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer(minLength: 4)
+                    Text("-\(rupiah(transaction.amount))")
+                        .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#f87171"))
+                        .lineLimit(1)
+                }
+                .padding(.vertical, 9)
+                .overlay(alignment: .bottom) {
+                    if index < reportTransactions.count - 1 {
+                        Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 0.7)
+                    }
+                }
+            }
+
+            HStack {
+                Text(isEnglish ? "TODAY'S TOTAL" : "TOTAL HARI INI")
+                    .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("-\(rupiah(reportTotal))")
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                    .foregroundStyle(Color(hex: "#f87171"))
+            }
+            .padding(.top, 13)
+        }
+        .padding(16)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
+    }
+
+    private var selectedDayInsightCard: some View {
+        let daysInMonth = Calendar.current.range(of: .day, in: .month, for: reportDate)?.count ?? 30
+        let averageDailyAllowance = income > 0
+            ? Int64((Double(income) / Double(max(daysInMonth, 1))).rounded())
+            : 0
+        let aboveDailyAverage = reportTotal > averageDailyAllowance
+        let tint = isDark
+            ? Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.55)).opacity(0.80)
+            : primary.opacity(0.07)
+        let tintBorder = primary.opacity(isDark ? 0.27 : 0.20)
+        let labelColor = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.30))
+            : primary
+        let top = dailyCategoryTotals.first
+        let averageTransaction = Int64((Double(reportTotal) / Double(max(reportTransactions.count, 1))).rounded())
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(primary.opacity(isDark ? 0.25 : 0.10))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(labelColor)
+                    )
+                Text(isEnglish ? "Today's Insight" : "Insight Hari Ini")
+                    .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                    .foregroundStyle(labelColor)
+            }
+            if let top {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(MeowlettCategory.color(for: top.0).opacity(0.14))
+                        .frame(width: 22, height: 22)
+                        .overlay(
+                            Image(systemName: MeowlettCategory.all.first(where: { $0.id == top.0 })?.icon ?? "tag")
+                                .font(.system(size: 11, weight: .regular))
+                                .foregroundStyle(MeowlettCategory.color(for: top.0))
+                        )
+                    (
+                        Text(isEnglish ? "Top: " : "Terbanyak: ")
+                            .foregroundColor(labelColor)
+                        + Text(MeowlettCategory.name(for: top.0, language: language))
+                            .fontWeight(.bold)
+                            .foregroundColor(MeowlettCategory.color(for: top.0))
+                        + Text(" — \(rupiah(top.1))")
+                            .foregroundColor(labelColor)
+                    )
+                    .font(MeowlettTypography.font(size: 12, weight: .regular))
+                    .lineLimit(1)
+                }
+            }
+            HStack(spacing: 8) {
+                Circle()
+                    .fill((aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a")).opacity(0.15))
+                    .frame(width: 22, height: 22)
+                    .overlay(
+                        Image(systemName: aboveDailyAverage ? "exclamationmark.triangle" : "checkmark.circle")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a"))
+                    )
+                Text("\(aboveDailyAverage ? (isEnglish ? "Above daily average" : "Melebihi rata-rata harian") : (isEnglish ? "Below daily average" : "Di bawah rata-rata harian")) (\(rupiah(averageDailyAllowance)))")
+                    .font(MeowlettTypography.font(size: 12, weight: .regular))
+                    .foregroundStyle(aboveDailyAverage ? Color(hex: "#ef4444") : (isDark ? Color(hex: "#86efac") : Color(hex: "#16a34a")))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(primary.opacity(isDark ? 0.15 : 0.10))
+                    .frame(width: 22, height: 22)
+                    .overlay(
+                        Image(systemName: "function")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(labelColor)
+                    )
+                (
+                    Text(isEnglish ? "Average per transaction: " : "Rata-rata per transaksi: ")
+                        .foregroundColor(labelColor)
+                    + Text(rupiah(averageTransaction))
+                        .fontWeight(.bold)
+                        .foregroundColor(labelColor)
+                )
+                .font(MeowlettTypography.font(size: 12, weight: .regular))
+            }
+        }
+        .padding(16)
+        .background(tint, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(tintBorder, lineWidth: 1))
     }
 
     private var storyTopCategories: [(String, Int64)] {
