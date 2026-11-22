@@ -65,7 +65,7 @@ struct DateTabView: View {
             if showDateUndoToast, let deleted = recentlyDeletedDateTransaction {
                 dateUndoToast(for: deleted)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 96)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
