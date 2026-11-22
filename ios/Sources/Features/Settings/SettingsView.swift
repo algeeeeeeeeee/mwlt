@@ -1133,7 +1133,7 @@ private struct SettingsDataSheet: View {
             isPresented: $showExporter,
             document: backupFile,
             contentType: .json,
-            defaultFilename: "meowlett-backup-\(Date.now.formatted(.iso8601.year().month().day()))"
+            defaultFilename: "meowlett-backup-\(MeowlettDateFormat.day(.now))"
         ) { result in
             if case .failure(let error) = result { importError = error.localizedDescription }
         }
@@ -1230,7 +1230,7 @@ private struct SettingsDataSheet: View {
         let transactions = store.transactions.map {
             MeowlettBackupTransaction(
                 id: $0.id.uuidString,
-                date: $0.date.formatted(.iso8601.year().month().day()),
+                date: MeowlettDateFormat.day($0.date),
                 amount: $0.amount,
                 category: $0.category,
                 description: $0.description,
@@ -1266,6 +1266,8 @@ private struct SettingsDataSheet: View {
         let restored = rows.compactMap { row -> MeowlettTransaction? in
             let formatter = DateFormatter()
             formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.timeZone = TimeZone.current
             formatter.dateFormat = "yyyy-MM-dd"
             guard let date = formatter.date(from: row.date) else { return nil }
             return MeowlettTransaction(
@@ -1396,7 +1398,7 @@ private struct MeowlettBackupTransaction: Codable {
             date = String(stringDate.prefix(10))
         } else if let timestamp = try? values.decode(Double.self, forKey: .date) {
             let seconds = timestamp > 10_000_000_000 ? timestamp / 1000 : timestamp
-            date = Date(timeIntervalSince1970: seconds).formatted(.iso8601.year().month().day())
+            date = MeowlettDateFormat.day(Date(timeIntervalSince1970: seconds))
         } else {
             throw BackupFileError.invalid
         }
