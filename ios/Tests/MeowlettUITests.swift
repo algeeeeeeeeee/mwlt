@@ -497,51 +497,101 @@ final class MeowlettUITests: XCTestCase {
         let app = XCUIApplication()
         launchUITestApp(app)
 
-        let standardButton = app.buttons["mwlt.header.settings"]
-        XCTAssertTrue(standardButton.waitForExistence(timeout: 15))
-        XCTAssertTrue(standardButton.isEnabled, "Settings header must be enabled before standard tap.")
-        recordHitPointDiagnostics(for: standardButton, named: "settings-header-before-button-tap", in: app)
+        var standardRecorded = false
+        var standardReady = false
+        var standardOpened = false
+        var standardHittableBeforeWait = false
+        var standardHittableAfterWait = false
+        var standardTapAttempted = false
 
-        let standardHittable = standardButton.isHittable
-        print("[MeowlettTapComparison] control=settings method=button.tap() hittable=\(standardHittable)")
-        if standardHittable {
-            standardButton.tap()
-        } else {
-            // Artifact #276 shows the fixed 44×44 Settings Button can exist, be enabled,
-            // and have a hittable gearshape child while XCTest marks the parent unhittable.
-            // Its normal tap then fails at AX ScrollToVisible with hit point {-1,-1}.
-            // Capture that known XCTest false-negative as diagnostic only so the paired
-            // coordinate-center comparison still runs; the coordinate destination below
-            // remains a required assertion and this does not hide a failed Settings action.
-            var expectedAXOptions = XCTExpectedFailure.Options()
-            expectedAXOptions.isStrict = false
-            XCTExpectFailure(
-                "XCTest may return kAXErrorCannotComplete for the fixed Settings Button when isHittable=false; compare coordinate tap next.",
-                options: expectedAXOptions
-            ) {
-                standardButton.tap()
+        XCTContext.runActivity(named: "Settings paired leg — standard button.tap()") { _ in
+            let dashboardHeading = app.staticTexts["mwlt.screen.dashboard"]
+            let dashboardTab = app.buttons["mwlt.tab.dashboard"]
+            let standardButton = app.buttons["mwlt.header.settings"]
+
+            // Wait for dashboard landmarks and the identifier-backed header before
+            // measuring hit testing; this is an existence-based readiness wait, not sleep.
+            let dashboardReady = dashboardHeading.waitForExistence(timeout: 15)
+                && dashboardTab.waitForExistence(timeout: 10)
+            standardHittableBeforeWait = standardButton.exists && standardButton.isHittable
+            let headerExists = standardButton.waitForExistence(timeout: 10)
+            standardReady = dashboardReady && headerExists
+            standardHittableAfterWait = headerExists && standardButton.isHittable
+
+            print("[MeowlettTapComparison] control=settings leg=standard phase=pre-tap dashboardReady=\(dashboardReady) headerExists=\(headerExists) hittableBeforeWait=\(standardHittableBeforeWait) hittableAfterWait=\(standardHittableAfterWait) timestamp=\(ISO8601DateFormatter().string(from: Date()))")
+
+            if standardReady {
+                XCTAssertTrue(standardButton.isEnabled, "Settings header must be enabled before standard tap.")
+                recordHitPointDiagnostics(for: standardButton, named: "settings-header-standard-after-readiness-wait", in: app)
+                standardTapAttempted = true
+
+                // Capture a possible XCTest AX tap failure, but always measure the
+                // destination. The final assertion still requires Settings to open.
+                var options = XCTExpectedFailure.Options()
+                options.isStrict = false
+                XCTExpectFailure(
+                    "Capture XCTest AX tap failure independently; Settings destination remains mandatory.",
+                    options: options
+                ) {
+                    standardButton.tap()
+                }
+                standardOpened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
             }
+
+            print("[MeowlettTapComparison] control=settings leg=standard opened=\(standardOpened) hittableBeforeTap=\(standardHittableAfterWait) tapAttempted=\(standardTapAttempted) timestamp=\(ISO8601DateFormatter().string(from: Date()))")
+            standardRecorded = true
         }
 
-        let standardOpened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
-        print("[MeowlettTapComparison] control=settings method=button.tap() hittable=\(standardHittable) opened=\(standardOpened)")
-        if standardHittable {
-            XCTAssertTrue(standardOpened, "A Settings header reported hittable must open Settings using button.tap().")
-        }
-
+        // Relaunch guarantees the coordinate leg starts independently, even if the
+        // standard leg failed to open Settings.
         app.terminate()
         launchUITestApp(app)
 
-        let coordinateButton = app.buttons["mwlt.header.settings"]
-        XCTAssertTrue(coordinateButton.waitForExistence(timeout: 15))
-        XCTAssertTrue(coordinateButton.isEnabled, "Settings header must be enabled before coordinate tap.")
-        recordHitPointDiagnostics(for: coordinateButton, named: "settings-header-before-coordinate-tap", in: app)
-        print("[MeowlettTapComparison] control=settings method=coordinate(center)")
-        coordinateButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        let coordinateOpened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
-        print("[MeowlettTapComparison] control=settings method=coordinate(center) opened=\(coordinateOpened)")
-        XCTAssertTrue(coordinateOpened, "The coordinate-center tap must open Settings when the accessibility identifier is available.")
+        var coordinateRecorded = false
+        var coordinateReady = false
+        var coordinateHittableBeforeWait = false
+        var coordinateHittableAfterWait = false
+        var coordinateTapAttempted = false
+        var coordinateOpened = false
+
+        XCTContext.runActivity(named: "Settings paired leg — coordinate center") { _ in
+            let dashboardHeading = app.staticTexts["mwlt.screen.dashboard"]
+            let dashboardTab = app.buttons["mwlt.tab.dashboard"]
+            let coordinateButton = app.buttons["mwlt.header.settings"]
+
+            let dashboardReady = dashboardHeading.waitForExistence(timeout: 15)
+                && dashboardTab.waitForExistence(timeout: 10)
+            coordinateHittableBeforeWait = coordinateButton.exists && coordinateButton.isHittable
+            let headerExists = coordinateButton.waitForExistence(timeout: 10)
+            coordinateReady = dashboardReady && headerExists
+            coordinateHittableAfterWait = headerExists && coordinateButton.isHittable
+
+            print("[MeowlettTapComparison] control=settings leg=coordinate phase=pre-tap dashboardReady=\(dashboardReady) headerExists=\(headerExists) hittableBeforeWait=\(coordinateHittableBeforeWait) hittableAfterWait=\(coordinateHittableAfterWait) timestamp=\(ISO8601DateFormatter().string(from: Date()))")
+
+            if coordinateReady {
+                XCTAssertTrue(coordinateButton.isEnabled, "Settings header must be enabled before coordinate tap.")
+                recordHitPointDiagnostics(for: coordinateButton, named: "settings-header-coordinate-after-readiness-wait", in: app)
+                coordinateTapAttempted = true
+                coordinateButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                coordinateOpened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
+            }
+
+            print("[MeowlettTapComparison] control=settings leg=coordinate opened=\(coordinateOpened) hittableBeforeTap=\(coordinateHittableAfterWait) tapAttempted=\(coordinateTapAttempted) timestamp=\(ISO8601DateFormatter().string(from: Date()))")
+            coordinateRecorded = true
+        }
+
+        // Do not assert until both legs have emitted independent result records.
+        XCTAssertTrue(standardRecorded, "The standard Settings leg must record a result.")
+        XCTAssertTrue(coordinateRecorded, "The coordinate Settings leg must record a result.")
+        XCTAssertTrue(standardReady, "The standard Settings leg must reach a ready dashboard/header state.")
+        XCTAssertTrue(coordinateReady, "The coordinate Settings leg must reach a ready dashboard/header state.")
+        XCTAssertTrue(standardTapAttempted, "The standard Settings tap must be attempted.")
+        XCTAssertTrue(coordinateTapAttempted, "The coordinate Settings tap must be attempted.")
+        XCTAssertTrue(standardOpened, "The standard button.tap() leg must open Settings.")
+        XCTAssertTrue(coordinateOpened, "The coordinate-center leg must open Settings.")
+        print("[MeowlettTapComparison] control=settings summary standardOpened=\(standardOpened) coordinateOpened=\(coordinateOpened) standardHittableBeforeWait=\(standardHittableBeforeWait) standardHittableAfterWait=\(standardHittableAfterWait) coordinateHittableBeforeWait=\(coordinateHittableBeforeWait) coordinateHittableAfterWait=\(coordinateHittableAfterWait)")
     }
+
     @MainActor
     func testQuickAddStandardTapVersusCoordinateTap() {
         let app = XCUIApplication()

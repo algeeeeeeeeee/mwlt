@@ -224,3 +224,15 @@ Snapshot yang paling baru dan masih memiliki rekaman test interaksi untuk Settin
 ### Batas perubahan pada checkpoint ini
 
 Hanya `CHECKPOINT.md` yang diperbarui. Tidak ada perubahan app source, test/helper, workflow, atau konfigurasi. PR #2 tetap Draft dan belum di-merge. Tidak ada pekerjaan P1 atau PREVIEW.png yang dimulai.
+
+
+## Follow-up checkpoint — paired Settings test independence
+
+- Basis: checkpoint 7ec57ce was read first. The branch already contained 7e2c829 (test: complete Settings tap comparison after AX failure), whose paired test still allowed the first leg's assertion/failure behavior to interfere with completion of the coordinate leg.
+- Changed only: ios/Tests/MeowlettUITests.swift — testSettingsHeaderStandardTapVersusCoordinateTap; and this checkpoint document.
+- The standard and coordinate legs now run in separate XCTContext.runActivity blocks. The app is relaunched between legs, so each begins from a fresh dashboard regardless of the first leg's result.
+- Each leg waits for dashboard heading, Dashboard tab, and the Settings accessibility identifier before sampling hit-testing. It logs hittableBeforeWait and hittableAfterWait, whether the tap was attempted, opened=true/false, and an ISO-8601 timestamp.
+- The standard AX tap is wrapped as a non-strict expected failure solely to collect the app's actual destination result even if XCTest reports an AX tap failure. The final assertions still require both legs to be ready, attempted, recorded, and to open mwlt.screen.settings. No result assertion was removed or weakened.
+- No app source, Quick Add paired test, other tests, workflow, or P1 files were changed.
+- Next run inspection: confirm both activity logs are present even if standard .tap() reports an AX failure; compare each leg's pre/post-wait hittable values; verify opened=true independently for both; check that both timestamps and hit-point snapshots are attached. CI was not awaited as requested.
+- Not yet verified: compilation and CI execution of this change; both paired Settings legs passing on a runner.
