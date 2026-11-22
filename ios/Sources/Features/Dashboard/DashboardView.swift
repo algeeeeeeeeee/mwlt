@@ -47,7 +47,7 @@ struct DashboardView: View {
             if let number = item["monthly"] as? NSNumber {
                 value = number.int64Value
             } else if let string = item["monthly"] as? String {
-                value = Int64(string.filter(\\.isNumber)) ?? 0
+                value = Int64(string.filter { $0.isNumber }) ?? 0
             } else {
                 value = 0
             }
