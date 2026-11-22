@@ -83,7 +83,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Build iPhone device        run: |
+      - name: Build iPhone device
+        run: |
           xcodebuild \
             -project ios/Meowlett.xcodeproj \
             -scheme Meowlett \
