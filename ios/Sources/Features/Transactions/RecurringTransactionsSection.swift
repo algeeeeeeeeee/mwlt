@@ -113,9 +113,12 @@ struct RecurringTransactionsSection: View {
             recurringIncomeSection
         }
         .onAppear(perform: load)
-        .onChange(of: recurring) { _, value in
+        .onChange(of: recurring) { oldValue, value in
             persist(value, key: "gm_recurring")
-            RecurringTransactionAutomation.processDueItems(store: store)
+            let existingIDs = Set(oldValue.map(\.id))
+            let newlyAddedIDs = Set(value.map(\.id)).subtracting(existingIDs)
+            guard !newlyAddedIDs.isEmpty else { return }
+            RecurringTransactionAutomation.processDueItems(store: store, itemIDs: newlyAddedIDs)
         }
         .onChange(of: recurringIncome) { _, value in persist(value, key: "gm_recurring_income") }
                 .sheet(item: $activeUtilitySheet, onDismiss: { isUtilitySheetPresented = false }) { sheet in
