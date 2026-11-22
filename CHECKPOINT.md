@@ -1,10 +1,10 @@
 # CHECKPOINT — MEOWLETT
 
-- **Waktu:** 22 November 2026, 23:58 WIB (waktu permintaan audit)
+- **Waktu pembaruan:** 23 November 2026, WIB
 - **Repo:** `algeeeeeeeeee/mwlt`
 - **Branch:** `native-swift-parity`
 - **SHA source yang diaudit:** `f03ed90b2fa2ac4fd50124787f9b15bb992bca5e`
-- **SHA branch sebelum pembaruan checkpoint ini:** `bb4442201a1e943321fbee17fa51a038f08d1e62`
+- **SHA branch saat pembaruan dokumen:** `86d8b3aab771ec078554218bfe6411cd5bfbba6e`
 - **PR:** [#2 — Draft Meowlett native SwiftUI parity](https://github.com/algeeeeeeeeee/mwlt/pull/2), base `main`, head `native-swift-parity`, masih Draft dan belum di-merge.
 - **Prioritas aktif:** P0 — stabilitas, bukti, dan akar masalah CI.
 - **Source aplikasi diubah dalam sesi audit ini:** TIDAK. Semua commit sesi audit hanya menambah/memperbarui `AUDIT.md` dan `CHECKPOINT.md`.
@@ -28,15 +28,19 @@
 
 - Simulator lokal tidak tersedia: runtime sesi Linux; `xcodebuild` dan `xcrun` tidak tersedia.
 - Screenshot Light/Dark dari HEAD source `f03ed90...` belum ada.
-- Run #265 pada SHA source `f03ed90...` dibatalkan sebelum UI test selesai; kandidat patch belum terverifikasi.
+- Run #267 pada SHA `f326632...` gagal 6 test case (5 Settings karena predicate header `hittable == true` timeout; satu Quick Add editor missing). Run #269 memuat patch diagnostik, tetapi status terakhir stale in_progress tanpa artifact.
 - Run #264 tidak memiliki artifact xcresult/screenshot; job gagal di langkah UI test.
-- Grep penuh pada clone source untuk WKWebView/WebKit belum bisa dilakukan. Daftar file iOS tidak menunjukkan asset HTML/JS/CSS, dan pencarian kode GitHub tidak mengembalikan hasil untuk WKWebView/import WebKit.
+- K1 sudah diverifikasi melalui Git tree dan scan 23 file Swift, `ios/project.yml`, serta path di bawah `ios/`; hasil lengkap ada di AUDIT.md §9.2.
 - Perbandingan pixel-to-pixel dengan screenshot PWA 390×844 belum dilakukan.
 
 ## Hasil CI terakhir
 
 | Run | SHA | Hasil |
 |---|---|---|
+| [#269](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679) | `86d8b3a...` | Build simulator masih in_progress sejak 17:21:08Z; hasil/artifact BELUM TERVERIFIKASI |
+| [#268](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048770667) | `5961b24...` | gagal sebelum job dibuat akibat YAML indentation; diperbaiki di #269 |
+| [#267](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45047595111) | `f326632...` | build simulator sukses; UI test gagal 10 assertions / 6 test cases; 5 Settings header not hittable + Quick Add editor missing |
+| [#266](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45047506498) | `bb44422...` | cancelled di Build simulator; UI tests skipped; tidak ada artifact |
 | [#265](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45040518618) | `f03ed90...` | CANCELLED saat UI test; belum memverifikasi patch hit target/presenter |
 | [#264](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45037226035) | `8c4dddc...` | 3 attempt; semua gagal. 10 test, 6/8/6 assertion failures; dua test case gagal per attempt dan berbeda antar-attempt |
 | [#262](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45035794180) | `e6da3d9...` | 10 UI test lulus, workflow gagal karena splash screenshot Light menangkap Dashboard |
@@ -44,17 +48,18 @@
 
 **Diagnosis Run #264:** BELUM TERBUKTI final. Log berulang menunjukkan `kAXErrorCannotComplete` pada `ScrollToVisible` untuk tombol fixed/overlay. HEAD source memiliki kandidat perbaikan coordinate tap/hit target 44pt dan pemindahan presenter Quick Add, tetapi belum diuji pada job selesai. Tidak boleh menyebut akar masalah sudah selesai.
 
-## Keputusan desain yang masih terbuka
+## Keputusan desain final (23 November 2026)
 
-- **T4 saldo/cicilan:** native saat ini menghitung `income - spent - totalCicilanMonthly`; total cicilan mengambil semua nominal monthly tanpa filter `paidMonths`. Belum diputuskan apakah sisa harus mengurangi cicilan yang belum dibayar pada bulan ini. Jangan ubah diam-diam.
-- **Preset custom:** spesifikasi prompt menyebut rose, sementara `src/constants/index.js` menyebut green. Perlu keputusan eksplisit.
-- Tags, Catatan Harian dan Theme Picker terpisah tetap di luar scope tanpa callsite resmi di App.jsx.
+- **T4 — Sisa:** pemasukan − pengeluaran bulan ini − cicilan bulan berjalan yang belum ditandai lunas (`paidMonths` tidak memuat kunci bulan lokal berjalan). Label UI harus eksplisit; tes cicilan sudah lunas dan belum lunas.
+- **Preset custom:** nilai awal rose `#881337 / #fb7185`.
+- **Swipe-to-delete:** boleh ditambahkan; Edit/Hapus melalui kartu terbuka wajib tetap tersedia.
+- **Tags/Catatan Harian:** jangan dibuat kecuali benar-benar ada di native; audit tidak menemukan implementasi native.
 
 ## Status K1–K9
 
 | Kriteria | Status |
 |---|---|
-| K1 Tidak ada WebView/HTML bundle | PARTIAL — grep penuh source clone belum dilakukan |
+| K1 Tidak ada WebView/HTML bundle | **VERIFIED** — 23 Swift files + project.yml + asset paths scanned |
 | K2 Semua layar/modal & semua tombol | BELUM TERVERIFIKASI |
 | K3 Semua modal blur | PARTIAL — Quick Add pada preview historis saja |
 | K4 Token/radius/font | PARTIAL — neutral palette cocok; theme architecture/font/modal/visual belum |
@@ -76,3 +81,41 @@
 ## Batasan kerja
 
 Jangan ubah `main` langsung, jangan merge, jangan force-push/rebase, jangan hapus branch/file/workflow/test. Semua perubahan berikutnya hanya pada `native-swift-parity`, commit kecil berprefix `audit:`, `fix:`, `feat:`, `test:`, `ci:` atau `docs:`.
+
+## Follow-up checkpoint — 23 November 2026
+
+### Selesai dengan bukti
+1. **K1 VERIFIED:** 23 Swift files pada target, project.yml, dan asset path di bawah ios dipindai. Rincian di AUDIT.md §9.2.
+2. **#266:** cancelled pada Build simulator; UI test skipped; artifact kosong. Pembatalan konsisten dengan concurrency cancel-in-progress ketika PR run #267 mulai.
+3. **#267:** build simulator success; 4 test lulus; 6 test case gagal (5 Settings karena predicate header hittable timeout; satu Quick Add editor missing). Tidak ada xcresult/screenshot artifact.
+4. **#268:** gagal sebelum jobs dibuat akibat YAML step indentation. Diperbaiki pada commit 86d8b3a.
+5. Keputusan final T4, preset custom rose, swipe-to-delete optional, serta batasan Tags/Catatan Harian tercatat di atas.
+6. Commit 5961b246 menambahkan snapshot diagnostics dan upload xcresult if: always(); commit 86d8b3a memperbaiki YAML.
+
+### P0 — belum selesai
+- Penyebab header Settings tidak hittable belum diketahui; overlay/keyboard/transisi yang menutupnya BELUM TERBUKTI.
+- Quick Add sheet failure root cause BELUM TERBUKTI.
+- Run #269 terakhir in_progress pada Build simulator sejak 17:21:08Z tanpa artifact. Hasil BELUM TERVERIFIKASI.
+- Jangan membuat tag checkpoint/p0-done sampai P0 benar-benar terbukti.
+
+### Status K1–K9
+| Kriteria | Status |
+|---|---|
+| K1 | **VERIFIED** |
+| K2 | BELUM TERVERIFIKASI |
+| K3 | PARTIAL |
+| K4 | PARTIAL |
+| K5 | BELUM TERVERIFIKASI |
+| K6 | BELUM TERVERIFIKASI — perlu 5 run hijau di SHA berbeda |
+| K7 | PARTIAL |
+| K8 | BELUM TERVERIFIKASI |
+| K9 | BELUM TERVERIFIKASI — PREVIEW.png per layar/modal belum tersedia |
+
+### Langkah berikutnya
+1. Periksa hasil #269: UI test log, xcresult, device build dan preview.
+2. Baca attachment hierarchy untuk cari alasan header non-hittable dan Quick Add editor gagal muncul.
+3. Selesaikan P0 dengan bukti; baru buat tag checkpoint/p0-done.
+4. Setelah P0, kerjakan satu prioritas P1 secara penuh: kode + test + screenshot Light/Dark sebelum pindah ke prioritas lain.
+5. Buat artifact otomatis PREVIEW.png per layar/modal untuk Light/Dark dengan kolom Referensi bila tersedia; K9 tetap belum dicentang sampai artifact terbaru ada.
+
+PR #2 tetap Draft; jangan merge, force-push, atau hapus branch/file/workflow/test.

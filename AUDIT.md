@@ -148,7 +148,7 @@ Sumber referensi resmi yang dipakai: `src/App.jsx`, `src/utils/theme.js`, `src/c
 - Preset green, blue, purple, rose, orange dan teal mempunyai pasangan primary/accent yang sama di `src/constants/index.js` dan `AppAppearance.swift`.
 - Kategori default di `src/constants/index.js` memuat sembilan kategori sesuai key dan warna yang disampaikan di spesifikasi.
 
-**Konflik spesifikasi vs source:** baris preset `custom` di `src/constants/index.js` memakai primary/accent green `#166534/#4ade80`, sedangkan spesifikasi audit yang diberikan dan nilai default native memakai rose `#881337/#fb7185`. Ini harus diputuskan sebelum P1; jangan diubah tanpa keputusan.
+**Keputusan desain final pengguna (23 November 2026):** preset `custom` memakai nilai awal rose primary/accent `#881337 / #fb7185`. Nilai green dari constants lama tidak dipakai sebagai default native.
 
 Native memakai `enum AppAppearance` dengan helper statis, bukan `struct MeowTheme` Equatable yang diinjeksi lewat environment. Perhitungan readable primary/accent sudah ada, tetapi arsitektur tema tunggal yang diminta belum ada.
 
@@ -247,9 +247,9 @@ Ketiga attempt diuji pada SHA yang sama. Tidak ada screenshot/xcresult artifact 
 - Theme Picker terpisah yang tidak dipanggil. Pengaturan preset yang benar-benar ada ada di Appearance.
 - Jangan menyimpulkan tombol lain mati hanya karena belum diuji; interaksi tombol satu per satu **BELUM DIPERIKSA** di simulator.
 
-### 4.3 T4 — saldo dan cicilan (keputusan ditahan)
+### 4.3 T4 — saldo dan cicilan (keputusan final pengguna, 23 November 2026)
 
-Kode sekarang mengurangi total `monthly` semua cicilan dari `remaining`, tanpa melihat `paidMonths`. Ini bukan sama dengan “cicilan yang belum dibayar bulan ini”. Jangan mengubah definisi dulu. Keputusan yang perlu dikonfirmasi/didokumentasikan sebelum P1: sisa saldo = income - expenses - cicilan bulan berjalan yang belum dibayar, atau definisi lain yang eksplisit. Jika memakai definisi unpaid, implementasi wajib memeriksa `paidMonths` untuk bulan lokal terkait.
+`Sisa` = pemasukan − pengeluaran bulan ini − cicilan bulan berjalan yang belum ditandai lunas. Cicilan bulan berjalan dianggap belum lunas bila `paidMonths` tidak memuat kunci bulan lokal berjalan. UI harus memberi label jelas. Tes wajib mencakup cicilan bulan berjalan yang sudah lunas (tidak mengurangi Sisa) dan yang belum lunas (mengurangi Sisa).
 
 ### 4.4 T8/T9
 
@@ -354,7 +354,7 @@ Ini mendukung hipotesis H5 bahwa automatic accessibility scrolling/hit-testing p
 
 | Kriteria | Status | Alasan |
 |---|---|---|
-| K1 Tidak ada WebView/HTML bundle | **PARTIAL — verifikasi source penuh belum selesai** | File inventory `ios/` tidak menunjukkan asset .html/.js/.css; pencarian GitHub untuk WKWebView/import WebKit tidak memberi hasil. Namun sesi audit tidak memiliki clone lokal untuk grep menyeluruh. Export report HTML adalah file output, bukan bukti WebView bundle. |
+| K1 Tidak ada WebView/HTML bundle | **VERIFIED** | Git tree + seluruh 23 file Swift target iOS dan `ios/project.yml` diperiksa. Tidak ditemukan WKWebView, import WebKit, SFSafariViewController, HTML loader, atau asset .html/.htm/.js/.css di bawah ios. UTType.html hanya dipakai untuk ekspor dokumen laporan. |
 | K2 Semua layar/modal dan 0 tombol tanpa aksi | **BELUM TERVERIFIKASI** | Source screens terpetakan; belum ada uji klik seluruh tombol/menu. |
 | K3 Semua modal blur | **BELUM TERVERIFIKASI** | Blur coordinator ada; satu bukti Quick Add lama saja, belum tiap modal Light/Dark. |
 | K4 Token/radius/font cocok | **PARTIAL** | Neutral palette cocok; arsitektur MeowTheme, system font splash, bobot 900, radius/ikon dan visual penuh belum tervalidasi; konflik preset custom belum diputuskan. |
@@ -376,3 +376,82 @@ Ini mendukung hipotesis H5 bahwa automatic accessibility scrolling/hit-testing p
 - Tidak ada screenshot PWA dari viewport 390×844 yang bisa dibandingkan pixel-to-pixel dalam sesi ini.
 - Screenshot Run #251 adalah bukti visual historis, bukan bukti keadaan HEAD terbaru.
 - Semua item yang belum punya tes/screenshot diberi status **BELUM TERVERIFIKASI**, bukan “selesai”.
+
+---
+
+## 9. Addendum verifikasi lanjutan — 23 November 2026
+
+### 9.1 Keputusan desain final
+
+- T4: Sisa = pemasukan − pengeluaran bulan ini − cicilan bulan berjalan yang belum ditandai lunas. Periksa paidMonths terhadap kunci bulan lokal berjalan; beri label UI jelas; uji cicilan lunas dan belum lunas.
+- Preset custom: default rose #881337 / #fb7185.
+- Swipe-to-delete diizinkan sebagai tambahan, tetapi Edit/Hapus melalui kartu terbuka tetap wajib.
+- Tags dan Catatan Harian tidak boleh dibuat kecuali sudah benar-benar ada di native; audit tidak menemukan implementasi native.
+
+### 9.2 K1 — hasil pencarian penuh target iOS
+
+Scan dilakukan pada Git tree branch native-swift-parity, isi seluruh 23 file Swift di ios/Sources + ios/Tests, ios/project.yml, serta path inventory ios/.
+
+| Pola / pemeriksaan | Hasil |
+|---|---|
+| WKWebView | 0 hit di 23 file Swift |
+| import WebKit | 0 hit di 23 file Swift |
+| SFSafariViewController | 0 hit di 23 file Swift |
+| HTML load/navigation APIs | 0 hit |
+| Asset .html/.htm/.js/.css di bawah ios/ | 0 file |
+| Source/resource target ios/project.yml | Sources, Resources/Assets.xcassets, Resources/Fonts, Resources/Images; test target Tests |
+| UTType.html | Hanya ekspor laporan: ReportsView.swift:19, :570, :1134 |
+
+index.html berada di root PWA, bukan target iOS; workflow menyebutnya hanya sebagai path trigger. Kesimpulan K1: VERIFIED untuk target native pada branch yang diperiksa.
+
+### 9.3 Run #266, #267, #268, #269
+
+- #266 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45047506498), SHA bb4442201a1e943321fbee17fa51a038f08d1e62: cancelled pada Build simulator; UI test dan langkah berikutnya skipped; tidak ada artifact. Log tepat: 2026-11-22T17:07:07.9199000Z ##[error]The operation was canceled.
+- Pembatalan #266: #266 dibuat 17:05:59Z, #267 untuk PR #2 dibuat 17:06:54Z, dan #266 berakhir 17:07:16Z. Workflow memakai concurrency group dari github.ref dengan cancel-in-progress: true. Ini konsisten dengan #267 menggantikan #266; bukan diagnosis UI.
+- #267 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45047595111), SHA f3266323ad66874df6d3e973a63acb0b9aab1d95: build simulator lulus; UI tests gagal; device build dan preview skipped. Total 10 UI tests, 10 assertion failures.
+- Lulus: testDatePreviewLaunchStartsOnDateTab; testDateWishlistSheetCanBeOpened; testMainTabsQuickAddAndCalculatorPresentation; testNativeOpeningSplashAppearsAndDismisses.
+- Gagal: testQuickAddSavesTransactionAndShowsItInTransactionsList — line 295 editor tidak muncul, kemudian assertions field 303–305 dan tap amount 307 gagal.
+- Gagal: testSettingsBackupActionBuildsAndRequestsExport; testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss; testSettingsNotificationsShowSystemPermissionStatus; testSettingsResetRequiresConfirmationAndCanBeCancelled; testSettingsRestoreActionRequestsImport. Kelima test gagal di tapSettingsHeader line 34: asynchronous wait 5 detik untuk predicate hittable == true pada mwlt.header.settings timeout.
+- Tidak ada snapshot atau xcresult artifact dari #267. Predicate hittable timeout tercatat, namun overlay/elemen penutup spesifik tidak diketahui.
+- #268 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048770667), SHA 5961b24614eb77a3ef024da8402d00e0e7fdc03c: gagal langsung sebelum job dibuat (0 jobs) akibat YAML indentation pada step Build iPhone device. Sudah diperbaiki pada commit 86d8b3aab771ec078554218bfe6411cd5bfbba6e.
+- #269 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679), SHA 86d8b3aab771ec078554218bfe6411cd5bfbba6e: YAML terbaca dan job berjalan; pemeriksaan terakhir menunjukkan Build simulator in_progress sejak 17:21:08Z tanpa pembaruan status maupun artifact. Hasil keseluruhan BELUM TERVERIFIKASI.
+
+### 9.4 Bukti kegagalan #264: accessibility/hit-testing/presentasi
+
+- Saat kegagalan Settings, hierarchy XCTest masih menunjukkan Dashboard, mwlt.header.settings dan mwlt.quickAdd; row Settings yang dicari tidak muncul.
+- Log mencatat kAXErrorCannotComplete saat XCTest meminta kAXScrollToVisibleAction pada tombol header fixed dengan frame {{298.0, 73.0}, {34.0, 34.0}}.
+- Run #267 menambah bukti: tombol header tidak memenuhi hittable == true dalam 5 detik pada kelima test Settings.
+- #264 tidak merekam isHittable dan tidak memiliki xcresult/screenshot. #267 juga tidak memiliki artifact diagnostik. Elemen spesifik yang menutupi tombol (overlay/modal/keyboard/animasi) BELUM TERBUKTI.
+- Quick Add editor gagal muncul pada satu test di #264 dan #267; apakah FAB hittable atau presenter sheet tertutup overlay BELUM TERBUKTI.
+
+### 9.5 H1–H7
+
+| Hipotesis | Status | Bukti |
+|---|---|---|
+| H1 Splash/onboarding | TERBANTAH untuk kegagalan navigasi Settings #264/#267 | Tes memakai --mwlt-preview-mode dan hierarchy #264 sudah menampilkan kontrol main app. |
+| H2 Locale angka/tanggal | TERBANTAH sebagai penyebab failure yang diamati | Assertions mencari accessibility identifier, bukan teks angka/tanggal. Matriks locale tetap belum ada. |
+| H3 Appearance Light/Dark | BELUM TERBUKTI | #264/#267 tidak menjalankan matriks Light/Dark terpisah. |
+| H4 Timezone UTC/WIB | TERBANTAH untuk perpindahan tab/presentasi Quick Add | Assertion gagal terkait navigasi Settings dan sheet Quick Add, bukan tanggal. Ketepatan timezone tetap belum diuji. |
+| H5 Accessibility/overlay/animasi/hit target | TERBUKTI pada gejala AX/hittable; penyebab akhir BELUM TERBUKTI | #264 mencatat kAXErrorCannotComplete; #267 gagal predicate hittable pada Settings header. Tidak ada bukti overlay spesifik. |
+| H6 Persistensi antar tes | BELUM TERBUKTI | Store/UserDefaults persisten dan reset test belum ada, tetapi tidak ada bukti state menyebabkan header tidak hittable. |
+| H7 Versi Xcode/simulator | TERBANTAH sebagai perubahan environment | Run sukses #251 dan #264 memakai runner image/macOS/Xcode/SDK/destination yang sama. Reproduksi lokal belum dilakukan. |
+
+### 9.6 PENYEBAB → KLASIFIKASI → PERBAIKAN
+
+- PENYEBAB: gejala terbukti: fixed Settings header muncul di hierarchy namun tidak menjadi hittable pada #267; #264 juga mencatat AX ScrollToVisible gagal. Penyebab mengapa elemen tidak hittable (overlay, layout, hosting, atau test runner) BELUM TERBUKTI. Quick Add editor gagal muncul pada satu test, root cause sheet BELUM TERBUKTI.
+- KLASIFIKASI: masalah interaksi accessibility/hit-testing pada kontrol fixed, kandidat isu layout SwiftUI atau koordinasi presenter. Belum cukup bukti menyebut bug aplikasi murni atau flaky CI murni.
+- PERBAIKAN: helper lama mensyaratkan hittable == true terlebih dulu; #267 membuktikan predicate itu gagal, jadi coordinate fallback tidak berjalan. Commit 5961b246 menambahkan snapshot exists/hittable/enabled/frame, debugDescription, sheet/alert/keyboard saat failure dan upload .xcresult dengan if: always(). Run #269 memuat patch diagnostik namun hasil BELUM TERVERIFIKASI.
+
+### 9.7 Status K1–K9
+
+| Kriteria | Status |
+|---|---|
+| K1 — no WebView/HTML bundle pada target native | VERIFIED |
+| K2 — semua tombol/layar/modal | BELUM TERVERIFIKASI |
+| K3 — blur/dim seragam untuk semua modal | PARTIAL |
+| K4 — tema/font/radius parity | PARTIAL |
+| K5 — S1–S11 Light + Dark | BELUM TERVERIFIKASI |
+| K6 — root cause P0 + 5 run hijau pada SHA berbeda | BELUM TERVERIFIKASI |
+| K7 — backup web/native round-trip | PARTIAL |
+| K8 — S1–S14, timezone, data stress, no crash | BELUM TERVERIFIKASI |
+| K9 — PREVIEW.png per layar/modal dari SHA terbaru | BELUM TERVERIFIKASI |
