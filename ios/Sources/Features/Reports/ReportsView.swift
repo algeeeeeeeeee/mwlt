@@ -1,5 +1,6 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import UIKit
 
 struct ReportsView: View {
     @EnvironmentObject private var store: FinanceStore
@@ -13,6 +14,9 @@ struct ReportsView: View {
     @State private var reportDate = Date.now
     @State private var trendMode = "bar"
     @State private var showHTMLExport = false
+    @State private var showStoryCard = false
+    @State private var showStoryExporter = false
+    @State private var storyPNGDocument: ReportPNGDocument?
 
     private var isEnglish: Bool { language == "en" }
     private var isDark: Bool { colorScheme == .dark }
@@ -183,11 +187,22 @@ struct ReportsView: View {
         }
         .background(AppAppearance.background(dark: isDark))
         .toolbar(.hidden, for: .navigationBar)
+        .overlay {
+            if showStoryCard {
+                storyCardModal
+            }
+        }
         .fileExporter(
             isPresented: $showHTMLExport,
             document: ReportHTMLDocument(html: reportHTML),
             contentType: .html,
             defaultFilename: "laporan-\(Date.now.formatted(.iso8601.year().month()))"
+        ) { _ in }
+        .fileExporter(
+            isPresented: $showStoryExporter,
+            document: storyPNGDocument,
+            contentType: .png,
+            defaultFilename: "meowlett-\(Date.now.formatted(.iso8601.year().month()))"
         ) { _ in }
     }
 
@@ -584,6 +599,18 @@ struct ReportsView: View {
                     .overlay(RoundedRectangle(cornerRadius: 13).stroke(accent.opacity(0.25), lineWidth: 1))
             }
             .buttonStyle(.plain)
+            Button {
+                showStoryCard = true
+            } label: {
+                Label(isEnglish ? "Export as Image" : "Ekspor sebagai Gambar", systemImage: "arrow.down.to.line")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
         }
         .padding(13)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
@@ -676,6 +703,105 @@ struct ReportsView: View {
             }
         }
         .cardStyle(dark: isDark)
+    }
+
+    private var storyTopCategories: [(String, Int64)] {
+        Dictionary(grouping: currentMonthTransactions, by: \.category)
+            .map { key, values in
+                (key, values.reduce(Int64(0)) { $0 + $1.amount })
+            }
+            .sorted { $0.1 > $1.1 }
+            .prefix(3)
+            .map { $0 }
+    }
+
+    private var storyPercentage: Int {
+        income > 0 ? Int((Double(currentMonthTotal) / Double(income) * 100).rounded()) : 0
+    }
+
+    private var storyRemaining: Int64 {
+        income - currentMonthTotal
+    }
+
+    private var storyCardModal: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.75))
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { showStoryCard = false }
+
+            VStack(spacing: 14) {
+                ReportStoryCardView(
+                    month: currentMonthLabel,
+                    percentUsed: storyPercentage,
+                    totalExpense: currentMonthTotal,
+                    income: income,
+                    remaining: storyRemaining,
+                    topCategories: storyTopCategories,
+                    themePrimary: primary,
+                    themeAccent: accent,
+                    isEnglish: isEnglish,
+                    language: language
+                )
+
+                HStack(spacing: 10) {
+                    Button {
+                        showStoryCard = false
+                    } label: {
+                        Text(isEnglish ? "Cancel" : "Batal")
+                            .font(MeowlettTypography.font(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.20), lineWidth: 1.5))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        exportStoryImage()
+                    } label: {
+                        Label(isEnglish ? "Download Image" : "Unduh Gambar", systemImage: "arrow.down.to.line")
+                            .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Text(isEnglish ? "Tap outside to close" : "Tap di luar untuk tutup")
+                    .font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .foregroundStyle(Color.white.opacity(0.35))
+            }
+            .frame(maxWidth: 380)
+            .padding(20)
+        }
+        .transition(.opacity)
+        .zIndex(100)
+    }
+
+    @MainActor
+    private func exportStoryImage() {
+        let renderer = ImageRenderer(content: ReportStoryCardView(
+            month: currentMonthLabel,
+            percentUsed: storyPercentage,
+            totalExpense: currentMonthTotal,
+            income: income,
+            remaining: storyRemaining,
+            topCategories: storyTopCategories,
+            themePrimary: primary,
+            themeAccent: accent,
+            isEnglish: isEnglish,
+            language: language
+        ).frame(width: 380))
+        renderer.scale = 3
+        guard let data = renderer.uiImage?.pngData() else { return }
+        storyPNGDocument = ReportPNGDocument(data: data)
+        showStoryExporter = true
     }
 
     private var reportCSV: String {
@@ -935,5 +1061,157 @@ private struct NativeReportChart: View {
                 }
             }
         }
+    }
+}
+
+private struct ReportPNGDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.png] }
+    let data: Data
+
+    init(data: Data) {
+        self.data = data
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        data = configuration.file.regularFileContents ?? Data()
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: data)
+    }
+}
+
+private struct ReportStoryCardView: View {
+    let month: String
+    let percentUsed: Int
+    let totalExpense: Int64
+    let income: Int64
+    let remaining: Int64
+    let topCategories: [(String, Int64)]
+    let themePrimary: Color
+    let themeAccent: Color
+    let isEnglish: Bool
+    let language: String
+
+    private func rupiah(_ value: Int64) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = Locale(identifier: "id_ID")
+        formatter.numberStyle = .decimal
+        return "Rp" + (formatter.string(from: NSNumber(value: value)) ?? String(value))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("MEOWLETT")
+                        .font(MeowlettTypography.font(size: 11, weight: .semibold))
+                        .tracking(1)
+                        .foregroundStyle(Color.white.opacity(0.5))
+                    Text(month)
+                        .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                        .foregroundStyle(.white)
+                }
+                Spacer()
+                Text("\(percentUsed)% \(isEnglish ? "used" : "terpakai")")
+                    .font(MeowlettTypography.font(size: 11, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.8))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+            }
+            .padding(.bottom, 24)
+
+            Text(isEnglish ? "TOTAL SPENDING" : "TOTAL PENGELUARAN")
+                .font(MeowlettTypography.font(size: 11, weight: .semibold))
+                .tracking(1)
+                .foregroundStyle(Color.white.opacity(0.5))
+                .padding(.bottom, 4)
+
+            Text(rupiah(totalExpense))
+                .font(MeowlettTypography.font(size: 36, weight: .black))
+                .tracking(-1)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.bottom, 4)
+
+            Text(isEnglish ? "of \(rupiah(income)) income" : "dari \(rupiah(income)) pemasukan")
+                .font(MeowlettTypography.font(size: 12, weight: .regular))
+                .foregroundStyle(Color.white.opacity(0.45))
+                .padding(.bottom, 24)
+
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.10))
+                    Capsule()
+                        .fill(Color.white.opacity(0.70))
+                        .frame(width: proxy.size.width * CGFloat(min(100, max(0, percentUsed))) / 100)
+                }
+            }
+            .frame(height: 6)
+            .padding(.bottom, 24)
+
+            if !topCategories.isEmpty {
+                Text(isEnglish ? "TOP CATEGORIES" : "KATEGORI TERBESAR")
+                    .font(MeowlettTypography.font(size: 10, weight: .bold))
+                    .tracking(1)
+                    .foregroundStyle(Color.white.opacity(0.4))
+                    .padding(.bottom, 10)
+
+                VStack(spacing: 8) {
+                    ForEach(Array(topCategories.enumerated()), id: \.offset) { _, item in
+                        HStack {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(MeowlettCategory.color(for: item.0))
+                                    .frame(width: 8, height: 8)
+                                Text(MeowlettCategory.name(for: item.0, language: language))
+                                    .font(MeowlettTypography.font(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.white.opacity(0.8))
+                            }
+                            Spacer()
+                            Text(rupiah(item.1))
+                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+            }
+
+            HStack {
+                Text(isEnglish ? "Remaining" : "Sisa")
+                    .font(MeowlettTypography.font(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.5))
+                Spacer()
+                Text(remaining >= 0 ? rupiah(remaining) : "-\(rupiah(abs(remaining)))")
+                    .font(MeowlettTypography.font(size: 15, weight: .black))
+                    .foregroundStyle(remaining >= 0 ? Color.white.opacity(0.9) : Color(hex: "#f87171"))
+            }
+            .padding(.top, 16)
+            .overlay(alignment: .top) {
+                Rectangle().fill(Color.white.opacity(0.10)).frame(height: 1)
+            }
+            .padding(.top, 20)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [themePrimary, themePrimary.opacity(0.80), Color(hex: "#0d0d0d")], startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: 24)
+        )
+        .overlay(alignment: .topTrailing) {
+            Circle()
+                .fill(Color.white.opacity(0.05))
+                .frame(width: 160, height: 160)
+                .offset(x: 40, y: -40)
+        }
+        .overlay(alignment: .bottomLeading) {
+            Circle()
+                .fill(Color.white.opacity(0.04))
+                .frame(width: 100, height: 100)
+                .offset(x: -20, y: 20)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 24))
     }
 }
