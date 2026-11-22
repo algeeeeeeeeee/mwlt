@@ -37,6 +37,12 @@ struct RootView: View {
         ProcessInfo.processInfo.arguments.contains("--mwlt-test-splash")
     }
 
+    // The screenshot pipeline must hold the real splash visible while simctl
+    // finishes launching the app and returns control to the capture script.
+    private var isSplashPreviewLaunch: Bool {
+        ProcessInfo.processInfo.arguments.contains("--mwlt-preview-splash")
+    }
+
     var body: some View {
         GeometryReader { geometry in
             Group {
@@ -59,7 +65,10 @@ struct RootView: View {
         .preferredColorScheme(preferredScheme)
         .overlay {
             if showNativeSplash {
-                NativeSplashView(holdForUITest: isSplashUITestLaunch) {
+                NativeSplashView(
+                    holdForUITest: isSplashUITestLaunch,
+                    holdForPreview: isSplashPreviewLaunch
+                ) {
                     withAnimation(reduceMotion ? .easeOut(duration: 0.18) : .easeOut(duration: 0.4)) {
                         showNativeSplash = false
                     }

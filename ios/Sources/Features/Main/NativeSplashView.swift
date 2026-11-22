@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NativeSplashView: View {
     let holdForUITest: Bool
+    let holdForPreview: Bool
     let onFinish: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -91,7 +92,9 @@ struct NativeSplashView: View {
         }
         .accessibilityElement(children: .contain)
         .task {
-            if holdForUITest {
+            if holdForUITest || holdForPreview {
+                // Keep the same splash artwork visible until its screenshot is captured.
+                // Unlike the UI test, the preview does not show a Continue control.
                 progress = 1
                 return
             }
