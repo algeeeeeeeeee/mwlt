@@ -420,8 +420,8 @@ index.html berada di root PWA, bukan target iOS; workflow menyebutnya hanya seba
 
 - Saat kegagalan Settings, hierarchy XCTest masih menunjukkan Dashboard, mwlt.header.settings dan mwlt.quickAdd; row Settings yang dicari tidak muncul.
 - Log mencatat kAXErrorCannotComplete saat XCTest meminta kAXScrollToVisibleAction pada tombol header fixed dengan frame {{298.0, 73.0}, {34.0, 34.0}}.
-- Run #267 menambah bukti: tombol header tidak memenuhi hittable == true dalam 5 detik pada kelima test Settings.
-- #264 tidak merekam isHittable dan tidak memiliki xcresult/screenshot. #267 juga tidak memiliki artifact diagnostik. Elemen spesifik yang menutupi tombol (overlay/modal/keyboard/animasi) BELUM TERBUKTI.
+- Run #267 menambah bukti: tombol header tidak memenuhi predicate hittable == true dalam 5 detik pada kelima test Settings. Namun setelah timeout, log masing-masing test menunjukkan coordinate tap pada tombol disintesis (baris "Tap mwlt.header.settings Button[0.50, 0.50]" dan "Synthesize event"), kemudian heading Settings muncul. Baris Settings, sheet, submenu, serta aksi Backup/Notifications/Reset/Restore yang diuji dapat diakses. Kelima test tetap dilaporkan gagal karena assertion predicate hittable, bukan karena perpindahan ke Settings gagal.
+- Ini membuktikan false-negative pada metrik hittable XCTest untuk fixed header dalam skenario tersebut; bukan bukti bahwa sentuhan UI tertutup overlay. #264 tidak merekam isHittable dan tidak memiliki xcresult/screenshot. #267 juga tidak memiliki artifact diagnostik. Elemen spesifik yang menutupi tombol BELUM TERBUKTI; alur aksi yang terekam justru menunjukkan coordinate tap berhasil mengeksekusi tombol.
 - Quick Add editor gagal muncul pada satu test di #264 dan #267; apakah FAB hittable atau presenter sheet tertutup overlay BELUM TERBUKTI.
 
 ### 9.5 H1–H7
@@ -440,7 +440,7 @@ index.html berada di root PWA, bukan target iOS; workflow menyebutnya hanya seba
 
 - PENYEBAB: gejala terbukti: fixed Settings header muncul di hierarchy namun tidak menjadi hittable pada #267; #264 juga mencatat AX ScrollToVisible gagal. Penyebab mengapa elemen tidak hittable (overlay, layout, hosting, atau test runner) BELUM TERBUKTI. Quick Add editor gagal muncul pada satu test, root cause sheet BELUM TERBUKTI.
 - KLASIFIKASI: masalah interaksi accessibility/hit-testing pada kontrol fixed, kandidat isu layout SwiftUI atau koordinasi presenter. Belum cukup bukti menyebut bug aplikasi murni atau flaky CI murni.
-- PERBAIKAN: helper lama mensyaratkan hittable == true terlebih dulu; #267 membuktikan predicate itu gagal, jadi coordinate fallback tidak berjalan. Commit 5961b246 menambahkan snapshot exists/hittable/enabled/frame, debugDescription, sheet/alert/keyboard saat failure dan upload .xcresult dengan if: always(). Run #269 memuat patch diagnostik namun hasil BELUM TERVERIFIKASI.
+- PERBAIKAN: helper lama menunggu predicate hittable == true selama 5 detik, tetapi XCTest tetap melanjutkan ke coordinate tap setelah expectation timeout. Log membuktikan fallback itu dijalankan dan benar-benar membuka Settings; yang membuat test gagal adalah assertion predicate tersebut. Perbaikan test yang tepat adalah mencatat isHittable sebagai diagnostik, memakai coordinate hanya ketika elemen masih ditemukan melalui accessibility identifier, lalu menguji hasil perilaku (heading/screen + aksi) tanpa mewajibkan property hittable yang terbukti false-negative. Tidak ada bukti saat ini untuk mengubah z-order/overlay sumber aplikasi. Commit 5961b246 menambahkan snapshot exists/hittable/enabled/frame, debugDescription, sheet/alert/keyboard saat failure dan upload .xcresult dengan if: always(). Run #269 memuat patch diagnostik namun hasil BELUM TERVERIFIKASI.
 
 ### 9.7 Status K1–K9
 

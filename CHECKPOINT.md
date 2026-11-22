@@ -87,13 +87,13 @@ Jangan ubah `main` langsung, jangan merge, jangan force-push/rebase, jangan hapu
 ### Selesai dengan bukti
 1. **K1 VERIFIED:** 23 Swift files pada target, project.yml, dan asset path di bawah ios dipindai. Rincian di AUDIT.md §9.2.
 2. **#266:** cancelled pada Build simulator; UI test skipped; artifact kosong. Pembatalan konsisten dengan concurrency cancel-in-progress ketika PR run #267 mulai.
-3. **#267:** build simulator success; 4 test lulus; 6 test case gagal (5 Settings karena predicate header hittable timeout; satu Quick Add editor missing). Tidak ada xcresult/screenshot artifact.
+3. **#267:** build simulator success; 4 test lulus; 6 test case dilaporkan gagal. Pada 5 test Settings, predicate header hittable timeout tetapi coordinate tap tetap disintesis, heading Settings muncul dan alur row/sheet berjalan; kegagalan ada pada assertion metadata XCTest. Satu test Quick Add editor missing. Tidak ada xcresult/screenshot artifact.
 4. **#268:** gagal sebelum jobs dibuat akibat YAML step indentation. Diperbaiki pada commit 86d8b3a.
 5. Keputusan final T4, preset custom rose, swipe-to-delete optional, serta batasan Tags/Catatan Harian tercatat di atas.
 6. Commit 5961b246 menambahkan snapshot diagnostics dan upload xcresult if: always(); commit 86d8b3a memperbaiki YAML.
 
 ### P0 — belum selesai
-- Penyebab header Settings tidak hittable belum diketahui; overlay/keyboard/transisi yang menutupnya BELUM TERBUKTI.
+- Header Settings terdaftar di accessibility dan coordinate tap pada #267 berhasil membuka Settings; yang gagal adalah predicate hittable XCTest. Elemen penutup fisik/overlay BELUM TERBUKTI dan tidak ada bukti ia memblokir aksi. Test helper perlu mencatat property itu, tetapi memvalidasi hasil navigasi yang nyata.
 - Quick Add sheet failure root cause BELUM TERBUKTI.
 - Run #269 terakhir in_progress pada Build simulator sejak 17:21:08Z tanpa artifact. Hasil BELUM TERVERIFIKASI.
 - Jangan membuat tag checkpoint/p0-done sampai P0 benar-benar terbukti.
