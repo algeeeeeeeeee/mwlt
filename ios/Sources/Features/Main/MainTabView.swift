@@ -148,7 +148,7 @@ struct MainTabView: View {
     }
     private var settingsHeaderIconColor: Color {
         colorSchemeIsDark
-            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.55))
+            ? AppAppearance.readableAccent()
             : AppAppearance.readablePrimaryOnLight()
     }
 
