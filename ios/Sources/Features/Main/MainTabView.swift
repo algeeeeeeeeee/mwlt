@@ -253,10 +253,6 @@ struct MainTabView: View {
         .onAppear {
             RecurringTransactionAutomation.processDueItems(store: store)
         }
-        .sheet(isPresented: $showQuickAdd) {
-            TransactionEditorSheet(initialCategory: "food")
-                .environmentObject(store)
-        }
         .onChange(of: selectedHeaderPhoto) { _, item in
             guard let item else { return }
             Task {
@@ -326,6 +322,9 @@ struct MainTabView: View {
                             .offset(x: -4, y: 4)
                     }
                 }
+                // Keep a stable 44pt hit target without changing the 34pt icon artwork.
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isEnglish ? "Settings" : "Pengaturan")
@@ -407,6 +406,7 @@ struct MainTabView: View {
                     .frame(width: 54, height: 54)
                     .background(LinearGradient(colors: [tint, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
                     .shadow(color: tint.opacity(0.34), radius: 16, x: 0, y: 4)
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isEnglish ? "Add transaction" : "Tambah transaksi")
@@ -477,6 +477,13 @@ struct MainTabView: View {
         .background {
             LinearGradient(colors: [AppAppearance.background(dark: colorSchemeIsDark).opacity(0), AppAppearance.background(dark: colorSchemeIsDark).opacity(0.96)], startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea(edges: .bottom)
+        }
+        // Present from the persistent dock rather than the Dashboard's nested sheet host.
+        // Dashboard owns its own sheets, so keeping Quick Add on a sibling avoids competing
+        // SwiftUI sheet presenters while preserving the dock and blurred backdrop.
+        .sheet(isPresented: $showQuickAdd) {
+            TransactionEditorSheet(initialCategory: "food")
+                .environmentObject(store)
         }
     }
 

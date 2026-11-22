@@ -23,13 +23,28 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    private func tapSettingsHeader(in app: XCUIApplication) {
+        let button = app.buttons["mwlt.header.settings"]
+        XCTAssertTrue(button.waitForExistence(timeout: 15), "Settings header button is missing.")
+        let hittable = expectation(
+            for: NSPredicate(format: "hittable == true"),
+            evaluatedWith: button,
+            handler: nil
+        )
+        wait(for: [hittable], timeout: 5)
+        // This header is fixed above the scroll view; a coordinate tap avoids
+        // XCTest's unreliable automatic ScrollToVisible action for overlay controls.
+        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    }
+
+    @MainActor
     private func openSettingsDataSheet(in app: XCUIApplication) {
         app.launchArguments = ["--mwlt-preview-mode"]
         app.launch()
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
-        settingsButton.tap()
+        tapSettingsHeader(in: app)
         XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
 
         let dataRow = app.buttons["mwlt.settings.data"]
@@ -81,7 +96,7 @@ final class MeowlettUITests: XCTestCase {
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 10))
-        settingsButton.tap()
+        tapSettingsHeader(in: app)
         XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
 
         let quickAddButton = app.buttons["mwlt.quickAdd"]
@@ -114,7 +129,7 @@ final class MeowlettUITests: XCTestCase {
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
-        settingsButton.tap()
+        tapSettingsHeader(in: app)
         XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
 
         let notificationsRow = app.buttons["mwlt.settings.notifications"]
@@ -135,7 +150,7 @@ final class MeowlettUITests: XCTestCase {
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
-        settingsButton.tap()
+        tapSettingsHeader(in: app)
         XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
 
         func openAndClose(row: String, title: String, close: String) {
