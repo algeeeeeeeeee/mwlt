@@ -254,6 +254,7 @@ struct MainTabView: View {
                     HStack(spacing: 7) {
                         Text(isEnglish ? selected.titleEN : selected.titleID)
                             .font(MeowlettTypography.font(size: 20, weight: .black))
+                            .accessibilityIdentifier("mwlt.screen.\(selected.rawValue)")
                         if selected == .date {
                             Image(systemName: "heart")
                                 .font(.system(size: 18, weight: .regular))
@@ -385,6 +386,7 @@ struct MainTabView: View {
                             ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.15))
                             : primary)
                     Button {
+                        print("[MeowlettNav] bottom tab tapped: \(tab.rawValue)")
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                             selected = tab
                         }
@@ -419,6 +421,7 @@ struct MainTabView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(isEnglish ? tab.titleEN : tab.titleID)
                     .accessibilityIdentifier("mwlt.tab.\(tab.rawValue)")
+                    .accessibilityValue(active ? "selected" : "not-selected")
                     .fixedSize(horizontal: true, vertical: false)
                 }
             }
