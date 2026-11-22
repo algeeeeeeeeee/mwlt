@@ -765,8 +765,9 @@ private struct SettingsDataSheet: View {
         }
         .padding(20)
         .background(AppAppearance.modal(dark: isDark))
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        .presentationDetents([.height(370)])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(22)
         .fileExporter(
             isPresented: $showExporter,
             document: backupFile,
