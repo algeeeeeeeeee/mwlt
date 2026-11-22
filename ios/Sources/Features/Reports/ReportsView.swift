@@ -64,16 +64,62 @@ struct ReportsView: View {
         }
     }
     private var insights: [(String, Int)] {
-        MeowlettCategory.all.compactMap { category in
-            let current = currentMonthTransactions.filter { $0.category == category.id }.reduce(Int64(0)) { $0 + $1.amount }
-            let previous = previousMonthTransactions.filter { $0.category == category.id }.reduce(Int64(0)) { $0 + $1.amount }
-            guard previous > 0 else { return nil }
-            let change = Int(((Double(current - previous) / Double(previous)) * 100).rounded())
-            return abs(change) >= 20 ? (category.id, change) : nil
+        var result: [(String, Int)] = []
+        let currentTotal = currentMonthTotal
+        let previousTotal = previousMonthTransactions.reduce(Int64(0)) { $0 + $1.amount }
+
+        if previousTotal > 0 {
+            let change = Int(((Double(currentTotal - previousTotal) / Double(previousTotal)) * 100).rounded())
+            result.append(("__total__", change))
         }
-        .sorted { abs($0.1) > abs($1.1) }
-        .prefix(4)
-        .map { $0 }
+
+        var seen = Set<String>()
+        let orderedKeys = store.transactions.compactMap { transaction -> String? in
+            guard seen.insert(transaction.category).inserted else { return nil }
+            return transaction.category
+        }
+        for key in orderedKeys {
+            let current = currentMonthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount }
+            let previous = previousMonthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount }
+            guard previous > 0, current > 0 else { continue }
+            let change = Int(((Double(current - previous) / Double(previous)) * 100).rounded())
+            if abs(change) >= 20 {
+                result.append((key, change))
+            }
+        }
+        return Array(result.prefix(4))
+    }
+
+    private var thisWeekStart: Date {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let weekday = calendar.component(.weekday, from: today)
+        let offset = (weekday + 5) % 7
+        return calendar.date(byAdding: .day, value: -offset, to: today) ?? today
+    }
+    private var tomorrowStart: Date {
+        Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: .now)) ?? .now
+    }
+    private var lastWeekStart: Date {
+        Calendar.current.date(byAdding: .day, value: -7, to: thisWeekStart) ?? thisWeekStart
+    }
+    private var thisWeekTransactions: [MeowlettTransaction] {
+        store.transactions.filter { $0.date >= thisWeekStart && $0.date < tomorrowStart }
+    }
+    private var lastWeekTransactions: [MeowlettTransaction] {
+        store.transactions.filter { $0.date >= lastWeekStart && $0.date < thisWeekStart }
+    }
+    private var thisWeekTotal: Int64 {
+        thisWeekTransactions.reduce(Int64(0)) { $0 + $1.amount }
+    }
+    private var lastWeekTotal: Int64 {
+        lastWeekTransactions.reduce(Int64(0)) { $0 + $1.amount }
+    }
+    private var weeklyInsightTopCategory: (String, Int64)? {
+        let totals = Dictionary(grouping: thisWeekTransactions, by: \.category)
+            .mapValues { $0.reduce(Int64(0)) { $0 + $1.amount } }
+        guard let top = totals.max(by: { $0.value < $1.value }) else { return nil }
+        return (top.key, top.value)
     }
     private var categoryTrendMonths: [Date] {
         let calendar = Calendar.current
@@ -226,25 +272,51 @@ struct ReportsView: View {
 
     private var insightsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionHeading(isEnglish ? "AI Insights" : "Insight Pengeluaran", symbol: "sparkles")
-            ForEach(Array(insights.enumerated()), id: \.offset) { _, insight in
-                let up = insight.1 > 0
-                HStack(spacing: 9) {
-                    Image(systemName: up ? "arrow.up.right" : "arrow.down.right")
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundStyle(up ? Color(hex: "#f87171") : Color(hex: "#16a34a"))
-                        .frame(width: 28, height: 28)
-                        .background((up ? Color(hex: "#f87171") : Color(hex: "#16a34a")).opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
-                    Text("\(MeowlettCategory.name(for: insight.0, language: language)) \(up ? (isEnglish ? "increased" : "naik") : (isEnglish ? "decreased" : "turun")) \(abs(insight.1))% \(isEnglish ? "compared with last month" : "dibanding bulan lalu")")
-                        .font(MeowlettTypography.font(size: 12, weight: .medium))
-                        .foregroundStyle(isDark ? Color(hex: "#d1fae5") : Color(hex: "#166534"))
-                        .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(Color(hex: isDark ? "#1a3a1a" : "#bbf7d0").opacity(isDark ? 1 : 0.45))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "bolt")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(isDark ? Color(hex: "#4ade80") : Color(hex: "#166534"))
+                    )
+                Text(isEnglish ? "Monthly Insights" : "Insight Bulanan")
+                    .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                    .foregroundStyle(isDark ? Color(hex: "#4ade80") : Color(hex: "#166534"))
+            }
+
+            VStack(alignment: .leading, spacing: 7) {
+                ForEach(Array(insights.enumerated()), id: \.offset) { _, insight in
+                    let up = insight.1 > 0
+                    let iconColor = up ? Color(hex: "#ef4444") : Color(hex: "#16a34a")
+                    let message: String = {
+                        if insight.0 == "__total__" {
+                            return "\(up ? (isEnglish ? "More spending" : "Lebih banyak") : (isEnglish ? "Less spending" : "Lebih hemat")) \(abs(insight.1))% \(isEnglish ? "last month" : "dari bulan lalu")"
+                        }
+                        return "\(MeowlettCategory.name(for: insight.0, language: language)) \(up ? (isEnglish ? "up" : "naik") : (isEnglish ? "down" : "turun")) \(abs(insight.1))% \(isEnglish ? "last month" : "dari bulan lalu")"
+                    }()
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(iconColor.opacity(0.15))
+                            .frame(width: 22, height: 22)
+                            .overlay(
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 11, weight: .black))
+                                    .foregroundStyle(iconColor)
+                                    .rotationEffect(.degrees(up ? 0 : 180))
+                            )
+                        Text(message)
+                            .font(MeowlettTypography.font(size: 12, weight: .medium))
+                            .foregroundStyle(isDark ? Color(hex: "#d1fae5") : Color(hex: "#166534"))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                .padding(10)
-                .background(Color(hex: "#22c55e").opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
             }
         }
-        .cardStyle(dark: isDark)
+        .padding(16)
+        .background(isDark ? Color(hex: "#0d1a0d") : Color(hex: "#f0fdf4"), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(isDark ? Color(hex: "#1a3a1a") : Color(hex: "#bbf7d0"), lineWidth: 1))
     }
 
     private var categoryTrendCard: some View {
@@ -323,38 +395,94 @@ struct ReportsView: View {
     }
 
     private var weeklyInsightCard: some View {
-        let thisWeek = weeklyTrend.last?.1 ?? 0
-        let lastWeek = weeklyTrend.dropLast().last?.1 ?? 0
-        let change = lastWeek > 0 ? Int(((Double(thisWeek - lastWeek) / Double(lastWeek)) * 100).rounded()) : 0
-        let top = currentMonthTransactions.reduce(into: [String: Int64]()) { result, tx in result[tx.category, default: 0] += tx.amount }.max { $0.value < $1.value }
-        return VStack(alignment: .leading, spacing: 10) {
-            sectionHeading(isEnglish ? "Weekly insight" : "Insight Mingguan", symbol: "lightbulb")
-            HStack(spacing: 10) {
-                Image(systemName: "calendar.badge.clock")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(primary)
-                    .frame(width: 38, height: 38)
-                    .background(primary.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
-                VStack(alignment: .leading, spacing: 3) {
-                    Text((isEnglish ? "This week: " : "Minggu ini: ") + rupiah(thisWeek))
-                        .font(MeowlettTypography.font(size: 13, weight: .bold))
-                    if lastWeek > 0 {
-                        Text("\(change >= 0 ? (isEnglish ? "More spending" : "Lebih banyak") : (isEnglish ? "Less spending" : "Lebih hemat")) \(rupiah(abs(thisWeek - lastWeek))) \(isEnglish ? "vs last week" : "dibanding minggu lalu")")
-                            .font(MeowlettTypography.font(size: 11, weight: .medium))
-                            .foregroundStyle(change > 0 ? Color(hex: "#f87171") : Color(hex: "#16a34a"))
+        let difference = thisWeekTotal - lastWeekTotal
+        let themeTint = isDark
+            ? Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.55)).opacity(0.80)
+            : Color(hex: AppAppearance.primaryHex).opacity(0.07)
+        let textTint = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.30))
+            : primary
+        return Group {
+            if thisWeekTotal > 0 {
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack(spacing: 7) {
+                        RoundedRectangle(cornerRadius: 9)
+                            .fill(primary.opacity(isDark ? 0.25 : 0.10))
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Image(systemName: "bolt")
+                                    .font(.system(size: 13, weight: .regular))
+                                    .foregroundStyle(textTint)
+                            )
+                        Text(isEnglish ? "Weekly Insight" : "Insight Mingguan")
+                            .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                            .foregroundStyle(textTint)
                     }
-                    if let top {
-                        Text((isEnglish ? "Top category: " : "Kategori teratas: ") + MeowlettCategory.name(for: top.key, language: language))
-                            .font(MeowlettTypography.font(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(primary.opacity(0.15))
+                            .frame(width: 22, height: 22)
+                            .overlay(
+                                Image(systemName: "chart.line.uptrend.xyaxis")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(textTint)
+                            )
+                        (
+                            Text(isEnglish ? "This week: " : "Total minggu ini: ")
+                                .foregroundColor(textTint)
+                            + Text(rupiah(thisWeekTotal))
+                                .fontWeight(.heavy)
+                                .foregroundColor(textTint)
+                        )
+                        .font(MeowlettTypography.font(size: 12, weight: .medium))
+                    }
+
+                    if lastWeekTotal > 0 && difference != 0 {
+                        let changeColor = difference > 0 ? Color(hex: "#ef4444") : Color(hex: "#16a34a")
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(changeColor.opacity(0.15))
+                                .frame(width: 22, height: 22)
+                                .overlay(
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.system(size: 11, weight: .black))
+                                        .foregroundStyle(changeColor)
+                                        .rotationEffect(.degrees(difference > 0 ? 0 : 180))
+                                )
+                            Text("\(difference > 0 ? (isEnglish ? "More spending" : "Lebih boros") : (isEnglish ? "Less spending" : "Lebih hemat")) \(rupiah(abs(difference))) \(isEnglish ? "vs last week" : "dibanding minggu lalu")")
+                                .font(MeowlettTypography.font(size: 12, weight: .medium))
+                                .foregroundStyle(textTint)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    if let top = weeklyInsightTopCategory {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(primary.opacity(0.15))
+                                .frame(width: 22, height: 22)
+                                .overlay(
+                                    Image(systemName: MeowlettCategory.all.first(where: { $0.id == top.0 })?.icon ?? "tag")
+                                        .font(.system(size: 11, weight: .regular))
+                                        .foregroundStyle(textTint)
+                                )
+                            (
+                                Text(isEnglish ? "Top category: " : "Kategori teratas: ")
+                                    .foregroundColor(textTint)
+                                + Text(MeowlettCategory.name(for: top.0, language: language))
+                                    .fontWeight(.heavy)
+                                    .foregroundColor(MeowlettCategory.color(for: top.0))
+                            )
+                            .font(MeowlettTypography.font(size: 12, weight: .medium))
+                        }
                     }
                 }
-                Spacer(minLength: 0)
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(themeTint, in: RoundedRectangle(cornerRadius: 18))
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(primary.opacity(isDark ? 0.27 : 0.20), lineWidth: 1))
             }
         }
-        .padding(15)
-        .background(primary.opacity(isDark ? 0.15 : 0.07), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(primary.opacity(0.14), lineWidth: 1))
     }
 
     private var exportCard: some View {
