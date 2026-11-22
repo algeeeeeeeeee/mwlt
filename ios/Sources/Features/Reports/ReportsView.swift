@@ -1139,6 +1139,146 @@ private struct ReportExportDocument: FileDocument {
     }
 }
 
+private struct ReportTrendSeries: Identifiable {
+    let id: String
+    let color: Color
+    let values: [Int64]
+}
+
+private struct NativeCategoryTrendChart: View {
+    let series: [ReportTrendSeries]
+    let mode: String
+
+    var body: some View {
+        Canvas { context, size in
+            let padding: CGFloat = 10
+            let chartHeight = size.height - 8
+            let monthCount = max(series.first?.values.count ?? 4, 1)
+            let maxAmount = CGFloat(max(series.flatMap(\.values).max() ?? 1, 1))
+
+            var baseline = Path()
+            baseline.move(to: CGPoint(x: padding, y: chartHeight))
+            baseline.addLine(to: CGPoint(x: size.width - padding, y: chartHeight))
+            context.stroke(baseline, with: .color(Color.primary.opacity(0.10)), lineWidth: 1)
+
+            if mode == "bar" {
+                let groupWidth = (size.width - padding * 2) / CGFloat(monthCount)
+                let slotWidth = groupWidth * 0.72 / CGFloat(max(series.count, 1))
+                for (categoryIndex, item) in series.enumerated() {
+                    for (monthIndex, amount) in item.values.enumerated() {
+                        let barHeight = max(2, CGFloat(amount) / maxAmount * (chartHeight - 16))
+                        let x = padding + CGFloat(monthIndex) * groupWidth + groupWidth * 0.14 + CGFloat(categoryIndex) * slotWidth
+                        let rect = CGRect(x: x, y: chartHeight - barHeight, width: max(2, slotWidth - 1), height: barHeight)
+                        context.fill(Path(roundedRect: rect, cornerRadius: 2), with: .color(item.color.opacity(0.9)))
+                    }
+                }
+            } else {
+                for item in series {
+                    var path = Path()
+                    var points: [CGPoint] = []
+                    for (index, amount) in item.values.enumerated() {
+                        let x = padding + CGFloat(index) / CGFloat(max(monthCount - 1, 1)) * (size.width - padding * 2)
+                        let y = chartHeight - padding - CGFloat(amount) / maxAmount * (chartHeight - padding * 2)
+                        let point = CGPoint(x: x, y: y)
+                        points.append(point)
+                        if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
+                    }
+                    context.stroke(path, with: .color(item.color), lineWidth: 2)
+                    for (index, point) in points.enumerated() where item.values[index] > 0 {
+                        let dot = CGRect(x: point.x - 3, y: point.y - 3, width: 6, height: 6)
+                        context.fill(Path(ellipseIn: dot), with: .color(item.color))
+                    }
+                }
+            }
+        }
+    }
+}
+
+private extension View {
+    func cardStyle(dark: Bool) -> some View {
+        self
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppAppearance.card(dark: dark), in: RoundedRectangle(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: dark), lineWidth: 1))
+            .shadow(color: .black.opacity(dark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
+    }
+}
+
+private struct NativeReportChart: View {
+    let values: [(Date, Int64)]
+    let color: Color
+    let pointColor: Color
+    let mode: String
+
+    var body: some View {
+        Canvas { context, size in
+            let padding: CGFloat = 12
+            let bottom = size.height - 8
+            let top: CGFloat = 12
+            let plotHeight = max(bottom - top, 1)
+            let maxValue = max(Double(values.map { $0.1 }.max() ?? 1), 1)
+            let points = values.enumerated().map { index, item in
+                CGPoint(
+                    x: values.count > 1
+                        ? padding + (size.width - padding * 2) * CGFloat(index) / CGFloat(values.count - 1)
+                        : size.width / 2,
+                    y: bottom - CGFloat(Double(item.1) / maxValue) * plotHeight
+                )
+            }
+
+            var baseline = Path()
+            baseline.move(to: CGPoint(x: padding, y: bottom))
+            baseline.addLine(to: CGPoint(x: size.width - padding, y: bottom))
+            context.stroke(baseline, with: .color(Color.primary.opacity(0.10)), lineWidth: 1)
+
+            if mode == "bar" {
+                let groupWidth = (size.width - padding * 2) / CGFloat(max(values.count, 1))
+                for (index, item) in values.enumerated() {
+                    let barHeight = max(2, CGFloat(Double(item.1) / maxValue) * plotHeight)
+                    let rect = CGRect(
+                        x: padding + CGFloat(index) * groupWidth + groupWidth * 0.18,
+                        y: bottom - barHeight,
+                        width: groupWidth * 0.64,
+                        height: barHeight
+                    )
+                    context.fill(Path(roundedRect: rect, cornerRadius: 4), with: .color(color.opacity(0.88)))
+                }
+            } else if let first = points.first, let last = points.last {
+                var line = Path()
+                line.move(to: first)
+                for point in points.dropFirst() { line.addLine(to: point) }
+
+                var area = line
+                area.addLine(to: CGPoint(x: last.x, y: bottom))
+                area.addLine(to: CGPoint(x: first.x, y: bottom))
+                area.closeSubpath()
+
+                context.fill(
+                    area,
+                    with: .linearGradient(
+                        Gradient(colors: [color.opacity(0.30), color.opacity(0)]),
+                        startPoint: CGPoint(x: 0, y: top),
+                        endPoint: CGPoint(x: 0, y: bottom)
+                    )
+                )
+                context.stroke(
+                    line,
+                    with: .color(color),
+                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
+                )
+
+                for point in points {
+                    let dot = CGRect(x: point.x - 4.5, y: point.y - 4.5, width: 9, height: 9)
+                    let shape = Path(ellipseIn: dot)
+                    context.fill(shape, with: .color(pointColor))
+                    context.stroke(shape, with: .color(color), lineWidth: 2)
+                }
+            }
+        }
+    }
+}
+
 private struct ReportStoryCardView: View {
     let month: String
     let percentUsed: Int
