@@ -24,10 +24,17 @@ struct RootView: View {
         return darkOverride == "true" ? .dark : .light
     }
 
+    // Preview builds must not depend on simulator preferences being written
+    // before the first app launch. This launch-only flag bypasses onboarding
+    // without changing the user's persisted onboarding state.
+    private var isNativePreviewLaunch: Bool {
+        ProcessInfo.processInfo.arguments.contains("--mwlt-preview-mode")
+    }
+
     var body: some View {
         GeometryReader { geometry in
             Group {
-                if isOnboarded {
+                if isOnboarded || isNativePreviewLaunch {
                     MainTabView()
                         .environmentObject(financeStore)
                 } else {
