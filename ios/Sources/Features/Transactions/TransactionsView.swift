@@ -55,6 +55,7 @@ private struct TransactionSortGlyph: View {
 
 struct TransactionsView: View {
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var modalBlurCoordinator: ModalBlurCoordinator
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_tx_receipts") private var receiptsRaw = "{}"
@@ -184,8 +185,6 @@ struct TransactionsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
-        .blur(radius: (showEditor || isRecurringUtilityPresented) ? 8 : 0)
-        .animation(.easeInOut(duration: 0.2), value: showEditor || isRecurringUtilityPresented)
         .overlay(alignment: .bottom) {
             if showUndoToast, let deleted = recentlyDeletedTransaction {
                 undoToast(for: deleted)
@@ -194,6 +193,10 @@ struct TransactionsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .onChange(of: showEditor || isRecurringUtilityPresented) { _, presented in
+            modalBlurCoordinator.set("transactions", isPresented: presented)
+        }
+        .onDisappear { modalBlurCoordinator.set("transactions", isPresented: false) }
         .toolbar(.hidden, for: .navigationBar)
         .sheet(isPresented: $showEditor) {
             TransactionEditorSheet(transaction: editingTransaction)
