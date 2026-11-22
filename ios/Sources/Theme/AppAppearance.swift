@@ -32,6 +32,45 @@ enum AppAppearance {
     static var accent: Color { Color(hex: accentHex) }
     static var primary: Color { Color(hex: primaryHex) }
 
+    static func lighten(_ hex: String, ratio: Double) -> String {
+        let values = rgb(hex)
+        func channel(_ value: Int) -> Int {
+            min(255, Int((Double(value) + Double(255 - value) * ratio).rounded()))
+        }
+        return String(format: "#%02X%02X%02X", channel(values.0), channel(values.1), channel(values.2))
+    }
+
+    static func darken(_ hex: String, ratio: Double) -> String {
+        let values = rgb(hex)
+        func channel(_ value: Int) -> Int {
+            max(0, Int((Double(value) * (1 - ratio)).rounded()))
+        }
+        return String(format: "#%02X%02X%02X", channel(values.0), channel(values.1), channel(values.2))
+    }
+
+    static func luminance(_ hex: String) -> Double {
+        let values = rgb(hex)
+        return (0.299 * Double(values.0) + 0.587 * Double(values.1) + 0.114 * Double(values.2)) / 255
+    }
+
+    static func readablePrimaryOnLight() -> Color {
+        guard luminance(primaryHex) > 0.5 else { return Color(hex: primaryHex) }
+        var ratio = 0.1
+        var result = primaryHex
+        while luminance(result) > 0.5 && ratio <= 1 {
+            result = darken(primaryHex, ratio: ratio)
+            ratio += 0.1
+        }
+        return Color(hex: result)
+    }
+
+    private static func rgb(_ hex: String) -> (Int, Int, Int) {
+        let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var value: UInt64 = 0
+        Scanner(string: cleaned).scanHexInt64(&value)
+        return (Int((value >> 16) & 0xff), Int((value >> 8) & 0xff), Int(value & 0xff))
+    }
+
     // Exact neutral palette used by buildTheme() in src/utils/theme.js.
     static func background(dark: Bool) -> Color { Color(hex: dark ? "#0a0a0a" : "#f4f4f4") }
     static func card(dark: Bool) -> Color { Color(hex: dark ? "#141414" : "#ffffff") }
