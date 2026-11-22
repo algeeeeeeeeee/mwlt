@@ -51,6 +51,8 @@ struct RootView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
             .background(Color(uiColor: .systemBackground))
+            // Controls beneath the blocking opening splash must not receive accessibility focus or taps.
+            .accessibilityHidden(showNativeSplash)
         }
         .background(Color(uiColor: .systemBackground).ignoresSafeArea())
         .environment(\.font, MeowlettTypography.font(size: 14, weight: .regular))
