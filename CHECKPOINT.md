@@ -119,3 +119,39 @@ Jangan ubah `main` langsung, jangan merge, jangan force-push/rebase, jangan hapu
 5. Buat artifact otomatis PREVIEW.png per layar/modal untuk Light/Dark dengan kolom Referensi bila tersedia; K9 tetap belum dicentang sampai artifact terbaru ada.
 
 PR #2 tetap Draft; jangan merge, force-push, atau hapus branch/file/workflow/test.
+## Follow-up checkpoint — 23 November 2026 (HEAD `1e5c0df`)
+
+### Selesai (bukti)
+- #269/#273 menunjukkan Settings header berukuran 44×44, label/identifier/enabled benar, tidak ada sheet/alert/keyboard, dan coordinate tap membuka Settings. `isHittable` berubah-ubah untuk frame yang sama: klasifikasi Settings **B** (predicate XCTest mismatch/intermiten), bukan app frame salah atau overlay terbukti.
+- Review diff `f03ed90`: Quick Add presenter dipindah ke dock; tidak ditemukan auto-close oleh `onDisappear` atau perubahan tab. Dashboard/Transactions/Settings memiliki presenter terpisah.
+- Celah isolasi test terkonfirmasi: sebelumnya tidak ada `-uitest-reset`; FinanceStore memakai `Application Support/Meowlett/transactions.json` dan UserDefaults/AppStorage persisten.
+- Commit `2a0454a` menambahkan reset storage per launch, hit-point diagnostics dan timestamp presenter logs. Commit `1e5c0df` memindahkan dua paired tests ke level class; method test kini 12.
+
+### Belum terverifikasi
+- `.tap()` vs coordinate untuk Settings dan FAB dalam paired tests: **BELUM TERVERIFIKASI**.
+- Reset `-uitest-reset` pada setiap test: code sudah ada; log runner belum tersedia.
+- Quick Add showQuickAdd true, content onAppear/onDisappear, presenter lain aktif/tidak, serta jalur dismiss aktual: **BELUM TERVERIFIKASI**.
+- #276/#277 pada SHA `1e5c0df`: Build simulator success; UI tests masih in_progress pada saat checkpoint ini. #274/#275 dibatalkan ketika koreksi posisi test dikirim; artifact diagnostiknya parsial.
+
+### Status K1–K9
+| Kriteria | Status |
+|---|---|
+| K1 | **VERIFIED** |
+| K2 | BELUM TERVERIFIKASI |
+| K3 | PARTIAL |
+| K4 | PARTIAL |
+| K5 | BELUM TERVERIFIKASI |
+| K6 | BELUM TERVERIFIKASI — perlu 5 run hijau atau reruns terpisah dengan catatan |
+| K7 | PARTIAL |
+| K8 | BELUM TERVERIFIKASI |
+| K9 | BELUM TERVERIFIKASI — PREVIEW.png per layar/modal belum ada |
+
+### Langkah berikutnya
+1. Ambil log dan `.xcresult` #277/#276. Catat jumlah test yang benar-benar ditemukan (target 12).
+2. Ambil `[MeowlettHitPoint]`, `[MeowlettTapComparison]`, `[MeowlettTapStrategy]`, `[MeowlettUITestReset]`, `[MeowlettQuickAdd]`, `[MeowlettPresenter]` dari log.
+3. Putuskan hasil normal `.tap()` vs coordinate untuk kedua kontrol; pastikan header tetap membuka Settings dan FAB membuka editor.
+4. Pastikan Quick Add presenter state/lifecycle dan tidak ada presenter lain yang aktif bersamaan; jika test isolasi gagal, perbaiki sebelum app UI.
+5. Hanya setelah P0 stabil, jalankan lima verifikasi hijau (atau reruns terpisah dengan catatan), baru tag `checkpoint/p0-done`.
+6. Setelah P0: mulai P1 satu prioritas penuh, lalu otomatisasi PREVIEW.png Light/Dark per layar/modal.
+
+PR #2 tetap Draft; tidak di-merge dan tidak force-push. Tidak ada pekerjaan P1 yang dimulai.

@@ -455,3 +455,80 @@ index.html berada di root PWA, bukan target iOS; workflow menyebutnya hanya seba
 | K7 — backup web/native round-trip | PARTIAL |
 | K8 — S1–S14, timezone, data stress, no crash | BELUM TERVERIFIKASI |
 | K9 — PREVIEW.png per layar/modal dari SHA terbaru | BELUM TERVERIFIKASI |
+
+---
+
+## 10. Follow-up P0 diagnostics — 23 November 2026
+
+### 10.1 Snapshot #269: Settings header dan FAB
+
+| Properti | Settings header | Quick Add FAB |
+|---|---|---|
+| Accessibility type | Button | Button |
+| Label | `Pengaturan` | `Tambah transaksi` |
+| Identifier | `mwlt.header.settings` | `mwlt.quickAdd` |
+| exists | `true` | `true` |
+| enabled | `true` | `true` |
+| hittable | `false` pada sebagian snapshot; `true` pada snapshot lain untuk frame yang sama | `false` pada snapshot #269; `true` pada snapshot #273 |
+| Frame | `(288, 69, 44, 44)` | `(25.67, 739, 54, 54)` |
+| Titik tengah turunan frame | `(310, 91)` | `(52.67, 766)` |
+| Sheet / alert / keyboard saat snapshot | `false / false / false` | `false / false / false` |
+
+Debug hierarchy mencantumkan Button sasaran pada frame tersebut beserta label dan identifier; di dalam header juga ada Image `gearshape`. Pada titik tengah header tidak ada sheet, alert, keyboard atau kontrol interaktif lain yang tercatat menutup tombol. Full-screen ScrollView adalah ancestor layout dan header berada di atasnya pada `zIndex(10)`. Untuk FAB, debug hierarchy mengenali Button `mwlt.quickAdd` pada frame dock. Pemeriksaan frame candidates/hit-point otomatis yang lebih rinci ditambahkan pada commit `2a0454a`; hasil run terbaru masih menunggu.
+
+### 10.2 Keputusan A/B untuk Settings
+
+- **A — geometri/aksesibilitas aplikasi salah: TERBANTAH oleh bukti yang tersedia.** Frame header berukuran 44×44 berada di kanan atas; label, identifier dan enabled benar; query accessibility menemukan Button; tidak ada sheet/alert/keyboard saat snapshot. Tidak ada dasar untuk mengubah z-order, overlay atau frame app.
+- **B — predicate `isHittable` XCTest tidak cocok/intermiten untuk kontrol fixed/container: TERBUKTI pada gejala.** Untuk frame dan identifier sama, `hittable` berubah `false`/`true`. Run #269/#273 memperlihatkan coordinate-center tap disintesis, lalu `mwlt.screen.settings` muncul dan row/sheet/submenu dapat dibuka. Ini menunjukkan `hittable=false` bukan bukti sentuhan tertutup overlay.
+- **`button.tap()` vs coordinate pada Settings:** paired test khusus sudah dipindahkan ke level class pada commit `1e5c0df`, tetapi hasilnya **BELUM TERVERIFIKASI** karena run #277 masih UI test aktif saat checkpoint ditulis. Helper menggunakan normal `.tap()` saat `isHittable=true`, coordinate-center fallback saat `false`, dan selalu memeriksa heading Settings.
+- **FAB:** #269 merekam `hittable=false`, #273 pada snapshot lain `hittable=true`. Test simpan transaksi di #269/#273 menyelesaikan alur editor dan penyimpanan; #273 log menunjukkan `quickAdd` Button ada dan `button.tap()` digunakan. Dedicated comparison `.tap()` vs coordinate untuk FAB **BELUM TERVERIFIKASI** hingga paired test baru selesai.
+
+### 10.3 Review Quick Add presenter sejak `f03ed90`
+
+- Diff `f03ed90` memindahkan `.sheet(isPresented: $showQuickAdd)` dari root `MainTabView.body` ke `bottomNavigation`/dock yang persisten. Tujuannya memisahkan host Quick Add dari presenter sheet yang dimiliki Dashboard.
+- `showQuickAdd` merupakan `@State` milik `MainTabView`; FAB dan callback Dashboard mengubahnya ke `true`. Source tidak menemukan jalur `onDisappear`, perubahan `selected` tab, atau observer lain yang otomatis mengubahnya ke `false`. Jalur tutup normal berada di aksi explicit Save/Cancel pada `TransactionEditorSheet` dan penutupan sheet oleh sistem.
+- Dashboard menggunakan presenter `.sheet(item: $activeSheet)` tersendiri; Transactions dan Settings juga punya presenter tersendiri. Dua presenter secara state bisa saja aktif bersamaan, tetapi tidak ada bukti snapshot #269/#273 bahwa presenter lain sedang aktif pada saat Quick Add diminta.
+- Sebelum patch isolasi, UI test tidak memiliki `-uitest-reset`; `FinanceStore` memuat `Application Support/Meowlett/transactions.json`, dan banyak preferensi dibaca dari `UserDefaults`/`AppStorage`. State antartest karena itu dapat bertahan. Ini **membuktikan celah isolasi**, tetapi belum membuktikan bahwa persistensi itulah penyebab intermittent Quick Add.
+- Commit `2a0454a` menambahkan `-uitest-reset` ke setiap app launch test. Sebelum `RootView`/`FinanceStore` dibuat, app menghapus persistent defaults domain dan folder `Application Support/Meowlett`; log `MeowlettUITestReset` mencatat timestamp dan hasil hapus. Apakah setiap launch pada runner benar-benar mengeluarkan log reset **BELUM TERVERIFIKASI** karena #274/#275 dibatalkan dan #277 masih berjalan.
+- Commit `2a0454a` menambahkan timestamped state log untuk permintaan FAB, perubahan `showQuickAdd`, perubahan tab saat editor aktif, `editor-content-onAppear/onDisappear`, `sheet-onDismiss`, dan Dashboard activeSheet plus daftar `ModalBlurCoordinator.activePresentations`. Nilai `showQuickAdd` menjadi `true`, apakah editor muncul, apakah presenter lain aktif, dan kapan sheet ditutup **BELUM TERVERIFIKASI** sampai log run baru tersedia.
+
+### 10.4 H1–H7 — pembaruan berbasis #269/#273
+
+| Hipotesis | Status | Bukti / batas |
+|---|---|---|
+| H1 Splash/onboarding | **TERBANTAH** sebagai sebab kegagalan Settings #269/#273 | Tes memakai `--mwlt-preview-mode`; hierarchy menampilkan header/FAB main app. Splash tidak menjelaskan predicate hittable pada header yang sudah ada. |
+| H2 Locale angka/tanggal | **TERBANTAH** untuk kegagalan navigasi/Quick Add yang diamati | Assertion utama mencari accessibility identifier/heading, bukan teks nominal/tanggal. Matriks locale tetap belum diuji. |
+| H3 Appearance Light/Dark | **BELUM TERVERIFIKASI** | #269/#273 tidak menjalankan matriks test terpisah untuk Light dan Dark. |
+| H4 Timezone UTC/WIB | **TERBANTAH** sebagai sebab kegagalan tap/navigasi/sheet | Assertion gagal berkaitan `hittable`, perpindahan Settings, atau presentasi editor; bukan tanggal. Kebenaran timezone tetap belum diuji. |
+| H5 Accessibility/overlay/hit target | **B TERBUKTI pada gejala; A terbantah** | Frame/label/identifier/enabled benar; tidak ada sheet/alert/keyboard; `hittable` berubah-ubah; coordinate tap membuka Settings. Paired standard-vs-coordinate masih ditunggu. |
+| H6 Persistensi antar tes | **Celah isolasi TERBUKTI; sebagai penyebab Quick Add BELUM TERVERIFIKASI** | Tidak ada reset sebelumnya, store dan AppStorage persisten. Reset baru ditambahkan; hasil lognya belum tersedia. |
+| H7 Xcode/simulator | **TERBANTAH** sebagai perubahan versi environment | Run #251 yang sukses dan #264/#269 menggunakan runner image, macOS, Xcode 16.4, SDK iOS 18.5 dan destination iPhone 16 yang sama. Reproduksi simulator lokal belum dilakukan. |
+
+### 10.5 Status commit dan run diagnostik terbaru
+
+- `2a0454a12d94d341e1d64bf6f72567cc24062a33` — `test: isolate UI state and trace fixed-control presenters`. Menambah reset, hit-point diagnostics, timestamped presenter logs, serta dua paired tap tests. Pada inspeksi source berikutnya, dua paired test ternyata tersarang di method Date sehingga tidak akan didaftarkan XCTest sebagai test cases terpisah.
+- `1e5c0df9bfbbca84cd8e3d2338349e79af114820` — `test: register fixed-control tap comparisons`. Memindahkan kedua paired test ke level class sebelum Date method. Source kini memiliki 12 method `test...` pada class `MeowlettUITests`.
+- **#274** — [push workflow](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052431641), SHA `2a0454a...`: Build simulator success; UI tests cancelled ketika commit koreksi dikirim; artifact parsial `Meowlett-UI-Test-Diagnostics-45052431641-1` berukuran 26 KB. Tidak ada hasil test yang dapat disimpulkan.
+- **#275** — [PR workflow](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052435437), SHA `2a0454a...`: UI test cancelled; artifact diagnostik hanya 6 KB. Tidak ada hasil test.
+- **#276** — [push workflow](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052948878), SHA `1e5c0df...`: Build simulator success; UI smoke test masih `in_progress` saat checkpoint ini dibuat.
+- **#277** — [PR workflow](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052955026), SHA `1e5c0df...`: Build simulator success; UI smoke test masih `in_progress`; belum ada artifact saat checkpoint ini dibuat.
+
+### 10.6 Kesimpulan sementara P0
+
+- **Settings:** diagnosis paling kuat adalah B — false-negative/intermiten `isHittable` XCTest pada kontrol fixed/container. Tidak ada bukti overlay fisik menutupinya. Helper baru mengubah `isHittable` menjadi strategi pemilihan gesture saja dan tetap wajib memverifikasi heading tujuan.
+- **Quick Add:** source `f03ed90` tidak menunjukkan auto-close tak disengaja. Test storage sebelumnya tidak diisolasi. State presenter/overlap dan hasil paired tap masih menunggu timestamped logs #277.
+- **P0 BELUM SELESAI.** Jangan membuat tag `checkpoint/p0-done` sampai paired tests dan Quick Add lifecycle terbukti, kegagalan lama sudah memiliki penyebab, dan stabilitas 5 run hijau (atau reruns terpisah dengan catatan) terpenuhi.
+
+### 10.7 Status K1–K9
+
+| Kriteria | Status |
+|---|---|
+| K1 — no WebView/HTML bundle di target native | **VERIFIED** |
+| K2 — semua tombol/layar/modal | **BELUM TERVERIFIKASI** |
+| K3 — blur/dim seragam semua modal | **PARTIAL** |
+| K4 — tema/font/radius parity | **PARTIAL** |
+| K5 — S1–S11 Light + Dark | **BELUM TERVERIFIKASI** |
+| K6 — P0 root cause + 5 CI green runs / reruns terpisah | **BELUM TERVERIFIKASI** |
+| K7 — backup web/native round-trip | **PARTIAL** |
+| K8 — S1–S14, timezone, data stress, no crash | **BELUM TERVERIFIKASI** |
+| K9 — PREVIEW.png per layar/modal dari SHA terbaru | **BELUM TERVERIFIKASI** |
