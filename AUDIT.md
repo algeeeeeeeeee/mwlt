@@ -414,7 +414,7 @@ index.html berada di root PWA, bukan target iOS; workflow menyebutnya hanya seba
 - Gagal: testSettingsBackupActionBuildsAndRequestsExport; testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss; testSettingsNotificationsShowSystemPermissionStatus; testSettingsResetRequiresConfirmationAndCanBeCancelled; testSettingsRestoreActionRequestsImport. Kelima test gagal di tapSettingsHeader line 34: asynchronous wait 5 detik untuk predicate hittable == true pada mwlt.header.settings timeout.
 - Tidak ada snapshot atau xcresult artifact dari #267. Predicate hittable timeout tercatat, namun overlay/elemen penutup spesifik tidak diketahui.
 - #268 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048770667), SHA 5961b24614eb77a3ef024da8402d00e0e7fdc03c: gagal langsung sebelum job dibuat (0 jobs) akibat YAML indentation pada step Build iPhone device. Sudah diperbaiki pada commit 86d8b3aab771ec078554218bfe6411cd5bfbba6e.
-- #269 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679), SHA 86d8b3aab771ec078554218bfe6411cd5bfbba6e: YAML terbaca dan job berjalan; pemeriksaan terakhir menunjukkan Build simulator in_progress sejak 17:21:08Z tanpa pembaruan status maupun artifact. Hasil keseluruhan BELUM TERVERIFIKASI.
+- #269 (https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679), SHA 86d8b3aab771ec078554218bfe6411cd5bfbba6e: YAML terbaca dan job berjalan; pemeriksaan terakhir menunjukkan Build simulator success dan Run native UI smoke tests in_progress; langkah upload xcresult belum berjalan dan belum ada artifact. Hasil keseluruhan BELUM TERVERIFIKASI.
 
 ### 9.4 Bukti kegagalan #264: accessibility/hit-testing/presentasi
 

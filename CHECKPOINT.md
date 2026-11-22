@@ -37,7 +37,7 @@
 
 | Run | SHA | Hasil |
 |---|---|---|
-| [#269](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679) | `86d8b3a...` | Build simulator masih in_progress sejak 17:21:08Z; hasil/artifact BELUM TERVERIFIKASI |
+| [#269](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679) | `86d8b3a...` | Build simulator success; UI smoke tests in_progress; hasil/artifact BELUM TERVERIFIKASI |
 | [#268](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048770667) | `5961b24...` | gagal sebelum job dibuat akibat YAML indentation; diperbaiki di #269 |
 | [#267](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45047595111) | `f326632...` | build simulator sukses; UI test gagal 10 assertions / 6 test cases; 5 Settings header not hittable + Quick Add editor missing |
 | [#266](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45047506498) | `bb44422...` | cancelled di Build simulator; UI tests skipped; tidak ada artifact |
@@ -95,7 +95,7 @@ Jangan ubah `main` langsung, jangan merge, jangan force-push/rebase, jangan hapu
 ### P0 — belum selesai
 - Header Settings terdaftar di accessibility dan coordinate tap pada #267 berhasil membuka Settings; yang gagal adalah predicate hittable XCTest. Elemen penutup fisik/overlay BELUM TERBUKTI dan tidak ada bukti ia memblokir aksi. Test helper perlu mencatat property itu, tetapi memvalidasi hasil navigasi yang nyata.
 - Quick Add sheet failure root cause BELUM TERBUKTI.
-- Run #269 terakhir in_progress pada Build simulator sejak 17:21:08Z tanpa artifact. Hasil BELUM TERVERIFIKASI.
+- Run #269 sudah Build simulator success dan terakhir in_progress pada Run native UI smoke tests; artifact xcresult belum tersedia. Hasil BELUM TERVERIFIKASI.
 - Jangan membuat tag checkpoint/p0-done sampai P0 benar-benar terbukti.
 
 ### Status K1–K9
