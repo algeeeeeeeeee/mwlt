@@ -11,6 +11,7 @@ struct DashboardView: View {
     var onAddTransaction: () -> Void = {}
 
     @EnvironmentObject private var store: FinanceStore
+    @EnvironmentObject private var modalBlurCoordinator: ModalBlurCoordinator
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
@@ -192,8 +193,6 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(AppAppearance.background(dark: isDark))
-            .blur(radius: activeSheet == nil ? 0 : 8)
-            .animation(.easeInOut(duration: 0.2), value: activeSheet != nil)
             .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 loadPersistedDashboardData()
@@ -201,6 +200,10 @@ struct DashboardView: View {
             }
             .onChange(of: budgets) { _, value in persistBudgets(value) }
             .onChange(of: savingsGoals) { _, value in persistSavingsGoals(value) }
+            .onChange(of: activeSheet != nil) { _, presented in
+                modalBlurCoordinator.set("dashboard", isPresented: presented)
+            }
+            .onDisappear { modalBlurCoordinator.set("dashboard", isPresented: false) }
                         .sheet(item: $activeSheet) { sheet in
                 switch sheet {
                 case .overallBudget:
