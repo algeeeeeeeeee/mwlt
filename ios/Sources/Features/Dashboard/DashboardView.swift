@@ -1414,7 +1414,12 @@ struct DashboardView: View {
     }
 
     private var recentTransactionsCard: some View {
-        let recent = Array(store.transactions.prefix(recentCount))
+        let recent = Array(store.transactions.sorted {
+            let left = $0.createdAt ?? $0.date
+            let right = $1.createdAt ?? $1.date
+            if left == right { return $0.id.uuidString > $1.id.uuidString }
+            return left > right
+        }.prefix(recentCount))
         let primaryText = isDark
             ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.45))
             : AppAppearance.readablePrimaryOnLight()

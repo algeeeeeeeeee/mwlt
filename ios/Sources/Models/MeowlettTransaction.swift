@@ -10,6 +10,7 @@ struct MeowlettTransaction: Identifiable, Codable, Equatable {
     var location: String
     var note: String
     var paymentMethod: String
+    var createdAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -19,7 +20,8 @@ struct MeowlettTransaction: Identifiable, Codable, Equatable {
         description: String,
         location: String = "",
         note: String = "",
-        paymentMethod: String = "cash"
+        paymentMethod: String = "cash",
+        createdAt: Date? = .now
     ) {
         self.id = id
         self.date = date
@@ -29,6 +31,7 @@ struct MeowlettTransaction: Identifiable, Codable, Equatable {
         self.location = location
         self.note = note
         self.paymentMethod = paymentMethod
+        self.createdAt = createdAt
     }
 }
 

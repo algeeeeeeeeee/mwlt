@@ -18,15 +18,22 @@ final class FinanceStore: ObservableObject {
     }
 
     func add(_ transaction: MeowlettTransaction) {
-        transactions.insert(transaction, at: 0)
+        var value = transaction
+        if value.createdAt == nil { value.createdAt = .now }
+        transactions.append(value)
+        sortByCreationTime()
         save()
         MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
 
     func update(_ transaction: MeowlettTransaction) {
         guard let index = transactions.firstIndex(where: { $0.id == transaction.id }) else { return }
-        transactions[index] = transaction
-        transactions.sort { $0.date > $1.date }
+        var value = transaction
+        if value.createdAt == nil {
+            value.createdAt = transactions[index].createdAt ?? transactions[index].date
+        }
+        transactions[index] = value
+        sortByCreationTime()
         save()
         MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
@@ -47,8 +54,10 @@ final class FinanceStore: ObservableObject {
 
     func restore(_ transaction: MeowlettTransaction) {
         guard !transactions.contains(where: { $0.id == transaction.id }) else { return }
-        transactions.append(transaction)
-        transactions.sort { $0.date > $1.date }
+        var value = transaction
+        if value.createdAt == nil { value.createdAt = value.date }
+        transactions.append(value)
+        sortByCreationTime()
         save()
         MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
@@ -60,7 +69,12 @@ final class FinanceStore: ObservableObject {
     }
 
     func replaceAllTransactions(_ values: [MeowlettTransaction]) {
-        transactions = values.sorted { $0.date > $1.date }
+        transactions = values.map { item in
+            var value = item
+            if value.createdAt == nil { value.createdAt = value.date }
+            return value
+        }
+        sortByCreationTime()
         save()
         MeowlettReminderScheduler.scheduleFromDefaults(transactions: transactions)
     }
@@ -87,7 +101,7 @@ final class FinanceStore: ObservableObject {
         func day(_ offset: Int) -> Date {
             calendar.date(byAdding: .day, value: offset, to: .now) ?? .now
         }
-        transactions = [
+        let previewTransactions = [
             MeowlettTransaction(date: day(0), amount: 32000, category: "food", description: "Sarapan nasi uduk", location: "Pontianak", paymentMethod: "cash"),
             MeowlettTransaction(date: day(0), amount: 15000, category: "transport", description: "Ojek ke sekolah", location: "Kota", paymentMethod: "qris"),
             MeowlettTransaction(date: day(-1), amount: 58000, category: "food", description: "Kopi dan camilan", location: "Coffee shop", note: "Meeting", paymentMethod: "cash"),
@@ -98,7 +112,12 @@ final class FinanceStore: ObservableObject {
             MeowlettTransaction(date: day(-10), amount: 145000, category: "health", description: "Perlengkapan kesehatan", paymentMethod: "qris"),
             MeowlettTransaction(date: day(-13), amount: 350000, category: "date", description: "Aktivitas akhir pekan", location: "Pontianak", paymentMethod: "cash"),
             MeowlettTransaction(date: day(-18), amount: 55000, category: "food", description: "Makan siang", paymentMethod: "cash")
-        ].sorted { $0.date > $1.date }
+        ]
+        transactions = previewTransactions.enumerated().map { index, item in
+            var value = item
+            value.createdAt = .now.addingTimeInterval(-Double(index))
+            return value
+        }
         save()
     }
 
@@ -108,7 +127,24 @@ final class FinanceStore: ObservableObject {
             transactions = []
             return
         }
-        transactions = decoded.sorted { $0.date > $1.date }
+        var migrated = decoded
+        var needsSave = false
+        for index in migrated.indices where migrated[index].createdAt == nil {
+            migrated[index].createdAt = migrated[index].date
+            needsSave = true
+        }
+        transactions = migrated
+        sortByCreationTime()
+        if needsSave { save() }
+    }
+
+    private func sortByCreationTime() {
+        transactions.sort {
+            let left = $0.createdAt ?? $0.date
+            let right = $1.createdAt ?? $1.date
+            if left == right { return $0.id.uuidString > $1.id.uuidString }
+            return left > right
+        }
     }
 
     private func save() {

@@ -356,7 +356,8 @@ struct TransactionEditorSheet: View {
             description: trimmed,
             location: location,
             note: note,
-            paymentMethod: paymentMethod
+            paymentMethod: paymentMethod,
+            createdAt: transaction?.createdAt ?? .now
         )
         if transaction == nil { store.add(item) } else { store.update(item) }
         persistReceipt(for: savedID)
