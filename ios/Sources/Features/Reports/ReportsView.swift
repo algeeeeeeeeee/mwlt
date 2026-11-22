@@ -425,23 +425,19 @@ struct ReportsView: View {
 
     private var weeklyTrendCard: some View {
         VStack(alignment: .leading, spacing: 11) {
-            sectionHeading(isEnglish ? "Weekly spending trend" : "Tren Pengeluaran Mingguan", symbol: "chart.xyaxis.line")
+            sectionHeading(isEnglish ? "8-Week Trend" : "Tren 8 Minggu", symbol: "chart.xyaxis.line")
             if weeklyTrend.allSatisfy({ $0.1 == 0 }) {
-                emptyMessage(isEnglish ? "No weekly data yet." : "Belum ada data mingguan.")
+                emptyMessage(isEnglish ? "No data" : "Belum ada data bulan ini")
                     .frame(height: 115)
             } else {
-                NativeReportChart(values: weeklyTrend, color: accent, mode: "line")
-                    .frame(height: 145)
-            }
-            HStack {
-                ForEach(Array(weeklyTrend.enumerated()), id: \.offset) { index, item in
-                    if index == 0 || index == 3 || index == 7 {
-                        Text(item.0.formatted(.dateTime.day().month(.abbreviated).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))))
-                            .font(MeowlettTypography.font(size: 9, weight: .semibold))
+                NativeReportChart(values: weeklyTrend, color: accent, pointColor: primary, mode: "line")
+                    .frame(height: 110)
+                HStack(spacing: 0) {
+                    ForEach(0..<8, id: \.self) { index in
+                        Text("\(isEnglish ? "W" : "M")\(index + 1)")
+                            .font(MeowlettTypography.font(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
-                    } else {
-                        Spacer(minLength: 0)
                     }
                 }
             }
@@ -863,53 +859,79 @@ private extension View {
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppAppearance.card(dark: dark), in: RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.primary.opacity(0.06), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: dark), lineWidth: 1))
+            .shadow(color: .black.opacity(dark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 }
 
 private struct NativeReportChart: View {
     let values: [(Date, Int64)]
     let color: Color
+    let pointColor: Color
     let mode: String
 
     var body: some View {
-        GeometryReader { proxy in
+        Canvas { context, size in
+            let padding: CGFloat = 12
+            let bottom = size.height - 8
+            let top: CGFloat = 12
+            let plotHeight = max(bottom - top, 1)
             let maxValue = max(Double(values.map { $0.1 }.max() ?? 1), 1)
             let points = values.enumerated().map { index, item in
                 CGPoint(
-                    x: values.count > 1 ? proxy.size.width * CGFloat(index) / CGFloat(values.count - 1) : proxy.size.width / 2,
-                    y: proxy.size.height * (1 - CGFloat(Double(item.1) / maxValue) * 0.88) - 4
+                    x: values.count > 1
+                        ? padding + (size.width - padding * 2) * CGFloat(index) / CGFloat(values.count - 1)
+                        : size.width / 2,
+                    y: bottom - CGFloat(Double(item.1) / maxValue) * plotHeight
                 )
             }
-            ZStack {
-                VStack {
-                    ForEach(0..<4, id: \.self) { _ in
-                        Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1)
-                        Spacer(minLength: 0)
-                    }
+
+            var baseline = Path()
+            baseline.move(to: CGPoint(x: padding, y: bottom))
+            baseline.addLine(to: CGPoint(x: size.width - padding, y: bottom))
+            context.stroke(baseline, with: .color(Color.primary.opacity(0.10)), lineWidth: 1)
+
+            if mode == "bar" {
+                let groupWidth = (size.width - padding * 2) / CGFloat(max(values.count, 1))
+                for (index, item) in values.enumerated() {
+                    let barHeight = max(2, CGFloat(Double(item.1) / maxValue) * plotHeight)
+                    let rect = CGRect(
+                        x: padding + CGFloat(index) * groupWidth + groupWidth * 0.18,
+                        y: bottom - barHeight,
+                        width: groupWidth * 0.64,
+                        height: barHeight
+                    )
+                    context.fill(Path(roundedRect: rect, cornerRadius: 4), with: .color(color.opacity(0.88)))
                 }
-                if mode == "bar" {
-                    HStack(alignment: .bottom, spacing: 10) {
-                        ForEach(Array(values.enumerated()), id: \.offset) { _, item in
-                            VStack {
-                                Spacer(minLength: 0)
-                                RoundedRectangle(cornerRadius: 5)
-                                    .fill(color.opacity(0.85))
-                                    .frame(height: max(3, proxy.size.height * CGFloat(Double(item.1) / maxValue) * 0.88))
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                } else {
-                    Path { path in
-                        guard let first = points.first else { return }
-                        path.move(to: first)
-                        for point in points.dropFirst() { path.addLine(to: point) }
-                    }
-                    .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-                    ForEach(Array(points.enumerated()), id: \.offset) { _, point in
-                        Circle().fill(color).frame(width: 7, height: 7).position(point)
-                    }
+            } else if let first = points.first, let last = points.last {
+                var line = Path()
+                line.move(to: first)
+                for point in points.dropFirst() { line.addLine(to: point) }
+
+                var area = line
+                area.addLine(to: CGPoint(x: last.x, y: bottom))
+                area.addLine(to: CGPoint(x: first.x, y: bottom))
+                area.closeSubpath()
+
+                context.fill(
+                    area,
+                    with: .linearGradient(
+                        Gradient(colors: [color.opacity(0.30), color.opacity(0)]),
+                        startPoint: CGPoint(x: 0, y: top),
+                        endPoint: CGPoint(x: 0, y: bottom)
+                    )
+                )
+                context.stroke(
+                    line,
+                    with: .color(color),
+                    style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round)
+                )
+
+                for point in points {
+                    let dot = CGRect(x: point.x - 4.5, y: point.y - 4.5, width: 9, height: 9)
+                    let shape = Path(ellipseIn: dot)
+                    context.fill(shape, with: .color(pointColor))
+                    context.stroke(shape, with: .color(color), lineWidth: 2)
                 }
             }
         }
