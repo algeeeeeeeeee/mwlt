@@ -308,28 +308,63 @@ struct DashboardView: View {
             }
             .font(MeowlettTypography.font(size: 10, weight: .regular))
             if remaining < 0 {
-                Text(isEnglish ? "You have exceeded your income" : "Pengeluaran sudah melebihi pemasukan")
-                    .font(MeowlettTypography.font(size: 11, weight: .bold))
-                    .foregroundStyle(Color(hex: "#fecaca"))
-                    .padding(.top, 12)
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color(hex: "#fca5a5"))
+                    Text(isEnglish
+                         ? "Spending exceeds income by \(rupiah(abs(remaining)))"
+                         : "Pengeluaran melebihi pemasukan sebesar \(rupiah(abs(remaining)))")
+                        .font(MeowlettTypography.font(size: 11, weight: .bold))
+                        .foregroundStyle(Color(hex: "#fca5a5"))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(hex: "#ef4444").opacity(0.20), in: RoundedRectangle(cornerRadius: 12))
+                .padding(.top, 12)
             }
         }
         .padding(.horizontal, 24)
         .padding(.top, 24)
         .padding(.bottom, 20)
         .background {
-            ZStack {
-                LinearGradient(colors: [primary.opacity(0.55), primary.opacity(0.78), primary], startPoint: .topLeading, endPoint: .bottomTrailing)
-                Circle().fill(primary.opacity(0.55)).frame(width: 240, height: 240).offset(x: 150, y: 110)
-                RoundedRectangle(cornerRadius: 52).fill(accent.opacity(0.18)).frame(width: 160, height: 250).rotationEffect(.degrees(-22)).offset(x: 135, y: -105)
-                Circle().fill(accent.opacity(0.10)).frame(width: 145, height: 145).offset(x: -155, y: -115)
-                Circle().fill(primary.opacity(0.25)).frame(width: 90, height: 90).offset(x: -25, y: 15)
+            GeometryReader { geometry in
+                ZStack {
+                    LinearGradient(
+                        colors: [
+                            Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.5)),
+                            Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.25)),
+                            primary
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    Circle()
+                        .fill(primary.opacity(0.55))
+                        .frame(width: 240, height: 240)
+                        .position(x: geometry.size.width - 55, y: geometry.size.height - 55)
+                    RoundedRectangle(cornerRadius: 52)
+                        .fill(accent.opacity(0.18))
+                        .frame(width: 160, height: 250)
+                        .rotationEffect(.degrees(-22))
+                        .position(x: geometry.size.width - 65, y: 70)
+                    Circle()
+                        .fill(accent.opacity(0.10))
+                        .frame(width: 145, height: 145)
+                        .position(x: 32.5, y: 32.5)
+                    Circle()
+                        .fill(primary.opacity(0.25))
+                        .frame(width: 90, height: 90)
+                        .position(x: geometry.size.width * 0.33 + 45, y: geometry.size.height * 0.36 + 45)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 22))
             }
-            .clipShape(RoundedRectangle(cornerRadius: 22))
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(.white.opacity(0.06), lineWidth: 1))
-        .shadow(color: .black.opacity(0.16), radius: 8, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.22), radius: 8, x: 0, y: 2)
     }
 
     private var streakCard: some View {
