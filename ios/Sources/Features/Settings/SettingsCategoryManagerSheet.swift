@@ -82,7 +82,7 @@ struct SettingsCategoryManagerSheet: View {
                     editorCard(existingKey: editingKey)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(isEnglish ? "ACTIVE CATEGORIES" : "KATEGORI AKTIF")
+                        Text(isEnglish ? "ACTIVE CATEGORIES (\(categories.count))" : "KATEGORI AKTIF (\(categories.count))")
                             .font(MeowlettTypography.font(size: 12, weight: .bold))
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
