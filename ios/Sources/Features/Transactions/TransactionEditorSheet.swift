@@ -65,7 +65,7 @@ struct TransactionEditorSheet: View {
                                 .font(MeowlettTypography.font(size: 13, weight: .heavy))
                                 .foregroundStyle(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 46)
+                                .frame(height: 44)
                                 .background(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
                         }
                         .disabled(descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || amount <= 0)
@@ -86,7 +86,9 @@ struct TransactionEditorSheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .frame(maxWidth: 400)
         .background(AppAppearance.modal(dark: dark))
+        .frame(maxWidth: .infinity)
         .presentationDetents([.fraction(0.88)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
@@ -118,7 +120,7 @@ struct TransactionEditorSheet: View {
 
     private var header: some View {
         HStack {
-            Text(transaction == nil ? (isEnglish ? "New transaction" : "Transaksi baru") : (isEnglish ? "Edit transaction" : "Edit transaksi"))
+            Text(transaction == nil ? (isEnglish ? "New Transaction" : "Transaksi Baru") : (isEnglish ? "Edit Transaction" : "Edit Transaksi"))
                 .font(MeowlettTypography.font(size: 14, weight: .black))
                 .foregroundStyle(.white)
             Spacer()
@@ -132,7 +134,8 @@ struct TransactionEditorSheet: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 13)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
         .background(LinearGradient(colors: [primary, Color(hex: AppAppearance.darken(AppAppearance.primaryHex, ratio: 0.25))], startPoint: .topLeading, endPoint: .bottomTrailing))
     }
 
@@ -272,7 +275,7 @@ struct TransactionEditorSheet: View {
             } else {
                 HStack(spacing: 8) {
                     PhotosPicker(selection: $selectedReceipt, matching: .images) {
-                        Label(isEnglish ? "Upload receipt" : "Unggah struk", systemImage: "photo")
+                        Label(isEnglish ? "Upload" : "Unggah", systemImage: "photo")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
@@ -290,8 +293,8 @@ struct TransactionEditorSheet: View {
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 11)
-                            .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.10), style: StrokeStyle(lineWidth: 1.2, dash: [5, 3])))
+                            .background(categoryChipBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: dark), style: StrokeStyle(lineWidth: 1.5, dash: [5, 3])))
                     }
                     .buttonStyle(.plain)
                     .disabled(!UIImagePickerController.isSourceTypeAvailable(.camera))
