@@ -161,7 +161,15 @@ struct MainTabView: View {
                         .frame(width: geometry.size.width, alignment: .leading)
                     Group {
                         switch selected {
-                        case .dashboard: DashboardView()
+                        case .dashboard:
+                            DashboardView(
+                                onSeeAllTransactions: {
+                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                                        selected = .transactions
+                                    }
+                                },
+                                onAddTransaction: { showQuickAdd = true }
+                            )
                         case .transactions: TransactionsView()
                         case .report: ReportsView()
                         case .date: DateTabView()
