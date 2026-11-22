@@ -5,19 +5,15 @@ on:
     branches:
       - main
       - native-swift-parity
-    paths:
-      - 'ios/**'
-      - 'public/meow.png'
-      - 'src/**'
-      - 'index.html'
-      - '.github/workflows/ios-native.yml'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches:
       - main
     paths:
       - 'ios/**'
       - 'public/meow.png'
-      - '.github/workflows/ios-native.yml'
 
 permissions:
   contents: read
