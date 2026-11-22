@@ -4,7 +4,7 @@
 - **Repo:** `algeeeeeeeeee/mwlt`
 - **Branch:** `native-swift-parity`
 - **SHA source yang diaudit:** `f03ed90b2fa2ac4fd50124787f9b15bb992bca5e`
-- **SHA branch saat pembaruan dokumen:** `86d8b3aab771ec078554218bfe6411cd5bfbba6e`
+- **SHA dasar saat pembaruan dokumen (sebelum commit checkpoint ini):** `5586a03e27cc65e820668f9be021778efcf23200`
 - **PR:** [#2 — Draft Meowlett native SwiftUI parity](https://github.com/algeeeeeeeeee/mwlt/pull/2), base `main`, head `native-swift-parity`, masih Draft dan belum di-merge.
 - **Prioritas aktif:** P0 — stabilitas, bukti, dan akar masalah CI.
 - **Source aplikasi diubah dalam sesi audit ini:** TIDAK. Semua commit sesi audit hanya menambah/memperbarui `AUDIT.md` dan `CHECKPOINT.md`.
@@ -155,3 +155,72 @@ PR #2 tetap Draft; jangan merge, force-push, atau hapus branch/file/workflow/tes
 6. Setelah P0: mulai P1 satu prioritas penuh, lalu otomatisasi PREVIEW.png Light/Dark per layar/modal.
 
 PR #2 tetap Draft; tidak di-merge dan tidak force-push. Tidak ada pekerjaan P1 yang dimulai.
+
+## Follow-up checkpoint — 23 November 2026 (pemeriksaan sampai HEAD `5586a03`)
+
+### Git log setelah `86d8b3a`
+
+Commit berikut masuk ke `native-swift-parity` setelah `86d8b3aab771ec078554218bfe6411cd5bfbba6e`:
+
+1. `1d39c07c6d28368802ff3cedc35509f14e6ddf5f` — `docs: record P0 diagnostics and final design decisions`
+2. `93c323ffbc9e5f8247e959b9576e6218b1da5e23` — `docs: correct Settings hit-testing diagnosis from run 267`
+3. `2648f21170352b86c74347830b78e81e8a6201b7` — `docs: refresh P0 workflow checkpoint status`
+4. `2a0454a12d94d341e1d64bf6f72567cc24062a33` — `test: isolate UI state and trace fixed-control presenters`
+5. `1e5c0df9bfbbca84cd8e3d2338349e79af114820` — `test: register fixed-control tap comparisons`
+6. `b881e36f70aac931ce3195ebdfcbf039ea731e68` — `docs: checkpoint P0 hit-testing and presenter diagnostics`
+7. `5586a03e27cc65e820668f9be021778efcf23200` — `test: verify dashboard return via selected tab state`
+
+Tidak ada commit aplikasi atau perubahan P1 dalam rentang commit tersebut; perubahan kode adalah instrumentasi/perubahan UI test. Sisanya dokumentasi.
+
+### CI #269 dan semua run sesudahnya
+
+| Run | SHA | Status / hasil | Link |
+|---|---|---|---|
+| #269 | `86d8b3a` | **failure** — build simulator sukses, UI test gagal | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048943679 |
+| #270 | `86d8b3a` | cancelled | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45048948747 |
+| #271 | `1d39c07` | cancelled | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45049365636 |
+| #272 | `93c323f` | cancelled | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45050095292 |
+| #273 | `2648f21` | **failure** — build simulator sukses, UI tests gagal | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45050210655 |
+| #274 | `2a0454a` | cancelled | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052431641 |
+| #275 | `2a0454a` | cancelled | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052435437 |
+| #276 | `1e5c0df` | cancelled setelah pengujian berjalan; diagnostic log tersimpan | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052948878 |
+| #277 | `1e5c0df` | cancelled ketika paired test Quick Add sedang berjalan; artifact parsial | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45052955026 |
+| #278 | `b881e36` | cancelled sebelum test case mulai; artifact hanya log bootstrap/scheduling | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45054056046 |
+| #279 | `5586a03` | **in_progress** saat pemeriksaan; tidak menunggu hasil | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45054430735 |
+| #280 | `5586a03` | **in_progress** saat pemeriksaan; tidak menunggu hasil | https://github.com/algeeeeeeeeee/mwlt/actions/runs/45054435413 |
+
+### Artifact diagnostik `.xcresult`
+
+**ADA.** Workflow upload artifact `Meowlett-UI-Test-Diagnostics` dari `$RUNNER_TEMP/MeowlettUITests.xcresult`. Artifact tersedia untuk #269 (160.668.376 bytes), #273 (129.745.096 bytes), #274/#275 (parsial), #276 (26.876.112 bytes), #277 (20.538.580 bytes), dan #278 (5.191 bytes). #279/#280 belum memiliki artifact pada pemeriksaan ini.
+
+Snapshot yang paling baru dan masih memiliki rekaman test interaksi untuk Settings/FAB adalah #276. Artifact #278 lebih baru secara waktu upload, tetapi isinya hanya session bootstrap (tidak ada `Test Case`, `MeowlettHitPoint`, atau paired-test snapshot). #279/#280 masih berjalan dan tidak ditunggu.
+
+### Kutipan snapshot #276
+
+**Settings** — `testSettingsHeaderStandardTapVersusCoordinateTap`:
+- `exists=true`: elemen Button ditemukan melalui accessibility query dengan identifier.
+- `label=Pengaturan`, `identifier=mwlt.header.settings`, `enabled=true`.
+- `hittable=false` pada snapshot sebelum standard tap.
+- `frame=(288.0, 69.0, 44.0, 44.0)`; `center=(310.0, 91.0)`.
+- `overlays.sheet=false, alert=false, keyboard=false`.
+- Pada dua snapshot lain pada run #276, identifier dan frame yang sama mencatat `hittable=true`.
+- Debug description memuat Button dan Image `gearshape` pada frame 44×44. Candidate list juga berisi container/ancestor layar penuh dan ScrollView; tidak mengidentifikasi satu elemen overlay tertentu yang menutupi titik tengah.
+
+**Perbandingan Settings:** pada paired test, `button.tap()` memulai gesture tetapi XCTest menghitung hit point `(-1, -1)`, mencatat `Element not hittable`, lalu gagal pada `kAXErrorCannotComplete` / `kAXScrollToVisibleAction` (assertion di `MeowlettUITests.swift:495`). Test berhenti di jalur standard tap itu; coordinate leg pada paired test **tidak tercapai**. Secara terpisah pada run yang sama, helper memakai coordinate-center fallback saat identifier ada dan enabled, dan test `testSettingsBackupActionBuildsAndRequestsExport` lulus. Jadi ada bukti coordinate fallback pada Settings berhasil dalam alur test lain, tetapi bukan hasil paired A/B yang tuntas.
+
+**FAB / Quick Add** — paired test `testQuickAddStandardTapVersusCoordinateTap`:
+- `exists=true`, `label=Tambah transaksi`, `identifier=mwlt.quickAdd`, `enabled=true`, `hittable=true`.
+- `frame=(25.6667, 739.0, 54.0, 54.0)`; `center=(52.6667, 766.0)`.
+- `overlays.sheet=false, alert=false, keyboard=false`.
+- `button.tap()` menghasilkan `opened=true`; setelah relaunch, `coordinate(center)` juga menghasilkan `opened=true`. Paired test lulus.
+
+### Kesimpulan berbasis bukti (tidak mengubah source/test)
+
+- **Settings: bukti lebih mendukung B — predicate/hit-point XCTest tidak cocok secara konsisten untuk fixed header/container.** Frame 44×44, identifier, label dan enabled benar; `hittable` berubah false/true pada frame yang sama; coordinate fallback pada test Settings lain dapat menyelesaikan alur Backup. Tidak ada bukti spesifik bahwa overlay fisik menutupi tombol. Penyebab lebih dalam dari kegagalan AX `ScrollToVisible` (misalnya perilaku hosting/container SwiftUI) **BELUM TERBUKTI**.
+- **Quick Add: bukan gejala hittable yang sama pada run #276.** FAB hittable dan kedua metode tap membuka editor pada paired test. Ini tidak dengan sendirinya menjelaskan historical failure #267; akar penyebab kegagalan lama Quick Add **BELUM TERBUKTI**.
+- **Perbandingan paired Settings A/B belum lengkap** karena standard `.tap()` gagal lebih dahulu sehingga coordinate leg tidak dijalankan dalam paired test. Jangan menyatakan bahwa paired comparison Settings sudah lulus.
+- P0 belum selesai; belum ada lima run hijau yang memenuhi K6. Tidak ada tag `checkpoint/p0-done`.
+
+### Batas perubahan pada checkpoint ini
+
+Hanya `CHECKPOINT.md` yang diperbarui. Tidak ada perubahan app source, test/helper, workflow, atau konfigurasi. PR #2 tetap Draft dan belum di-merge. Tidak ada pekerjaan P1 atau PREVIEW.png yang dimulai.
