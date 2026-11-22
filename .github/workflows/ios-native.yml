@@ -228,6 +228,11 @@ jobs:
               # Give its initial app/store setup more time than warm tab switches.
               launch_timeout=150
               settle_seconds=6
+            elif [ "$filename" = "03-date.png" ]; then
+              # The Date tab has its own initial data/layout pass; allow it to settle
+              # before capturing the first-frame preview.
+              launch_timeout=120
+              settle_seconds=6
             fi
             for attempt in 1 2; do
               echo "Launching preview $filename (attempt $attempt)..."

@@ -148,9 +148,24 @@ struct MainTabView: View {
     @AppStorage("gm_notif") private var notificationsEnabled = "0"
     @EnvironmentObject private var store: FinanceStore
     @StateObject private var modalBlurCoordinator = ModalBlurCoordinator()
-    @State private var selected: MeowlettTab = .dashboard
-    @State private var showQuickAdd = false
+    @State private var selected: MeowlettTab
+    @State private var showQuickAdd: Bool
     @State private var selectedHeaderPhoto: PhotosPickerItem?
+
+    init() {
+        // Preview routing must be ready before the first SwiftUI frame.
+        // Changing tabs from onAppear can capture a blank first frame for
+        // views that need a fresh initial layout, such as the Date tab.
+        let arguments = ProcessInfo.processInfo.arguments
+        let previewTabArgument = arguments.first {
+            $0.hasPrefix("--mwlt-preview-tab=")
+        }
+        let previewTab = previewTabArgument.flatMap {
+            MeowlettTab(rawValue: String($0.dropFirst("--mwlt-preview-tab=".count)))
+        }
+        _selected = State(initialValue: previewTab ?? .dashboard)
+        _showQuickAdd = State(initialValue: arguments.contains("--mwlt-preview-quick-add"))
+    }
 
     private var isEnglish: Bool { language == "en" }
     private var tint: Color {
@@ -208,17 +223,6 @@ struct MainTabView: View {
         .tint(tint)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
-            // Deterministic launch routing is used only by the simulator preview workflow.
-            let arguments = ProcessInfo.processInfo.arguments
-            if let argument = arguments.first(where: { $0.hasPrefix("--mwlt-preview-tab=") }) {
-                let rawValue = String(argument.dropFirst("--mwlt-preview-tab=".count))
-                if let previewTab = MeowlettTab(rawValue: rawValue) {
-                    selected = previewTab
-                }
-            }
-            if arguments.contains("--mwlt-preview-quick-add") {
-                showQuickAdd = true
-            }
             RecurringTransactionAutomation.processDueItems(store: store)
         }
         .sheet(isPresented: $showQuickAdd) {

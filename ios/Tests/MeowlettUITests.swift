@@ -216,6 +216,22 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    func testDatePreviewLaunchStartsOnDateTab() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--mwlt-preview-mode", "--mwlt-preview-tab=date"]
+        app.launch()
+
+        XCTAssertTrue(
+            app.staticTexts["mwlt.screen.date"].waitForExistence(timeout: 15),
+            "A direct Date preview launch should render the Date header on its first screen."
+        )
+        XCTAssertTrue(
+            app.buttons["mwlt.date.addWishlist"].waitForExistence(timeout: 8),
+            "A direct Date preview launch should render Date tab content."
+        )
+    }
+
+    @MainActor
     func testDateWishlistSheetCanBeOpened() {
         let app = XCUIApplication()
         app.launchArguments = ["--mwlt-preview-mode"]
