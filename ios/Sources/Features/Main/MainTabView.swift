@@ -294,6 +294,7 @@ struct MainTabView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isEnglish ? "Settings" : "Pengaturan")
             .accessibilityIdentifier("mwlt.header.settings")
             PhotosPicker(selection: $selectedHeaderPhoto, matching: .images) {
                 ZStack(alignment: .bottomTrailing) {
@@ -416,6 +417,7 @@ struct MainTabView: View {
                         .contentShape(RoundedRectangle(cornerRadius: 20))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(isEnglish ? tab.titleEN : tab.titleID)
                     .accessibilityIdentifier("mwlt.tab.\(tab.rawValue)")
                     .fixedSize(horizontal: true, vertical: false)
                 }
