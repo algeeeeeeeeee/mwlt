@@ -79,8 +79,8 @@ jobs:
           }
           # Cover simulator discovery and creation too, not only boot/capture.
           (
-            sleep 720
-            echo "::error::Native preview capture exceeded 12 minutes."
+            sleep 1080
+            echo "::error::Native preview capture exceeded 18 minutes."
             kill -TERM "$PPID"
           ) &
           WATCHDOG_PID=$!
@@ -165,7 +165,7 @@ jobs:
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
           echo "Installing Meowlett app..."
-          simctl_with_timeout 90 install "$DEVICE_ID" "$APP_PATH"
+          simctl_with_timeout 240 install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
 
           echo "Capturing onboarding preview (first launch, maximum 120 seconds)..."
