@@ -210,10 +210,18 @@ jobs:
             shift
             local output="$RUNNER_TEMP/MeowlettPreviews/$filename"
             local attempt
+            local launch_timeout=75
+            local settle_seconds=2
+            if [ "$filename" = "02-dashboard.png" ]; then
+              # Dashboard is the first native screen opened after a fresh install.
+              # Give its initial app/store setup more time than warm tab switches.
+              launch_timeout=150
+              settle_seconds=6
+            fi
             for attempt in 1 2; do
               echo "Launching preview $filename (attempt $attempt)..."
-              if simctl_with_timeout 75 launch "$DEVICE_ID" com.mwlt.meowlett "$@"; then
-                sleep 2
+              if simctl_with_timeout "$launch_timeout" launch "$DEVICE_ID" com.mwlt.meowlett "$@"; then
+                sleep "$settle_seconds"
                 if simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$output"; then
                   echo "Captured $filename"
                   CAPTURED_COUNT=$((CAPTURED_COUNT + 1))
@@ -235,7 +243,7 @@ jobs:
             echo "::warning::Could not set onboarding preference before preview launch."
           fi
 
-          capture_preview "02-dashboard.png" --mwlt-preview-seed-data || true
+          capture_preview "02-dashboard.png" --mwlt-preview-seed-data --mwlt-preview-tab=dashboard || true
           for TAB in transactions report date settings; do
             capture_preview "03-$TAB.png" --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB" || true
           done
@@ -243,10 +251,22 @@ jobs:
 
           echo "Captured $CAPTURED_COUNT native preview screen(s):"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
-          if [ "$CAPTURED_COUNT" -eq 0 ]; then
-            echo "::error::No native preview screenshots could be captured."
-            exit 1
-          fi
+
+          # A successful partial collage must not hide a missing core tab.
+          REQUIRED_PREVIEWS=(
+            "02-dashboard.png"
+            "03-transactions.png"
+            "03-report.png"
+            "03-date.png"
+            "03-settings.png"
+            "08-quick-add.png"
+          )
+          for PREVIEW in "${REQUIRED_PREVIEWS[@]}"; do
+            if [ ! -s "$RUNNER_TEMP/MeowlettPreviews/$PREVIEW" ]; then
+              echo "::error::Required native preview is missing: $PREVIEW"
+              exit 1
+            fi
+          done
 
       - name: Assemble a single native preview image
         run: |
