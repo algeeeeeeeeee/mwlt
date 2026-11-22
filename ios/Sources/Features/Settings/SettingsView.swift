@@ -719,8 +719,11 @@ private struct SettingsDataSheet: View {
                 Text("Data").font(MeowlettTypography.font(size: 17, weight: .black))
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
-                    .font(MeowlettTypography.font(size: 12, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                    .foregroundStyle(Color.primary.opacity(0.72))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
             }
             Button {
                 backupFile = makeBackupFile()
@@ -730,7 +733,8 @@ private struct SettingsDataSheet: View {
                     symbol: "arrow.down.to.line",
                     title: isEnglish ? "Backup data" : "Backup data",
                     subtitle: isEnglish ? "Export a full JSON backup" : "Ekspor cadangan data lengkap",
-                    color: AppAppearance.accent
+                    color: AppAppearance.accent,
+                    variant: "accent"
                 )
             }
             .buttonStyle(.plain)
@@ -740,19 +744,21 @@ private struct SettingsDataSheet: View {
                     symbol: "arrow.up.to.line",
                     title: isEnglish ? "Restore backup" : "Pulihkan backup",
                     subtitle: isEnglish ? "Restore from a Meowlett JSON file" : "Pulihkan dari file JSON Meowlett",
-                    color: AppAppearance.primary
+                    color: AppAppearance.primary,
+                    variant: "neutral"
                 )
             }
             .buttonStyle(.plain)
 
-            Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1).padding(.vertical, 3)
+            Rectangle().fill(cardBorder).frame(height: 1).padding(.vertical, 4)
 
             Button { showResetConfirm = true } label: {
                 dataAction(
                     symbol: "trash",
                     title: isEnglish ? "Reset data" : "Reset data",
                     subtitle: isEnglish ? "Delete finance data on this device" : "Hapus data keuangan di perangkat ini",
-                    color: Color(hex: "#ef4444")
+                    color: Color(hex: "#ef4444"),
+                    variant: "danger"
                 )
             }
             .buttonStyle(.plain)
@@ -898,19 +904,29 @@ private struct SettingsDataSheet: View {
         dismiss()
     }
 
-    private func dataAction(symbol: String, title: String, subtitle: String, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .bold)).foregroundStyle(color)
-                .frame(width: 38, height: 38).background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+    private func dataAction(symbol: String, title: String, subtitle: String, color: Color, variant: String) -> some View {
+        let isAccent = variant == "accent"
+        let isDanger = variant == "danger"
+        let foreground = isAccent ? color : (isDanger ? color : Color.primary)
+        let surface = isAccent ? color.opacity(0.09) : (isDanger ? color.opacity(0.07) : AppAppearance.card2(dark: isDark))
+        let iconSurface = isAccent ? color.opacity(0.15) : (isDanger ? color.opacity(0.12) : AppAppearance.card2(dark: isDark))
+        let borderColor = isAccent ? color.opacity(0.40) : (isDanger ? color.opacity(0.21) : cardBorder)
+
+        return HStack(spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 18, weight: .regular)).foregroundStyle(foreground)
+                .frame(width: 38, height: 38).background(iconSurface, in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(color)
-                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
+                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(foreground)
+                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .foregroundStyle(isAccent || isDanger ? foreground.opacity(0.7) : Color.secondary)
             }
             Spacer()
         }
         .padding(14)
-        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.25), lineWidth: 1.5))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(surface, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(borderColor, lineWidth: 1.5))
+        .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 
