@@ -231,7 +231,7 @@ struct MainTabView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .top)
 
-                    // The PWA uses a fixed 20pt backdrop blur over scrolling content.
+                    // Match the PWA's fixed 20px backdrop blur while content scrolls beneath it.
                     // Keep the native header layered above the scroll views so cards
                     // move underneath its translucent material while scrolling.
                     topHeader
