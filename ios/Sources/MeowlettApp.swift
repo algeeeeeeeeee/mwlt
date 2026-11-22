@@ -3,7 +3,31 @@ import SwiftUI
 @main
 struct MeowlettApp: App {
     init() {
+        Self.resetUITestPersistenceIfRequested()
         MeowlettTypography.registerBundledFonts()
+    }
+
+    private static func resetUITestPersistenceIfRequested() {
+        guard ProcessInfo.processInfo.arguments.contains("-uitest-reset") else { return }
+
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "com.mwlt.meowlett"
+        UserDefaults.standard.removePersistentDomain(forName: bundleIdentifier)
+        UserDefaults.standard.synchronize()
+
+        let supportRoot = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        let transactionsDirectory = supportRoot?.appendingPathComponent("Meowlett", isDirectory: true)
+        var fileState = "not-found"
+        if let transactionsDirectory, FileManager.default.fileExists(atPath: transactionsDirectory.path) {
+            do {
+                try FileManager.default.removeItem(at: transactionsDirectory)
+                fileState = "removed"
+            } catch {
+                fileState = "failed: \(error.localizedDescription)"
+            }
+        }
+
+        let timestamp = String(format: "%.3f", Date().timeIntervalSince1970)
+        NSLog("[MeowlettUITestReset] timestamp=%@ defaultsDomain=%@ transactionsDirectory=%@", timestamp, bundleIdentifier, fileState)
     }
 
     var body: some Scene {

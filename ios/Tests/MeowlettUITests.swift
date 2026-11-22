@@ -3,6 +3,42 @@ import XCTest
 final class MeowlettUITests: XCTestCase {
 
     @MainActor
+    private func launchUITestApp(_ app: XCUIApplication, additionalArguments: [String] = []) {
+        app.launchArguments = ["-uitest-reset", "--mwlt-preview-mode"] + additionalArguments
+        app.launch()
+    }
+
+    @MainActor
+    private func recordHitPointDiagnostics(
+        for element: XCUIElement,
+        named name: String,
+        in app: XCUIApplication
+    ) {
+        let frame = element.frame
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        let candidates = app.descendants(matching: .any).allElementsBoundByIndex.compactMap { candidate -> String? in
+            guard candidate.exists, candidate.frame.contains(center) else { return nil }
+            return "type=\(candidate.elementType), label=\(candidate.label), identifier=\(candidate.identifier), enabled=\(candidate.isEnabled), hittable=\(candidate.isHittable), frame=\(candidate.frame)"
+        }
+
+        print("""
+        [MeowlettHitPoint] name=\(name)
+        target.type=\(element.elementType)
+        target.label=\(element.label)
+        target.identifier=\(element.identifier)
+        target.enabled=\(element.isEnabled)
+        target.hittable=\(element.isHittable)
+        target.frame=\(frame)
+        target.center=\(center)
+        center.accessibility.frame-candidates:
+        \(candidates.joined(separator: "\n"))
+        overlays.sheet=\(app.sheets.firstMatch.exists), alert=\(app.alerts.firstMatch.exists), keyboard=\(app.keyboards.firstMatch.exists)
+        target.debugDescription:
+        \(element.debugDescription)
+        """)
+    }
+
+    @MainActor
     private func captureAccessibilitySnapshot(
         named name: String,
         app: XCUIApplication,
@@ -15,7 +51,7 @@ final class MeowlettUITests: XCTestCase {
             let enabled = exists && element.isEnabled
             let frame = exists ? String(describing: element.frame) : "unavailable"
             let description = exists ? element.debugDescription : "<not in accessibility hierarchy>"
-            return "\(entry.0): exists=\(exists), hittable=\(hittable), enabled=\(enabled), frame=\(frame)\n\(description)"
+            return "\(entry.0): exists=\(exists), hittable=\(hittable), enabled=\(enabled), label=\(element.label), identifier=\(element.identifier), frame=\(frame)\n\(description)"
         }.joined(separator: "\n")
 
         let report = """
@@ -110,15 +146,26 @@ final class MeowlettUITests: XCTestCase {
     private func tapSettingsHeader(in app: XCUIApplication) {
         let button = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(button.waitForExistence(timeout: 15), "Settings header button is missing.")
-        let hittable = expectation(
-            for: NSPredicate(format: "hittable == true"),
-            evaluatedWith: button,
-            handler: nil
-        )
-        let hittableResult = XCTWaiter.wait(for: [hittable], timeout: 5)
-        if hittableResult != .completed {
+        XCTAssertTrue(button.isEnabled, "Settings header must remain enabled.")
+        recordHitPointDiagnostics(for: button, named: "settings-header", in: app)
+
+        // Runs #269 and #273 show the same 44×44 identifier-backed header in its
+        // expected top-right frame, with no sheet/alert/keyboard. XCTest's
+        // isHittable value intermittently reports false even though a center
+        // coordinate event opens Settings. It selects a gesture; it is never
+        // a pass criterion. The destination screen is asserted below.
+        if button.isHittable {
+            print("[MeowlettTapStrategy] Settings -> button.tap()")
+            button.tap()
+        } else {
+            print("[MeowlettTapStrategy] Settings -> coordinate(center) fallback; identifier exists and enabled")
+            button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+
+        let opened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
+        if !opened {
             captureAccessibilitySnapshot(
-                named: "settings-header-not-hittable",
+                named: "settings-screen-did-not-open-after-tap",
                 app: app,
                 elements: [
                     ("settingsHeader", button),
@@ -129,26 +176,12 @@ final class MeowlettUITests: XCTestCase {
                 ]
             )
         }
-        XCTAssertEqual(hittableResult, .completed, "Settings header did not become hittable before tap.")
-        // Coordinate fallback is used only after the normal accessibility element exists and is hittable.
-        captureAccessibilitySnapshot(
-            named: "settings-header-before-coordinate-fallback",
-            app: app,
-            elements: [
-                ("settingsHeader", button),
-                ("settingsHeading", app.staticTexts["mwlt.screen.settings"]),
-                ("sheet", app.sheets.firstMatch),
-                ("alert", app.alerts.firstMatch),
-                ("keyboard", app.keyboards.firstMatch)
-            ]
-        )
-        button.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertTrue(opened, "Settings header tap must open the Settings screen.")
     }
 
     @MainActor
     private func openSettingsDataSheet(in app: XCUIApplication) {
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        launchUITestApp(app)
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
@@ -164,8 +197,7 @@ final class MeowlettUITests: XCTestCase {
     @MainActor
     func testNativeOpeningSplashAppearsAndDismisses() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode", "--mwlt-test-splash"]
-        app.launch()
+        launchUITestApp(app, additionalArguments: ["--mwlt-test-splash"])
 
         let splashTitle = app.staticTexts["mwlt.splash.title"]
         XCTAssertTrue(
@@ -186,18 +218,17 @@ final class MeowlettUITests: XCTestCase {
     @MainActor
     func testMainTabsQuickAddAndCalculatorPresentation() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        launchUITestApp(app)
 
         XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
         let dashboardScroll = app.scrollViews.firstMatch
         XCTAssertTrue(dashboardScroll.waitForExistence(timeout: 8), "Dashboard scroll view is missing.")
         dashboardScroll.swipeUp()
-        XCTAssertTrue(
-            app.buttons["mwlt.header.settings"].isHittable,
-            "The frosted header must remain pinned above dashboard content while scrolling."
-        )
-        dashboardScroll.swipeDown()
+        tapSettingsHeader(in: app)
+        tapTab("dashboard", app: app)
+        let returnedDashboardScroll = app.scrollViews.firstMatch
+        XCTAssertTrue(returnedDashboardScroll.waitForExistence(timeout: 8), "Dashboard scroll view should return after navigating back.")
+        returnedDashboardScroll.swipeDown()
         tapTab("transactions", app: app)
         tapTab("report", app: app)
         tapTab("date", app: app)
@@ -232,8 +263,7 @@ final class MeowlettUITests: XCTestCase {
     @MainActor
     func testSettingsNotificationsShowSystemPermissionStatus() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        launchUITestApp(app)
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
@@ -253,8 +283,7 @@ final class MeowlettUITests: XCTestCase {
     @MainActor
     func testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        launchUITestApp(app)
 
         let settingsButton = app.buttons["mwlt.header.settings"]
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
@@ -396,15 +425,12 @@ final class MeowlettUITests: XCTestCase {
     func testQuickAddSavesTransactionAndShowsItInTransactionsList() {
         let app = XCUIApplication()
         let transactionName = "CI Flow " + String(UUID().uuidString.prefix(6))
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        launchUITestApp(app)
 
         let quickAddButton = app.buttons["mwlt.quickAdd"]
         XCTAssertTrue(waitForElement(quickAddButton, label: "quick-add-button", app: app, timeout: 15))
-        if !quickAddButton.isHittable {
-            captureAccessibilitySnapshot(named: "quick-add-not-hittable", app: app, elements: [("quickAdd", quickAddButton), ("sheet", app.sheets.firstMatch), ("alert", app.alerts.firstMatch), ("keyboard", app.keyboards.firstMatch)])
-        }
-        XCTAssertTrue(quickAddButton.isHittable, "Quick Add button is present but not hittable.")
+        recordHitPointDiagnostics(for: quickAddButton, named: "quick-add-before-standard-tap", in: app)
+        print("[MeowlettTapStrategy] Quick Add save flow -> button.tap()")
         quickAddButton.tap()
 
         let editorTitleBeforeSave = app.staticTexts["mwlt.transactionEditor.title"]
@@ -459,9 +485,61 @@ final class MeowlettUITests: XCTestCase {
 
     @MainActor
     func testDatePreviewLaunchStartsOnDateTab() {
+    @MainActor
+    func testSettingsHeaderStandardTapVersusCoordinateTap() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode", "--mwlt-preview-tab=date"]
-        app.launch()
+        launchUITestApp(app)
+
+        let standardButton = app.buttons["mwlt.header.settings"]
+        XCTAssertTrue(standardButton.waitForExistence(timeout: 15))
+        recordHitPointDiagnostics(for: standardButton, named: "settings-header-before-button-tap", in: app)
+        print("[MeowlettTapComparison] control=settings method=button.tap()")
+        standardButton.tap()
+        let standardOpened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
+        print("[MeowlettTapComparison] control=settings method=button.tap() opened=\(standardOpened)")
+
+        app.terminate()
+        launchUITestApp(app)
+
+        let coordinateButton = app.buttons["mwlt.header.settings"]
+        XCTAssertTrue(coordinateButton.waitForExistence(timeout: 15))
+        recordHitPointDiagnostics(for: coordinateButton, named: "settings-header-before-coordinate-tap", in: app)
+        print("[MeowlettTapComparison] control=settings method=coordinate(center)")
+        coordinateButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let coordinateOpened = app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8)
+        print("[MeowlettTapComparison] control=settings method=coordinate(center) opened=\(coordinateOpened)")
+        XCTAssertTrue(coordinateOpened, "The coordinate-center tap must open Settings when the accessibility identifier is available.")
+    }
+
+    @MainActor
+    func testQuickAddStandardTapVersusCoordinateTap() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+
+        let standardButton = app.buttons["mwlt.quickAdd"]
+        XCTAssertTrue(standardButton.waitForExistence(timeout: 15))
+        recordHitPointDiagnostics(for: standardButton, named: "quick-add-before-button-tap", in: app)
+        print("[MeowlettTapComparison] control=quick-add method=button.tap()")
+        standardButton.tap()
+        let standardOpened = app.staticTexts["mwlt.transactionEditor.title"].waitForExistence(timeout: 8)
+        print("[MeowlettTapComparison] control=quick-add method=button.tap() opened=\(standardOpened)")
+
+        app.terminate()
+        launchUITestApp(app)
+
+        let coordinateButton = app.buttons["mwlt.quickAdd"]
+        XCTAssertTrue(coordinateButton.waitForExistence(timeout: 15))
+        recordHitPointDiagnostics(for: coordinateButton, named: "quick-add-before-coordinate-tap", in: app)
+        print("[MeowlettTapComparison] control=quick-add method=coordinate(center)")
+        coordinateButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        let coordinateOpened = app.staticTexts["mwlt.transactionEditor.title"].waitForExistence(timeout: 8)
+        print("[MeowlettTapComparison] control=quick-add method=coordinate(center) opened=\(coordinateOpened)")
+        XCTAssertTrue(coordinateOpened, "The coordinate-center tap must present Quick Add.")
+    }
+
+
+        let app = XCUIApplication()
+        launchUITestApp(app, additionalArguments: ["--mwlt-preview-tab=date"])
 
         XCTAssertTrue(
             app.staticTexts["mwlt.screen.date"].waitForExistence(timeout: 15),
@@ -476,8 +554,7 @@ final class MeowlettUITests: XCTestCase {
     @MainActor
     func testDateWishlistSheetCanBeOpened() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        launchUITestApp(app)
 
         XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
         tapTab("date", app: app)

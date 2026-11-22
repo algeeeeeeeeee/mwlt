@@ -251,7 +251,15 @@ struct MainTabView: View {
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: colorSchemeIsDark)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
+            recordQuickAddLifecycle("main-tab-onAppear")
             RecurringTransactionAutomation.processDueItems(store: store)
+        }
+        .onChange(of: showQuickAdd) { oldValue, newValue in
+            recordQuickAddLifecycle("showQuickAdd-state-change old=\(oldValue) new=\(newValue)", presented: newValue)
+        }
+        .onChange(of: selected) { oldValue, newValue in
+            guard showQuickAdd else { return }
+            recordQuickAddLifecycle("selected-tab-change old=\(oldValue.rawValue) new=\(newValue.rawValue)")
         }
         .onChange(of: selectedHeaderPhoto) { _, item in
             guard let item else { return }
@@ -393,11 +401,20 @@ struct MainTabView: View {
         return hour < 12 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam"
     }
 
+    private func recordQuickAddLifecycle(_ event: String, presented: Bool? = nil) {
+        #if DEBUG
+        let timestamp = String(format: "%.3f", Date().timeIntervalSince1970)
+        let activePresenters = modalBlurCoordinator.activePresentations.sorted().joined(separator: ",")
+        print("[MeowlettQuickAdd] timestamp=\(timestamp) event=\(event) showQuickAdd=\(presented ?? showQuickAdd) selected=\(selected.rawValue) activeOtherPresenters=\(activePresenters)")
+        #endif
+    }
+
     private var bottomNavigation: some View {
         HStack(spacing: 0) {
             Spacer(minLength: 0)
             HStack(spacing: 10) {
             Button {
+                recordQuickAddLifecycle("FAB-tap-request", presented: true)
                 showQuickAdd = true
             } label: {
                 Image(systemName: "plus")
@@ -481,9 +498,20 @@ struct MainTabView: View {
         // Present from the persistent dock rather than the Dashboard's nested sheet host.
         // Dashboard owns its own sheets, so keeping Quick Add on a sibling avoids competing
         // SwiftUI sheet presenters while preserving the dock and blurred backdrop.
-        .sheet(isPresented: $showQuickAdd) {
+        .sheet(
+            isPresented: $showQuickAdd,
+            onDismiss: {
+                recordQuickAddLifecycle("sheet-onDismiss", presented: false)
+            }
+        ) {
             TransactionEditorSheet(initialCategory: "food")
                 .environmentObject(store)
+                .onAppear {
+                    recordQuickAddLifecycle("editor-content-onAppear")
+                }
+                .onDisappear {
+                    recordQuickAddLifecycle("editor-content-onDisappear")
+                }
         }
     }
 

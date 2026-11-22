@@ -217,6 +217,10 @@ struct DashboardView: View {
             .onChange(of: budgets) { _, value in persistBudgets(value) }
             .onChange(of: savingsGoals) { _, value in persistSavingsGoals(value) }
             .onChange(of: activeSheet != nil) { _, presented in
+                #if DEBUG
+                let timestamp = String(format: "%.3f", Date().timeIntervalSince1970)
+                print("[MeowlettPresenter] timestamp=\(timestamp) host=dashboard active=\(presented) activeSheet=\(String(describing: activeSheet))")
+                #endif
                 modalBlurCoordinator.set("dashboard", isPresented: presented)
             }
             .onDisappear { modalBlurCoordinator.set("dashboard", isPresented: false) }
