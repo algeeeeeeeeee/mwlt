@@ -183,6 +183,8 @@ struct TransactionsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
+        .blur(radius: showEditor ? 8 : 0)
+        .animation(.easeInOut(duration: 0.2), value: showEditor)
         .overlay(alignment: .bottom) {
             if showUndoToast, let deleted = recentlyDeletedTransaction {
                 undoToast(for: deleted)
