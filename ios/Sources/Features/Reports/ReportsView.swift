@@ -1131,7 +1131,7 @@ struct ReportsView: View {
 }
 
 private struct ReportExportDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.html, .png] }
+    static var readableContentTypes: [UTType] { [.html, .png, .commaSeparatedText] }
     let data: Data
 
     init(data: Data) {
