@@ -89,7 +89,7 @@ struct TransactionEditorSheet: View {
         .frame(maxWidth: 400)
         .background(AppAppearance.modal(dark: dark))
         .frame(maxWidth: .infinity)
-        .presentationDetents([.fraction(0.88)])
+        .presentationDetents([.height(520)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
         .presentationBackground(AppAppearance.modal(dark: dark))
