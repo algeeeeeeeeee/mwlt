@@ -382,3 +382,14 @@ The job logs show the source path for the upload as `$RUNNER_TEMP/MeowlettUITest
 4. **Quick Add:** `testQuickAddSavesTransactionAndShowsItInTransactionsList` and `testQuickAddStandardTapVersusCoordinateTap` passed in both #289 and #290. Their historical Quick Add failure in #267 was not reproduced in these two runs; this does not by itself prove all Quick Add presenter edge cases fixed.
 
 No app source or workflow changes are implied by this diagnosis. P0 remains open; K6 (five green validations) remains **BELUM TERVERIFIKASI**. Do not create `checkpoint/p0-done`. PR #2 remains Draft.
+
+
+## Paired Settings test correction — no expected failure
+
+- Replaced the body of only `testSettingsHeaderStandardTapVersusCoordinateTap` in `ios/Tests/MeowlettUITests.swift`. No app source, other test, helper outside this test, or workflow was changed.
+- Removed `XCTExpectFailure` entirely. The test temporarily sets `continueAfterFailure = true` and restores the previous value with `defer`. This lets XCTest record a failure from `button.tap()` without aborting the test method before the independent coordinate activity executes.
+- The standard and coordinate legs each run in their own `XCTContext.runActivity`, start from a fresh app launch, use the Settings accessibility identifier, record hit-testing before the header wait and immediately before tap, then record `opened` using `waitForExistence(timeout: 3)` plus an ISO-8601 timestamp.
+- Immediately before each tap, the test logs 15 lines around the Settings button in the app accessibility hierarchy, a `debugDescription` for the target, and all `descendants(matching: .any)` whose frame contains the required midpoint `(310, 91)`, with element type and identifier.
+- Final assertions occur only after both activities. Both standard and coordinate gestures are required to open `mwlt.screen.settings`; a standard AX failure cannot be converted to a passing result.
+- Next run: verify both activity blocks are present even if standard `.tap()` fails, check both pre-wait/pre-tap `hittable` values, inspect the 15-line hierarchy context and midpoint-covering elements for both legs, and require `opened=true` independently for each. No CI was awaited in this commit.
+- **Not yet verified:** Swift compilation and simulator execution of the revised paired test; both legs passing.
