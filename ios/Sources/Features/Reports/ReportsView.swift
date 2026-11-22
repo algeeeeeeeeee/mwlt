@@ -187,6 +187,8 @@ struct ReportsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
+        .blur(radius: showStoryCard ? 8 : 0)
+        .animation(.easeInOut(duration: 0.2), value: showStoryCard)
         .toolbar(.hidden, for: .navigationBar)
         .overlay {
             if showStoryCard {
