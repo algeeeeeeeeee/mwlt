@@ -105,6 +105,8 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
+        .blur(radius: activeSheet == nil ? 0 : 8)
+        .animation(.easeInOut(duration: 0.2), value: activeSheet != nil)
         .toolbar(.hidden, for: .navigationBar)
         .onChange(of: selectedPhoto) { _, item in
             Task {
