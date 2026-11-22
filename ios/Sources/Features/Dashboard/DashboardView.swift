@@ -892,57 +892,92 @@ struct DashboardView: View {
     }
 
     private var savingsGoalsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let primaryText = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.45))
+            : AppAppearance.readablePrimaryOnLight()
+        let accent = Color(hex: AppAppearance.accentHex)
+
+        return VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 7) {
-                Image(systemName: "banknote")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color(hex: AppAppearance.primaryHex))
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(primaryText.opacity(0.10))
                     .frame(width: 28, height: 28)
-                    .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
+                    .overlay(
+                        Image(systemName: "banknote")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(primaryText)
+                    )
                 Text(isEnglish ? "Savings goals" : "Target Tabungan")
                     .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                    .foregroundStyle(.primary)
                 Spacer()
                 if !savingsGoals.isEmpty {
                     Button {
                         editingGoal = nil
                         showGoalEditor = true
                     } label: {
-                        Label(isEnglish ? "Add" : "Tambah", systemImage: "plus")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(Color(hex: AppAppearance.primaryHex))
+                        HStack(spacing: 3) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text(isEnglish ? "Add" : "Tambah")
+                                .font(MeowlettTypography.font(size: 12, weight: .bold))
+                        }
+                        .foregroundStyle(primaryText)
                     }
                     .buttonStyle(.plain)
                 }
             }
+            .padding(.bottom, 14)
 
             if savingsGoals.isEmpty {
-                VStack(spacing: 9) {
-                    Image(systemName: "banknote")
-                        .font(.system(size: 34, weight: .light))
-                        .foregroundStyle(Color(hex: AppAppearance.accentHex))
+                VStack(spacing: 0) {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [accent.opacity(0.13), Color(hex: AppAppearance.primaryHex).opacity(0.10)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
                         .frame(width: 72, height: 72)
-                        .background(Color(hex: AppAppearance.accentHex).opacity(0.12), in: Circle())
-                        .overlay(Circle().stroke(Color(hex: AppAppearance.accentHex).opacity(0.2), lineWidth: 1.5))
+                        .overlay(Circle().stroke(accent.opacity(0.22), lineWidth: 1.5))
+                        .overlay(
+                            Image(systemName: "rocket")
+                                .font(.system(size: 36, weight: .light))
+                                .foregroundStyle(primaryText)
+                        )
+                        .padding(.bottom, 10)
+
                     Text(isEnglish ? "No savings goals yet" : "Belum ada target tabungan")
                         .font(MeowlettTypography.font(size: 14, weight: .bold))
-                    Text(isEnglish ? "Create your first target." : "Yuk, buat target pertamamu!")
+                        .foregroundStyle(.primary)
+                        .padding(.bottom, 4)
+
+                    Text("Yuk, buat target pertamamu!")
                         .font(MeowlettTypography.font(size: 12, weight: .regular))
                         .foregroundStyle(.secondary)
+                        .padding(.bottom, 14)
+
                     Button {
                         editingGoal = nil
                         showGoalEditor = true
                     } label: {
-                        Label(isEnglish ? "Add goal" : "Tambah target", systemImage: "plus")
-                            .font(.system(size: 13, weight: .heavy))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(Color(hex: AppAppearance.primaryHex), in: RoundedRectangle(cornerRadius: 14))
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text(isEnglish ? "Add goal" : "Tambah target")
+                                .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(accent, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 8)
             } else {
                 VStack(spacing: 14) {
                     ForEach(savingsGoals) { goal in
@@ -954,6 +989,8 @@ struct DashboardView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private func savingsGoalRow(_ goal: DashboardSavingsGoal) -> some View {
