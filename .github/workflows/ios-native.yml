@@ -159,7 +159,8 @@ jobs:
             exit 1
           fi
           echo "Simulator booted."
-          simctl_with_timeout 45 status_bar "$DEVICE_ID" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+          # Skip status_bar override: CoreSimulator can hang on this cosmetic command
+          # after a fresh iOS runtime migration. Screenshots remain valid without it.
 
           APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
           test -d "$APP_PATH"
