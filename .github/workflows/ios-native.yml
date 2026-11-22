@@ -26,7 +26,7 @@ permissions:
 concurrency:
   # Version the group so a runner cleanup from an older workflow cannot hold
   # a newer native build in the pending state.
-  group: meowlett-native-ios-v2-${{ github.ref }}
+  group: meowlett-native-ios-v3-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -229,10 +229,11 @@ jobs:
             return 1
           }
 
-          # Onboarding is optional: a slow first cold launch must not prevent
-          # the primary app screens from being captured.
-          capture_preview "01-onboarding.png" || true
-          simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
+          # Skip onboarding in this capture run: the previous build already
+          # includes an onboarding reference. Focus on active tabs and popups.
+          if ! simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES; then
+            echo "::warning::Could not set onboarding preference before preview launch."
+          fi
 
           capture_preview "02-dashboard.png" --mwlt-preview-seed-data || true
           for TAB in transactions report date settings; do
