@@ -428,8 +428,8 @@ struct MainTabView: View {
             .fixedSize(horizontal: true, vertical: false)
             .padding(5)
             .background(.regularMaterial, in: Capsule())
-            .overlay(Capsule().fill(colorSchemeIsDark ? Color.black.opacity(0.20) : Color.white.opacity(0.10)))
-            .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.20 : 0.22), lineWidth: 1))
+            .overlay(Capsule().fill(colorSchemeIsDark ? Color.black.opacity(0.20) : Color.white.opacity(0.10)).allowsHitTesting(false))
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(colorSchemeIsDark ? 0.20 : 0.22), lineWidth: 1).allowsHitTesting(false))
             .shadow(color: .black.opacity(colorSchemeIsDark ? 0.45 : 0.15), radius: colorSchemeIsDark ? 24 : 20, x: 0, y: colorSchemeIsDark ? 4 : 3)
             .fixedSize(horizontal: true, vertical: false)
             }
