@@ -687,116 +687,163 @@ struct DashboardView: View {
             guard let limit = budgets[category.id], limit > 0 else { return nil }
             return (category.id, limit)
         }
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
-                Image(systemName: "wallet.bifold")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color(hex: AppAppearance.primaryHex))
-                    .frame(width: 28, height: 28)
-                    .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
-                Text(isEnglish ? "Monthly budget" : "Budget Bulanan")
-                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
-                Spacer()
-                Button { showOverallBudgetEditor = true } label: {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(5)
-                }
-                .buttonStyle(.plain)
-            }
+        let primary = Color(hex: AppAppearance.primaryHex)
+        let accent = Color(hex: AppAppearance.accentHex)
+        let readablePrimary = isDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.45))
+            : AppAppearance.readablePrimaryOnLight()
 
-            if overall <= 0 && entries.isEmpty {
+        return Group {
+            if entries.isEmpty && overall <= 0 {
                 HStack(spacing: 12) {
-                    Image(systemName: "wallet.pass")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(Color(hex: AppAppearance.primaryHex))
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(readablePrimary.opacity(0.10))
                         .frame(width: 44, height: 44)
-                        .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(
+                            Image(systemName: "wallet")
+                                .font(.system(size: 20, weight: .regular))
+                                .foregroundStyle(readablePrimary)
+                        )
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(isEnglish ? "No limits set" : "Belum ada limit")
+                        Text(isEnglish ? "Monthly budget" : "Budget Bulanan")
                             .font(MeowlettTypography.font(size: 13, weight: .heavy))
-                        Text(isEnglish ? "Set one to stay on track." : "Atur budget supaya pengeluaran terkontrol.")
+                            .foregroundStyle(.primary)
+                        Text(isEnglish
+                             ? "No budget set yet. Tap to set one."
+                             : "Belum ada anggaran. Tap untuk mengatur.")
                             .font(MeowlettTypography.font(size: 11, weight: .regular))
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer(minLength: 2)
-                    Button(isEnglish ? "Set budget" : "Atur") { showOverallBudgetEditor = true }
-                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
-                        .foregroundStyle(Color(hex: AppAppearance.primaryHex))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(hex: AppAppearance.primaryHex).opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+                    Spacer(minLength: 4)
+                    Button {
+                        showOverallBudgetEditor = true
+                    } label: {
+                        Text(isEnglish ? "Set Budget" : "Atur Anggaran")
+                            .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                            .foregroundStyle(readablePrimary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(readablePrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(readablePrimary.opacity(0.20), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
             } else {
-                VStack(spacing: 11) {
-                    if overall > 0 {
-                        budgetProgressRow(
-                            title: isEnglish ? "Total monthly" : "Total Bulanan",
-                            spent: spent,
-                            limit: overall,
-                            color: Color(hex: AppAppearance.accentHex),
-                            showIcon: false
-                        )
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 7) {
+                        RoundedRectangle(cornerRadius: 9)
+                            .fill(readablePrimary.opacity(0.10))
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Image(systemName: "slider.horizontal.3")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(readablePrimary)
+                            )
+                        Text(isEnglish ? "Monthly budget" : "Budget Bulanan")
+                            .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Button { showOverallBudgetEditor = true } label: {
+                            Image(systemName: "pencil")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 24, height: 24)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    ForEach(Array(entries.prefix(4).enumerated()), id: \.offset) { _, entry in
-                        categoryBudgetRow(entry.0, limit: entry.1)
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        if overall > 0 {
+                            budgetProgressRow(
+                                title: isEnglish ? "Total Monthly" : "Total Bulanan",
+                                spent: spent,
+                                limit: overall,
+                                color: accent,
+                                showIcon: false
+                            )
+                        }
+                        ForEach(Array(entries.prefix(4).enumerated()), id: \.offset) { _, entry in
+                            categoryBudgetRow(entry.0, limit: entry.1)
+                        }
                     }
                 }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private func categoryBudgetRow(_ key: String, limit: Int64) -> some View {
+        let category = MeowlettCategory.all.first(where: { $0.id == key })
         let spent = monthTransactions.filter { $0.category == key }.reduce(Int64(0)) { $0 + $1.amount }
         let percentage = limit > 0 ? min(100, Int((Double(spent) / Double(limit) * 100).rounded())) : 0
         let over = percentage >= 100
         let warning = percentage >= 80
-        let color = MeowlettCategory.color(for: key)
-        let statusColor = over ? Color(hex: "#ef4444") : warning ? Color(hex: "#f59e0b") : Color(hex: AppAppearance.accentHex)
+        let color = Color(hex: category?.color ?? "#94a3b8")
+        let stateColor = over ? Color(hex: "#ef4444") : warning ? Color(hex: "#f59e0b") : Color(hex: AppAppearance.accentHex)
+        let barColors = over
+            ? [Color(hex: "#ef4444"), Color(hex: "#fca5a5")]
+            : warning
+                ? [Color(hex: "#f59e0b"), Color(hex: "#fcd34d")]
+                : [Color(hex: AppAppearance.primaryHex), Color(hex: AppAppearance.accentHex)]
+
         return VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 5) {
-                Image(systemName: MeowlettCategory.all.first(where: { $0.id == key })?.icon ?? "tag")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(systemName: category?.icon ?? "tag")
+                    .font(.system(size: 13, weight: .regular))
                     .foregroundStyle(color)
                 Text(MeowlettCategory.name(for: key, language: language))
                     .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(.primary)
-                Spacer(minLength: 4)
-                Button { budgets[key] = nil } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 3)
+                    .lineLimit(1)
+                Spacer(minLength: 3)
+                Button {
+                    budgets[key] = 0
+                } label: {
+                    Text("✕")
+                        .font(MeowlettTypography.font(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary.opacity(0.6))
+                        .padding(.horizontal, 4)
                 }
                 .buttonStyle(.plain)
-                Button { budgets[key] = (budgets[key] ?? limit) + 50_000 } label: {
+                Button {
+                    budgets[key] = (budgets[key] ?? limit) + 50_000
+                } label: {
                     HStack(spacing: 3) {
                         Text("\(percentage)%")
-                            .font(MeowlettTypography.font(size: 11, weight: .heavy))
-                        Image(systemName: "plus")
-                            .font(.system(size: 8, weight: .black))
+                            .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                        if over {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
                     }
-                    .foregroundStyle(statusColor)
+                    .foregroundStyle(stateColor)
                     .padding(.horizontal, 4)
                 }
                 .buttonStyle(.plain)
             }
+
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(isDark ? 0.06 : 0.06))
                     Capsule()
-                        .fill(LinearGradient(colors: [statusColor, statusColor.opacity(0.72)], startPoint: .leading, endPoint: .trailing))
+                        .fill(LinearGradient(colors: barColors, startPoint: .leading, endPoint: .trailing))
                         .frame(width: proxy.size.width * CGFloat(percentage) / 100)
                 }
             }
             .frame(height: 6)
+
             Text("\(rupiah(spent)) / \(rupiah(limit))")
-                .font(MeowlettTypography.font(size: 10, weight: .medium))
+                .font(MeowlettTypography.font(size: 10, weight: .regular))
                 .foregroundStyle(.secondary)
+                .padding(.top, -2)
         }
     }
 
@@ -804,31 +851,43 @@ struct DashboardView: View {
         let percentage = limit > 0 ? min(100, Int((Double(spent) / Double(limit) * 100).rounded())) : 0
         let over = percentage >= 100
         let warning = percentage >= 80
-        let barColor: Color = over ? Color(hex: "#ef4444") : warning ? Color(hex: "#f59e0b") : color
+        let stateColor = over ? Color(hex: "#ef4444") : warning ? Color(hex: "#f59e0b") : Color(hex: AppAppearance.accentHex)
+        let barColors = over
+            ? [Color(hex: "#ef4444"), Color(hex: "#fca5a5")]
+            : warning
+                ? [Color(hex: "#f59e0b"), Color(hex: "#fcd34d")]
+                : [Color(hex: AppAppearance.primaryHex), Color(hex: AppAppearance.accentHex)]
+
         return VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 5) {
-                if showIcon {
-                    Circle().fill(color).frame(width: 7, height: 7)
-                }
+                if showIcon { Circle().fill(color).frame(width: 7, height: 7) }
                 Text(title)
                     .font(MeowlettTypography.font(size: 12, weight: .bold))
                     .foregroundStyle(.primary)
                 Spacer()
-                Text("\\(percentage)%")
-                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
-                    .foregroundStyle(barColor)
+                HStack(spacing: 3) {
+                    Text("\(percentage)%")
+                        .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                    if over {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                }
+                .foregroundStyle(stateColor)
             }
             GeometryReader { proxy in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Color.primary.opacity(isDark ? 0.07 : 0.06))
-                    Capsule().fill(LinearGradient(colors: [barColor, barColor.opacity(0.7)], startPoint: .leading, endPoint: .trailing))
+                    Capsule().fill(Color.primary.opacity(isDark ? 0.06 : 0.06))
+                    Capsule()
+                        .fill(LinearGradient(colors: barColors, startPoint: .leading, endPoint: .trailing))
                         .frame(width: proxy.size.width * CGFloat(percentage) / 100)
                 }
             }
             .frame(height: 6)
-            Text("\\(rupiah(spent)) / \\(rupiah(limit))")
-                .font(MeowlettTypography.font(size: 10, weight: .medium))
+            Text("\(rupiah(spent)) / \(rupiah(limit))")
+                .font(MeowlettTypography.font(size: 10, weight: .regular))
                 .foregroundStyle(.secondary)
+                .padding(.top, -2)
         }
     }
 
