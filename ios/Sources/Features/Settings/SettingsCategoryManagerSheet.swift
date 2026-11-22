@@ -6,7 +6,9 @@ struct SettingsCategoryManagerSheet: View {
     @EnvironmentObject private var store: FinanceStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("gm_category_order") private var categoryOrderRaw = "[]"
     @State private var categories: [String: MeowlettCategoryDefinition] = [:]
+    @State private var categoryOrder: [String] = []
     @State private var loaded = false
     @State private var editingKey: String?
     @State private var label = ""
@@ -25,8 +27,9 @@ struct SettingsCategoryManagerSheet: View {
         Color(hex: isDark ? "#272727" : "#eeeeee")
     }
     private var orderedKeys: [String] {
-        let builtIn = ["food","transport","date","shopping","entertainment","health","bills","pets","other"]
-        return builtIn.filter { categories[$0] != nil } + categories.keys.filter { !builtIn.contains($0) }.sorted()
+        let present = categoryOrder.filter { categories[$0] != nil }
+        let missing = categories.keys.filter { !present.contains($0) }.sorted()
+        return present + missing
     }
     private let colors = [
         "#4ade80","#86efac","#f9a8d4","#a3e635","#34d399","#6ee7b7",
@@ -113,6 +116,11 @@ struct SettingsCategoryManagerSheet: View {
                   let data = value.data(using: .utf8),
                   let decoded = try? JSONDecoder().decode([String: MeowlettCategoryDefinition].self, from: data) else { return }
             categories = decoded
+            categoryOrder = MeowlettCategory.orderedKeys(
+                fromJSON: value,
+                availableKeys: Set(decoded.keys),
+                storedOrderJSON: categoryOrderRaw
+            )
         }
     }
 
@@ -170,6 +178,7 @@ struct SettingsCategoryManagerSheet: View {
                     Button {
                         guard categories.count > 1 else { return }
                         categories.removeValue(forKey: key)
+                        categoryOrder.removeAll { $0 == key }
                         if editingKey == key {
                             editingKey = nil
                             label = ""
@@ -352,6 +361,11 @@ struct SettingsCategoryManagerSheet: View {
                 "other": .init(label: "Other", labelId: "Lainnya", icon: "package", color: "#94a3b8")
             ]
         }
+        categoryOrder = MeowlettCategory.orderedKeys(
+            fromJSON: categoriesRaw,
+            availableKeys: Set(categories.keys),
+            storedOrderJSON: categoryOrderRaw
+        )
         loaded = true
         persist()
     }
@@ -373,6 +387,7 @@ struct SettingsCategoryManagerSheet: View {
             let baseKey = clean.lowercased().split(whereSeparator: { $0.isWhitespace }).joined(separator: "_")
             let key = baseKey + "_" + String(Int64(Date().timeIntervalSince1970 * 1000))
             categories[key] = MeowlettCategoryDefinition(label: clean, labelId: nil, icon: icon, color: color)
+            categoryOrder.append(key)
         }
 
         persist()
@@ -383,6 +398,12 @@ struct SettingsCategoryManagerSheet: View {
     }
 
     private func persist() {
+        let currentOrder = orderedKeys
+        categoryOrder = currentOrder
+        if let orderData = try? JSONEncoder().encode(currentOrder),
+           let orderValue = String(data: orderData, encoding: .utf8) {
+            categoryOrderRaw = orderValue
+        }
         guard let data = try? JSONEncoder().encode(categories),
               let value = String(data: data, encoding: .utf8) else { return }
         categoriesRaw = value

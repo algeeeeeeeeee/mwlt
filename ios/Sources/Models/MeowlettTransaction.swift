@@ -111,17 +111,94 @@ enum MeowlettCategory {
         ("other", "Lainnya", "Other", "square.grid.2x2.fill", "#94a3b8")
     ]
 
+    static func orderedKeys(
+        fromJSON json: String,
+        availableKeys: Set<String>,
+        storedOrderJSON: String? = nil
+    ) -> [String] {
+        var candidates: [String] = []
+
+        if let orderData = storedOrderJSON?.data(using: .utf8),
+           let storedOrder = try? JSONDecoder().decode([String].self, from: orderData) {
+            candidates.append(contentsOf: storedOrder)
+        }
+        candidates.append(contentsOf: topLevelObjectKeys(in: json))
+        candidates.append(contentsOf: builtIns.map(\.id))
+        candidates.append(contentsOf: availableKeys.sorted())
+
+        var seen = Set<String>()
+        return candidates.filter { availableKeys.contains($0) && seen.insert($0).inserted }
+    }
+
+    private static func topLevelObjectKeys(in json: String) -> [String] {
+        let characters = Array(json)
+        var keys: [String] = []
+        var depth = 0
+        var index = 0
+
+        while index < characters.count {
+            let character = characters[index]
+            if character == "\"" {
+                let start = index
+                index += 1
+                var escaped = false
+
+                while index < characters.count {
+                    let current = characters[index]
+                    if escaped {
+                        escaped = false
+                    } else if current == "\\" {
+                        escaped = true
+                    } else if current == "\"" {
+                        break
+                    }
+                    index += 1
+                }
+
+                let end = index
+                if depth == 1, end < characters.count {
+                    var next = end + 1
+                    while next < characters.count && characters[next].isWhitespace {
+                        next += 1
+                    }
+                    if next < characters.count && characters[next] == ":" {
+                        let literal = String(characters[start...end])
+                        if let data = literal.data(using: .utf8),
+                           let key = try? JSONDecoder().decode(String.self, from: data) {
+                            keys.append(key)
+                        }
+                    }
+                }
+
+                index = min(index + 1, characters.count)
+                continue
+            }
+
+            if character == "{" {
+                depth += 1
+            } else if character == "}" {
+                depth = max(0, depth - 1)
+            }
+            index += 1
+        }
+        return keys
+    }
+
     static var all: [(id: String, idName: String, enName: String, icon: String, color: String)] {
         let defaults = UserDefaults.standard
-        guard let data = defaults.string(forKey: "gm_categories")?.data(using: .utf8),
+        let rawJSON = defaults.string(forKey: "gm_categories") ?? ""
+        guard let data = rawJSON.data(using: .utf8),
               let saved = try? JSONDecoder().decode([String: MeowlettCategoryDefinition].self, from: data) else {
             return builtIns
         }
 
-        // gm_categories is authoritative once saved: removed categories must stay removed.
-        let orderedKeys = builtIns.map(\.id).filter { saved[$0] != nil }
-            + saved.keys.filter { key in !builtIns.contains(where: { $0.id == key }) }.sorted()
-        return orderedKeys.compactMap { key in
+        // Keep the PWA object's insertion order; native category edits preserve it separately.
+        let ordered = orderedKeys(
+            fromJSON: rawJSON,
+            availableKeys: Set(saved.keys),
+            storedOrderJSON: defaults.string(forKey: "gm_category_order")
+        )
+        return ordered.compactMap { key in
             guard let item = saved[key] else { return nil }
             let fallback = builtIns.first(where: { $0.id == key })
             let english = item.label.isEmpty ? (fallback?.enName ?? key) : item.label
@@ -129,7 +206,6 @@ enum MeowlettCategory {
             return (key, indonesia, english, item.displayIcon, item.color)
         }
     }
-
     static func name(for id: String, language: String) -> String {
         guard let value = all.first(where: { $0.id == id }) else { return id }
         return language == "en" ? value.enName : value.idName
