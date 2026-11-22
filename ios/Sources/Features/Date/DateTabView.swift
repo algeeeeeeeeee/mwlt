@@ -45,7 +45,7 @@ struct DateTabView: View {
                 dateRecordCard
             }
             .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.top, 16)
             .padding(.bottom, 90)
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
@@ -56,8 +56,8 @@ struct DateTabView: View {
         .onChange(of: wishlist) { _, value in saveWishlist(value) }
         .sheet(isPresented: $showWishlistForm) {
             wishlistAddSheet
-                .presentationDetents([.height(260)])
-                .presentationDragIndicator(.visible)
+                .presentationDetents([.height(230)])
+                .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(24)
         }
         .sheet(isPresented: $showEditor) {
@@ -126,10 +126,10 @@ struct DateTabView: View {
                     Image(systemName: "sparkles")
                         .font(.system(size: 28, weight: .light))
                         .foregroundStyle(datePink.opacity(0.42))
-                    Text(isEnglish ? "No wishlist yet" : "Belum ada wishlist")
+                    Text(isEnglish ? "No date wishlist yet" : "Belum ada wishlist date")
                         .font(MeowlettTypography.font(size: 13, weight: .medium))
                         .foregroundStyle(.secondary)
-                    Text(isEnglish ? "Add places or activities you want to do together." : "Tambahkan tempat atau aktivitas yang ingin dilakukan.")
+                    Text(isEnglish ? "Add your dream date spots" : "Tambahkan tempat impian kalian")
                         .font(MeowlettTypography.font(size: 11, weight: .regular))
                         .foregroundStyle(Color.secondary.opacity(0.72))
                         .multilineTextAlignment(.center)
@@ -179,7 +179,7 @@ struct DateTabView: View {
         .padding(.vertical, 16)
         .background(cardBackground, in: RoundedRectangle(cornerRadius: 18))
         .overlay(RoundedRectangle(cornerRadius: 18).stroke(cardBorder, lineWidth: 1))
-        .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private var dateRecordCard: some View {
@@ -196,7 +196,7 @@ struct DateTabView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .black))
-                        Text(isEnglish ? "Add Date" : "Tambah Date").font(MeowlettTypography.font(size: 12, weight: .heavy))
+                        Text(isEnglish ? "Record" : "Catat").font(MeowlettTypography.font(size: 12, weight: .heavy))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14)
@@ -317,7 +317,7 @@ struct DateTabView: View {
     private var wishlistAddSheet: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(isEnglish ? "Add to Wishlist" : "Tambah Wishlist")
+                Text(isEnglish ? "Add Date Wishlist" : "Tambah Wishlist Date")
                     .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
@@ -326,10 +326,10 @@ struct DateTabView: View {
                 }
                 .buttonStyle(.plain)
             }
-            TextField(isEnglish ? "Where do you want to go?" : "Mau ke mana atau ingin melakukan apa?", text: $wishlistInput)
-                .font(MeowlettTypography.font(size: 15, weight: .regular))
+            TextField(isEnglish ? "e.g. Rooftop dinner..." : "Contoh: Dinner di rooftop...", text: $wishlistInput)
+                .font(MeowlettTypography.font(size: 16, weight: .regular))
                 .padding(13)
-                .background(isDark ? Color.white.opacity(0.06) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+                .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(hex: "#f9a8d4"), lineWidth: 1.5))
                 .submitLabel(.done)
                 .onSubmit(addWishlist)
@@ -338,22 +338,22 @@ struct DateTabView: View {
                     .font(MeowlettTypography.font(size: 14, weight: .heavy))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 46)
+                    .frame(height: 44)
                     .background(datePink, in: RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 24)
-        .padding(.bottom, 28)
-        .background(AppAppearance.modal(dark: isDark))
+        .padding(.top, 22)
+        .padding(.bottom, 36)
+        .background(AppAppearance.card(dark: isDark))
     }
 
     private var cardBackground: Color {
         AppAppearance.card(dark: isDark)
     }
     private var cardBorder: Color {
-        Color.primary.opacity(isDark ? 0.10 : 0.07)
+        AppAppearance.border(dark: isDark)
     }
 
     private func iconTile(symbol: String, pink: Bool) -> some View {
