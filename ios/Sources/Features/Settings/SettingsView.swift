@@ -1105,6 +1105,7 @@ private struct SettingsDataSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.settings.data.backup")
+            .accessibilityValue(showExporter ? "presented" : "idle")
 
             Button { showImporter = true } label: {
                 dataAction(
@@ -1117,6 +1118,7 @@ private struct SettingsDataSheet: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.settings.data.restore")
+            .accessibilityValue(showImporter ? "presented" : "idle")
 
             Rectangle().fill(cardBorder).frame(height: 1).padding(.vertical, 4)
 

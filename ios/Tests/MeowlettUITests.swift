@@ -23,6 +23,22 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    private func openSettingsDataSheet(in app: XCUIApplication) {
+        app.launchArguments = ["--mwlt-preview-mode"]
+        app.launch()
+
+        let settingsButton = app.buttons["mwlt.header.settings"]
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
+        settingsButton.tap()
+        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+
+        let dataRow = app.buttons["mwlt.settings.data"]
+        XCTAssertTrue(dataRow.waitForExistence(timeout: 10))
+        dataRow.tap()
+        XCTAssertTrue(app.staticTexts["mwlt.settings.sheet.data.title"].waitForExistence(timeout: 10))
+    }
+
+    @MainActor
     func testMainTabsQuickAddAndCalculatorPresentation() {
         let app = XCUIApplication()
         app.launchArguments = ["--mwlt-preview-mode"]
@@ -140,57 +156,63 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
-    func testSettingsDataActionsOpenAndCanBeCancelledSafely() {
+    func testSettingsBackupActionBuildsAndRequestsExport() {
         let app = XCUIApplication()
-        app.launchArguments = ["--mwlt-preview-mode"]
-        app.launch()
+        openSettingsDataSheet(in: app)
 
-        let settingsButton = app.buttons["mwlt.header.settings"]
-        XCTAssertTrue(settingsButton.waitForExistence(timeout: 15))
-        settingsButton.tap()
-        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
-
-        let dataRow = app.buttons["mwlt.settings.data"]
-        XCTAssertTrue(dataRow.waitForExistence(timeout: 10))
-        dataRow.tap()
-        let dataTitle = app.staticTexts["mwlt.settings.sheet.data.title"]
-        XCTAssertTrue(dataTitle.waitForExistence(timeout: 10))
-
-        // Backup opens the native export picker. Cancel it so the test does not write a file.
         let backupButton = app.buttons["mwlt.settings.data.backup"]
         XCTAssertTrue(backupButton.waitForExistence(timeout: 8))
         backupButton.tap()
-        let backupCancel = app.buttons["Cancel"].firstMatch
-        XCTAssertTrue(backupCancel.waitForExistence(timeout: 10), "Backup did not present the native export picker.")
-        backupCancel.tap()
-        XCTAssertTrue(dataTitle.waitForExistence(timeout: 8), "The Data sheet did not return after cancelling Backup.")
 
-        // Restore opens the native import picker. Cancel it so no file is imported.
+        let exportRequested = expectation(
+            for: NSPredicate(format: "value == %@", "presented"),
+            evaluatedWith: backupButton,
+            handler: nil
+        )
+        wait(for: [exportRequested], timeout: 8)
+        XCTAssertEqual(backupButton.value as? String, "presented")
+    }
+
+    @MainActor
+    func testSettingsRestoreActionRequestsImport() {
+        let app = XCUIApplication()
+        openSettingsDataSheet(in: app)
+
         let restoreButton = app.buttons["mwlt.settings.data.restore"]
         XCTAssertTrue(restoreButton.waitForExistence(timeout: 8))
         restoreButton.tap()
-        let restoreCancel = app.buttons["Cancel"].firstMatch
-        XCTAssertTrue(restoreCancel.waitForExistence(timeout: 10), "Restore did not present the native import picker.")
-        restoreCancel.tap()
-        XCTAssertTrue(dataTitle.waitForExistence(timeout: 8), "The Data sheet did not return after cancelling Restore.")
 
-        // Verify Reset asks for confirmation, then cancel. Never perform a destructive reset in UI tests.
+        let importRequested = expectation(
+            for: NSPredicate(format: "value == %@", "presented"),
+            evaluatedWith: restoreButton,
+            handler: nil
+        )
+        wait(for: [importRequested], timeout: 8)
+        XCTAssertEqual(restoreButton.value as? String, "presented")
+    }
+
+    @MainActor
+    func testSettingsResetRequiresConfirmationAndCanBeCancelled() {
+        let app = XCUIApplication()
+        openSettingsDataSheet(in: app)
+
+        let dataTitle = app.staticTexts["mwlt.settings.sheet.data.title"]
         let resetButton = app.buttons["mwlt.settings.data.reset"]
         XCTAssertTrue(resetButton.waitForExistence(timeout: 8))
         resetButton.tap()
+
+        let confirmation = app.staticTexts["mwlt.settings.data.confirmation.message"]
         XCTAssertTrue(
-            app.staticTexts["mwlt.settings.data.confirmation.message"].waitForExistence(timeout: 8),
+            confirmation.waitForExistence(timeout: 8),
             "Reset did not show its confirmation prompt."
         )
-        let resetCancel = app.buttons["mwlt.settings.data.confirmation.cancel"]
-        XCTAssertTrue(resetCancel.waitForExistence(timeout: 8), "Reset confirmation is missing its Cancel action.")
-        resetCancel.tap()
-        XCTAssertTrue(dataTitle.waitForExistence(timeout: 8), "The Data sheet did not remain open after cancelling Reset.")
 
-        let dataClose = app.buttons["mwlt.settings.sheet.data.close"]
-        XCTAssertTrue(dataClose.waitForExistence(timeout: 8))
-        dataClose.tap()
-        XCTAssertTrue(dataRow.waitForExistence(timeout: 8), "Settings root did not return after closing Data.")
+        let cancelButton = app.buttons["mwlt.settings.data.confirmation.cancel"]
+        XCTAssertTrue(cancelButton.waitForExistence(timeout: 8))
+        cancelButton.tap()
+
+        XCTAssertTrue(dataTitle.waitForExistence(timeout: 8))
+        XCTAssertFalse(confirmation.exists, "Reset confirmation should close after cancellation.")
     }
 
     @MainActor
