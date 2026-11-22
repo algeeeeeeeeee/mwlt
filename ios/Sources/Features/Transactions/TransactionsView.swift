@@ -91,8 +91,8 @@ struct TransactionsView: View {
                     emptyState
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(grouped, id: \.date) { group in
-                            dateGroup(group.date, transactions: group.items)
+                        ForEach(Array(grouped.enumerated()), id: \.element.date) { index, group in
+                            dateGroup(group.date, transactions: group.items, groupIndex: index)
                         }
                     }
                 }
@@ -128,7 +128,7 @@ struct TransactionsView: View {
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.secondary)
             TextField(isEnglish ? "Search transactions..." : "Cari transaksi...", text: $searchQuery)
-                .font(MeowlettTypography.font(size: 15, weight: .regular))
+                .font(MeowlettTypography.font(size: 16, weight: .regular))
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
             if !searchQuery.isEmpty {
@@ -140,8 +140,8 @@ struct TransactionsView: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 46)
-        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.primary.opacity(0.08), lineWidth: 1.5))
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
         .padding(.bottom, 10)
     }
 
@@ -244,59 +244,102 @@ struct TransactionsView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle().fill(LinearGradient(colors: [accent.opacity(0.13), primary.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 88, height: 88)
-                    .overlay(Circle().stroke(accent.opacity(0.25), lineWidth: 1.5))
-                Image(systemName: searchQuery.isEmpty ? "plus.circle" : "magnifyingglass")
-                    .font(.system(size: 36, weight: .light))
-                    .foregroundStyle(accent)
-            }
-            .padding(.bottom, 6)
-            Text(searchQuery.isEmpty
-                 ? (isEnglish ? "No transactions yet" : "Belum ada transaksi")
-                 : (isEnglish ? "No transactions found" : "Transaksi tidak ditemukan"))
-                .font(MeowlettTypography.font(size: 18, weight: .black))
-                .foregroundStyle(.primary)
-            Text(searchQuery.isEmpty
-                 ? (isEnglish ? "Start tracking your spending today." : "Yuk mulai catat pengeluaran hari ini.")
-                 : (isEnglish ? "Try another search term." : "Coba kata pencarian lainnya."))
-                .font(MeowlettTypography.font(size: 13, weight: .regular))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, 12)
+        VStack(spacing: 0) {
             if searchQuery.isEmpty {
+                RoundedRectangle(cornerRadius: 26)
+                    .fill(accent.opacity(0.08))
+                    .frame(width: 88, height: 88)
+                    .overlay(RoundedRectangle(cornerRadius: 26).stroke(accent.opacity(0.18), lineWidth: 1.5))
+                    .overlay(
+                        Image(systemName: "plus.circle")
+                            .font(.system(size: 38, weight: .light))
+                            .foregroundStyle(accent)
+                    )
+                    .padding(.bottom, 16)
+
+                Text(isEnglish ? "No transactions yet" : "Belum ada transaksi")
+                    .font(MeowlettTypography.font(size: 18, weight: .black))
+                    .foregroundStyle(.primary)
+                    .padding(.bottom, 8)
+
+                Text(isEnglish
+                     ? "Start tracking your spending today."
+                     : "Yuk mulai catat pengeluaran hari ini.")
+                    .font(MeowlettTypography.font(size: 13, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                    .padding(.bottom, 24)
+
                 Button {
                     editingTransaction = nil
                     showEditor = true
                 } label: {
                     Label(isEnglish ? "Add first transaction" : "Catat transaksi pertama", systemImage: "plus")
-                        .font(.system(size: 14, weight: .heavy))
+                        .font(MeowlettTypography.font(size: 14, weight: .heavy))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 22)
+                        .padding(.horizontal, 28)
                         .padding(.vertical, 13)
-                        .background(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 16))
+                        .background(
+                            LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 16)
+                        )
                 }
                 .buttonStyle(.plain)
+            } else {
+                Circle()
+                    .fill(LinearGradient(colors: [accent.opacity(0.10), primary.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 80, height: 80)
+                    .overlay(Circle().stroke(accent.opacity(0.16), lineWidth: 1.5))
+                    .overlay(
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 34, weight: .light))
+                            .foregroundStyle(isDark ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.45)) : AppAppearance.accent)
+                    )
+                    .padding(.bottom, 16)
+
+                Text(isEnglish ? "Not found" : "Tidak ditemukan")
+                    .font(MeowlettTypography.font(size: 16, weight: .black))
+                    .foregroundStyle(.primary)
+                    .padding(.bottom, 6)
+
+                Text((isEnglish ? "No results for " : "Tidak ada hasil untuk ") + "\"\(searchQuery)\"")
+                    .font(MeowlettTypography.font(size: 13, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(2)
+                    .multilineTextAlignment(.center)
             }
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 20)
-        .padding(.vertical, 38)
-        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.primary.opacity(0.07), lineWidth: 1))
+        .padding(.top, 48)
+        .padding(.bottom, 40)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
     }
 
-    private func dateGroup(_ date: Date, transactions: [MeowlettTransaction]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private func dateGroup(_ date: Date, transactions: [MeowlettTransaction], groupIndex: Int) -> some View {
+        let dateLabel: String = {
+            if Calendar.current.isDateInToday(date) {
+                return isEnglish ? "TODAY" : "HARI INI"
+            }
+            if Calendar.current.isDateInYesterday(date) {
+                return isEnglish ? "YESTERDAY" : "KEMARIN"
+            }
+            return date.formatted(
+                .dateTime.weekday(.wide).day().month(.wide)
+                    .locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))
+            ).uppercased()
+        }()
+
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Text(date.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: language == "en" ? "en_GB" : "id_ID"))).uppercased())
+                Text(dateLabel)
                     .font(MeowlettTypography.font(size: 12, weight: .heavy))
                     .tracking(0.3)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Rectangle().fill(Color.primary.opacity(0.10)).frame(height: 1)
+                Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1)
                 Text("\(transactions.count) \(isEnglish ? "transactions" : "transaksi")")
                     .font(MeowlettTypography.font(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -308,13 +351,28 @@ struct TransactionsView: View {
                 }
             }
         }
-        .padding(.top, 5)
-        .padding(.bottom, 10)
+        .padding(.top, groupIndex > 0 ? 16 : 0)
+        .padding(.bottom, 8)
     }
 
     private func transactionCard(_ transaction: MeowlettTransaction) -> some View {
         let active = activeTransactionID == transaction.id
-        let categoryColor = MeowlettCategory.color(for: transaction.category)
+        let category = MeowlettCategory.all.first(where: { $0.id == transaction.category })
+        let categoryColor = Color(hex: category?.color ?? "#94a3b8")
+        let method = transaction.paymentMethod.isEmpty ? "cash" : transaction.paymentMethod
+        let methodColor = method == "cash"
+            ? Color(hex: "#4ade80")
+            : method == "qris" ? Color(hex: "#8b5cf6") : Color(hex: "#3b82f6")
+        let methodName = method == "cash"
+            ? (isEnglish ? "Cash" : "Tunai")
+            : method == "qris" ? "QRIS" : "Transfer"
+        let methodIcon = method == "cash" ? "dollarsign.circle" : method == "qris" ? "qrcode" : "building.columns"
+        let secondary = [
+            MeowlettCategory.name(for: transaction.category, language: language),
+            transaction.location,
+            transaction.note
+        ].filter { !$0.isEmpty }.joined(separator: " · ")
+
         return VStack(spacing: 0) {
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -323,52 +381,58 @@ struct TransactionsView: View {
             } label: {
                 HStack(spacing: 11) {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(categoryColor.opacity(0.15))
+                        .fill(categoryColor.opacity(0.145))
                         .frame(width: 40, height: 40)
-                        .overlay {
-                            Image(systemName: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "shippingbox")
-                                .font(.system(size: 20, weight: .medium))
+                        .overlay(
+                            Image(systemName: category?.icon ?? "shippingbox")
+                                .font(.system(size: 22, weight: .regular))
                                 .foregroundStyle(categoryColor)
-                        }
+                        )
+
                     VStack(alignment: .leading, spacing: 2) {
                         Text(transaction.description)
                             .font(MeowlettTypography.font(size: 14, weight: .bold))
                             .foregroundStyle(.primary)
                             .lineLimit(1)
-                        let categoryName = MeowlettCategory.name(for: transaction.category, language: language)
-                        let secondary = [categoryName, transaction.location, transaction.note].filter { !$0.isEmpty }.joined(separator: " · ")
-                        Text(secondary)
-                            .font(MeowlettTypography.font(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                        HStack(spacing: 5) {
-                            let method = transaction.paymentMethod.isEmpty ? "cash" : transaction.paymentMethod
-                            Image(systemName: method == "cash" ? "banknote" : method == "qris" ? "qrcode" : "building.columns")
-                                .font(.system(size: 8, weight: .semibold))
-                            Text(method == "cash" ? (isEnglish ? "Cash" : "Tunai") : method == "qris" ? "QRIS" : "Transfer")
-                                .font(MeowlettTypography.font(size: 9, weight: .heavy))
-                            .lineLimit(1)
+
+                        HStack(spacing: 4) {
+                            Text(secondary)
+                                .font(MeowlettTypography.font(size: 11, weight: .regular))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .layoutPriority(0)
+                            HStack(spacing: 2) {
+                                Image(systemName: methodIcon)
+                                    .font(.system(size: 8, weight: .regular))
+                                Text(methodName)
+                                    .font(MeowlettTypography.font(size: 9, weight: .heavy))
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(methodColor)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(methodColor.opacity(0.12), in: Capsule())
+                            .overlay(Capsule().stroke(methodColor.opacity(0.25), lineWidth: 1))
+                            .fixedSize()
                         }
-                        .foregroundStyle(Color(hex: transaction.paymentMethod == "cash" || transaction.paymentMethod.isEmpty ? "#4ade80" : transaction.paymentMethod == "qris" ? "#8b5cf6" : "#3b82f6"))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color(hex: transaction.paymentMethod == "cash" || transaction.paymentMethod.isEmpty ? "#4ade80" : transaction.paymentMethod == "qris" ? "#8b5cf6" : "#3b82f6").opacity(0.12), in: Capsule())
+
                         if hasReceipt(transaction) {
                             Label(isEnglish ? "Receipt photo" : "Foto struk", systemImage: "photo")
-                                .font(.system(size: 9, weight: .bold))
+                                .font(MeowlettTypography.font(size: 9, weight: .bold))
                                 .foregroundStyle(.secondary)
-                                .padding(.horizontal, 6)
+                                .padding(.horizontal, 7)
                                 .padding(.vertical, 2)
                                 .background(Color.primary.opacity(0.05), in: Capsule())
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    VStack(alignment: .trailing, spacing: 4) {
+
+                    VStack(alignment: .trailing, spacing: 3) {
                         Text("-\(rupiah(transaction.amount))")
                             .font(MeowlettTypography.font(size: 13, weight: .heavy))
                             .foregroundStyle(Color(hex: "#f87171"))
                         Image(systemName: "chevron.down")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 14, weight: .regular))
                             .foregroundStyle(Color.secondary.opacity(0.55))
                             .rotationEffect(.degrees(active ? 180 : 0))
                     }
@@ -386,41 +450,45 @@ struct TransactionsView: View {
                         activeTransactionID = nil
                     } label: {
                         Label("Edit", systemImage: "pencil")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(MeowlettTypography.font(size: 13, weight: .bold))
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
-                            .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.09), lineWidth: 1.5))
+                            .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
                     }
                     .buttonStyle(.plain)
+
                     Button {
                         deleteTransactionWithUndo(transaction)
                         activeTransactionID = nil
                     } label: {
                         Label(isEnglish ? "Delete" : "Hapus", systemImage: "trash")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(MeowlettTypography.font(size: 13, weight: .bold))
                             .foregroundStyle(Color(hex: "#f87171"))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
-                            .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.25), lineWidth: 1.5))
+                            .background(Color(hex: isDark ? "#1f0a0a" : "#fff1f2"), in: RoundedRectangle(cornerRadius: 12))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: isDark ? "#3d1414" : "#fecdd3"), lineWidth: 1.5))
                     }
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 10)
                 .padding(.bottom, 12)
-                .overlay(alignment: .top) { Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1) }
+                .overlay(alignment: .top) { Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1) }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.primary.opacity(0.08), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(active ? AppAppearance.accent.opacity(0.4) : AppAppearance.border(dark: isDark), lineWidth: 1))
         .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 1.5).fill(categoryColor).frame(width: 3).padding(.vertical, 1)
+            RoundedRectangle(cornerRadius: 1.5)
+                .fill(categoryColor)
+                .frame(width: 3)
+                .padding(.vertical, 1)
         }
-        .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private func undoToast(for transaction: MeowlettTransaction) -> some View {
