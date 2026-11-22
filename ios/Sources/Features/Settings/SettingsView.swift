@@ -831,6 +831,7 @@ private struct SettingsDataSheet: View {
     @State private var importError = ""
 
     private var isDark: Bool { colorScheme == .dark }
+    private var cardBorder: Color { Color.primary.opacity(isDark ? 0.10 : 0.07) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
