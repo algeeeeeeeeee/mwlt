@@ -89,7 +89,7 @@ struct NativeSplashView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .accessibilityIdentifier("mwlt.splash.root")
+        .accessibilityElement(children: .contain)
         .task {
             if holdForUITest {
                 progress = 1
