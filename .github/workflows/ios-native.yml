@@ -271,6 +271,7 @@ jobs:
             simctl_with_timeout 20 ui "$DEVICE_ID" appearance "$MODE"
             sleep 2
 
+            # This dedicated flag keeps the real splash visible until simctl captures it.
             capture_preview "$MODE-01-splash.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-splash
             capture_preview "$MODE-02-dashboard.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=dashboard
             capture_preview "$MODE-03-transactions.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=transactions
