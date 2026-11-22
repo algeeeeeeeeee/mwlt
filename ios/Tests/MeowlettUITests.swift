@@ -225,7 +225,16 @@ final class MeowlettUITests: XCTestCase {
         XCTAssertTrue(dashboardScroll.waitForExistence(timeout: 8), "Dashboard scroll view is missing.")
         dashboardScroll.swipeUp()
         tapSettingsHeader(in: app)
-        tapTab("dashboard", app: app)
+        let dashboardTab = app.buttons["mwlt.tab.dashboard"]
+        XCTAssertTrue(dashboardTab.waitForExistence(timeout: 8), "Dashboard navigation item should be available after Settings.")
+        dashboardTab.tap()
+        let dashboardSelected = expectation(
+            for: NSPredicate(format: "value == %@", "selected"),
+            evaluatedWith: dashboardTab,
+            handler: nil
+        )
+        wait(for: [dashboardSelected], timeout: 8)
+        XCTAssertEqual(dashboardTab.value as? String, "selected", "Dashboard tab must be selected after returning from Settings.")
         let returnedDashboardScroll = app.scrollViews.firstMatch
         XCTAssertTrue(returnedDashboardScroll.waitForExistence(timeout: 8), "Dashboard scroll view should return after navigating back.")
         returnedDashboardScroll.swipeDown()
