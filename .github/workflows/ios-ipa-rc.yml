@@ -2,6 +2,8 @@ name: Meowlett IPA Release Candidate
 
 on:
   push:
+    branches:
+      - native-swift-parity
     tags:
       - 'rc*'
   workflow_dispatch:
@@ -21,6 +23,7 @@ concurrency:
 
 jobs:
   build-ipa:
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, '[ipa]')
     name: Build unsigned Release IPA
     runs-on: macos-15
     timeout-minutes: 35
@@ -52,8 +55,14 @@ jobs:
           INPUT_RC_LABEL: ${{ inputs.rc_label }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == refs/tags/* ]]; then
             LABEL="$GITHUB_REF_NAME"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            EVENT_MESSAGE="$(jq -r '.head_commit.message // ""' "$GITHUB_EVENT_PATH")"
+            LABEL="$(printf '%s\n' "$EVENT_MESSAGE" | /usr/bin/sed -nE 's/.*(rc[0-9]+-preview).*/\1/p' | /usr/bin/head -n 1)"
+            if [[ -z "$LABEL" ]]; then
+              LABEL="rc-preview"
+            fi
           else
             LABEL="$INPUT_RC_LABEL"
           fi

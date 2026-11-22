@@ -398,12 +398,12 @@ No app source or workflow changes are implied by this diagnosis. P0 remains open
 ## ANTRIAN TUGAS
 
 T0 (IPA, kerjakan PERTAMA)
- a) Baca ios-native.yml: cara proyek Xcode dihasilkan (xcodegen dari ios/project.yml?), versi Xcode, scheme, nama target, trigger. Kutip dari file, jangan berasumsi. Pastikan push TAG tidak memicu ios-native.yml; kalau memicu, atur filter-nya agar tag tidak memicu.
- b) Buat .github/workflows/ios-ipa-rc.yml: trigger `push: tags: ['rc*']` + workflow_dispatch (input rc_label). Concurrency group sendiri (`ipa-rc-${{ github.ref }}`), cancel-in-progress: false. Tanpa UI test.
- c) Build Release iphoneos unsigned: xcodebuild archive dengan CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="". Fallback: xcodebuild build -sdk iphoneos -configuration Release. Kemas Payload/Meowlett.app menjadi Meowlett-<label>-<short-sha>.ipa, upload artifact (retention 14 hari), tulis SHA/versi/build number/ukuran di job summary.
- d) Verifikasi di workflow. GAGALKAN job bila: Info.plist tanpa CFBundleIdentifier/versi; ada WebKit di binary (otool -L). Hanya LAPORKAN: font Plus Jakarta Sans ada di bundle dan terdaftar di UIAppFonts; argumen -uitest-* aktif di Release.
- e) Buat IPA-RC.md: status "preview, bukan paritas UI; P0 terbuka"; cara memicu (git tag rcN-preview <sha> && git push origin rcN-preview); cara pasang via Sideloadly/AltStore (Apple ID gratis kedaluwarsa 7 hari); IPA unsigned.
- f) Commit (ci:), push branch SEKALI. Lalu buat dan push tag rc1-preview pada commit itu. Cek SEKALI apakah run IPA terpicu, laporkan nomor run, BERHENTI.
+ a) Baca ios-native.yml: cara proyek Xcode dihasilkan, versi Xcode yang dinyatakan/dicatat, scheme, target, trigger. Kutip dari file, jangan berasumsi. Pastikan push TAG tidak memicu ios-native.yml; bila memicu, filter agar tag tidak memicu.
+ b) Buat/perbarui .github/workflows/ios-ipa-rc.yml dengan trigger push ke branch native-swift-parity, tags ['rc*'], dan workflow_dispatch(input rc_label). Job hanya jalan jika: `github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, '[ipa]')`.
+ c) Concurrency group sendiri `ipa-rc-${{ github.ref }}`, cancel-in-progress: false. Build Release iphoneos unsigned (archive, fallback build), tanpa UI test. Kemas Payload/Meowlett.app menjadi Meowlett-<label>-<short-sha>.ipa, artifact retention 14 hari, tulis SHA/versi/build/ukuran di summary.
+ d) Gagalkan job bila metadata Info.plist yang diwajibkan tidak ada atau binary menautkan WebKit (otool -L). Hanya laporkan status font Plus Jakarta Sans/UIAppFonts dan argumen -uitest-*.
+ e) Perbarui IPA-RC.md: status preview, bukan paritas UI; P0 terbuka; cara trigger utama adalah push commit dengan [ipa]. Dokumentasikan unsigned IPA dan instalasi Sideloadly/AltStore (Apple ID gratis 7 hari).
+ f) Commit `ci: build IPA rc1-preview [ipa]`, push branch native-swift-parity SEKALI. Commit itu sendiri harus memicu workflow IPA. Cek SEKALI apakah run IPA terpicu, catat nomor run, lalu berhenti.
 
 T1 (P0) Baca run untuk commit 4ca24ab. Kutip [MeowlettTapComparison] kedua leg Settings dan daftar elemen yang mencakup titik (310,91). Bila ada view lain (bukan tombol Settings) di titik itu, perbaiki di app (urutan z, allowsHitTesting(false) pada overlay/background blur header, accessibilityElement). Bila tidak ada, tulis BELUM TERBUKTI dan jangan ubah app.
 T2 (P1) Target MeowlettTests (tanpa UI) + job CI terpisah "unit" untuk umpan balik cepat.
@@ -453,3 +453,24 @@ T9+ (P2–P4) Susun dari tabel selisih di AUDIT.md sesuai urutan prioritas; tiap
 | K8 | BELUM TERVERIFIKASI |
 | K9 | BELUM TERVERIFIKASI |
 
+## T0 follow-up — build IPA lewat push commit `[ipa]` (23 November 2026)
+
+### Pemeriksaan run commit sebelumnya
+- Pada pemeriksaan tunggal sebelum perubahan, HEAD sebelumnya `3b2517ee9f4aa289e1cbc453d39ff09f5004cc9a` memiliki native run #294 (event `push`) dan #295 (event `pull_request`), keduanya `in_progress`. Tidak ada run IPA untuk commit itu. Tidak dilakukan polling.
+
+### Perubahan dalam tugas tunggal ini
+- `.github/workflows/ios-ipa-rc.yml`: trigger `push.branches: native-swift-parity` ditambahkan, trigger tag `rc*` dan `workflow_dispatch(rc_label)` dipertahankan.
+- Job-level `if` gate: `github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, '[ipa]')`. Push biasa di branch tanpa `[ipa]` tidak menjalankan job; push tag dan workflow_dispatch tetap dapat menjalankan job.
+- Concurrency tetap terisolasi pada `ipa-rc-${{ github.ref }}` dengan `cancel-in-progress: false`; tidak berbagi group dengan workflow UI test.
+- Label push branch dipetik dari pola `rcN-preview` dalam pesan commit (untuk commit ini `rc1-preview`); tag memakai nama tag, sedangkan workflow_dispatch memakai input `rc_label`.
+- Build Release unsigned, archive/fallback build, pemeriksaan Info.plist dan WebKit, pelaporan font/`UIAppFonts`/`-uitest-*`, packaging IPA, summary SHA/version/build/size, serta artifact retention 14 hari dipertahankan. Tidak ada UI test di workflow IPA.
+- `IPA-RC.md` diperbarui dengan contoh trigger `git commit -m "ci: build IPA rc1-preview [ipa]"` lalu push ke `native-swift-parity`.
+- `ios-native.yml`, source app, test, dan branch `main` tidak diubah.
+
+### Bukti / batas verifikasi
+- Branch awal sebelum commit tugas ini: `3b2517ee9f4aa289e1cbc453d39ff09f5004cc9a`.
+- Workflow hanya diverifikasi dari perubahan file; eksekusi runner dan hasil build IPA belum dapat disimpulkan sebelum run GitHub Actions dibuat.
+- Hasil pemicu run IPA setelah push commit ini akan dicatat melalui pemeriksaan tunggal. Jika tidak ditemukan, penyebabnya akan dinyatakan apa adanya.
+- **Build IPA, pemeriksaan runtime Info.plist/WebKit, font/flag Release, dan artifact: BELUM TERVERIFIKASI** sampai workflow dijalankan dan selesai.
+- K1: VERIFIED. K2: BELUM TERVERIFIKASI. K3: PARTIAL. K4: PARTIAL. K5: BELUM TERVERIFIKASI. K6: BELUM TERVERIFIKASI. K7: PARTIAL. K8: BELUM TERVERIFIKASI. K9: BELUM TERVERIFIKASI.
+- PR #2 tetap Draft; tidak merge, force-push, atau ubah `main`.

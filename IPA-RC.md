@@ -6,21 +6,16 @@ Workflow `.github/workflows/ios-ipa-rc.yml` menghasilkan IPA Release untuk peran
 
 ## Cara memicu
 
-Dari commit yang sudah ada di branch `native-swift-parity`, buat dan push tag RC:
+Workflow otomatis berjalan dari push ke branch `native-swift-parity` hanya bila pesan commit mengandung marker `[ipa]`. Commit biasa tanpa marker tidak menjalankan build IPA.
+
+Contoh memicu RC pertama:
 
 ```sh
-git tag rcN-preview <sha>
-git push origin rcN-preview
+git commit -m "ci: build IPA rc1-preview [ipa]"
+git push origin native-swift-parity
 ```
 
-Contoh untuk RC pertama:
-
-```sh
-git tag rc1-preview <sha>
-git push origin rc1-preview
-```
-
-Alternatifnya, buka **Actions → Meowlett IPA Release Candidate → Run workflow** dan isi input `rc_label`.
+Nama file IPA diambil dari label `rc1-preview` pada pesan commit, lalu diberi short SHA. Untuk push tag `rc*`, label diambil dari nama tag. Alternatif manual tetap tersedia melalui **Actions → Meowlett IPA Release Candidate → Run workflow** dengan input `rc_label`.
 
 Setelah job selesai, ambil artifact `Meowlett-IPA-RC-<run>`. Artifact disimpan selama 14 hari. Nama file memakai format `Meowlett-<label>-<short-sha>.ipa`.
 
