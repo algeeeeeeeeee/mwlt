@@ -1121,6 +1121,8 @@ private struct SettingsDataSheet: View {
         .padding(.top, 22)
         .padding(.bottom, 40)
         .background(AppAppearance.modal(dark: isDark))
+        .blur(radius: confirmation == nil ? 0 : 8)
+        .animation(.easeInOut(duration: 0.2), value: confirmation != nil)
         .presentationDetents([.height(370)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(22)
