@@ -935,63 +935,91 @@ private struct SettingsCategoryMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
 
+    private var isDark: Bool { colorScheme == .dark }
+    private var categoryBackground: Color {
+        isDark ? AppAppearance.card2(dark: true) : AppAppearance.background(dark: false)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
+            Capsule()
+                .fill(AppAppearance.border(dark: isDark))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+
             HStack {
                 Text(isEnglish ? "Category" : "Kategori")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.secondary).frame(width: 32, height: 32)
-                        .background(Color(uiColor: .secondarySystemBackground), in: Circle())
-                }.buttonStyle(.plain)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .background(categoryBackground, in: Circle())
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20).padding(.vertical, 15)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
 
             VStack(spacing: 0) {
                 menuRow(
                     symbol: "chart.bar",
                     title: isEnglish ? "Spending Limits" : "Batas Pengeluaran",
-                    subtitle: isEnglish ? "Set monthly category budgets" : "Atur batas pengeluaran per kategori",
+                    subtitle: isEnglish ? "Set spending limits per category" : "Atur batas pengeluaran per kategori",
                     color: AppAppearance.accent,
                     action: onBudget
                 )
-                Rectangle().fill(Color.primary.opacity(0.07)).frame(height: 1).padding(.leading, 52)
+
+                Rectangle()
+                    .fill(AppAppearance.border(dark: isDark))
+                    .frame(height: 1)
+                    .padding(.leading, 48)
+
                 menuRow(
                     symbol: "square.grid.2x2",
-                    title: isEnglish ? "Manage categories" : "Kelola Kategori",
+                    title: isEnglish ? "Manage Categories" : "Kelola Kategori",
                     subtitle: isEnglish ? "Manage & organise categories" : "Atur & kelola kategori",
                     color: AppAppearance.primary,
                     action: onManage
                 )
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 20)
+            .padding(.bottom, 32)
         }
-        .background(AppAppearance.modal(dark: colorScheme == .dark))
+        .frame(maxWidth: 480)
+        .frame(maxWidth: .infinity)
+        .background(AppAppearance.card(dark: isDark))
         .presentationDetents([.height(220)])
-        .presentationDragIndicator(.visible)
+        .presentationDragIndicator(.hidden)
         .presentationCornerRadius(28)
     }
 
     private func menuRow(symbol: String, title: String, subtitle: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
+                Image(systemName: symbol)
+                    .font(.system(size: 18, weight: .regular))
                     .foregroundStyle(color)
                     .frame(width: 36, height: 36)
-                    .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                    .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(.primary)
-                    Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text(title)
+                        .font(MeowlettTypography.font(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(MeowlettTypography.font(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(.tertiary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(.tertiary)
             }
-            .padding(.vertical, 13)
+            .padding(.vertical, 14)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
