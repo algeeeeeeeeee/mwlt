@@ -323,7 +323,7 @@ private struct SettingsAppearanceSheet: View {
         VStack(spacing: 0) {
             Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
             HStack(spacing: 10) {
-                Image(systemName: darkOverride == "true" ? "moon.fill" : "sun.max.fill")
+                Image(systemName: isDark ? "moon.fill" : "sun.max.fill")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundStyle(AppAppearance.accent)
                     .frame(width: 36, height: 36)
@@ -344,11 +344,15 @@ private struct SettingsAppearanceSheet: View {
                     appearanceSwitchRow(
                         symbol: darkOverride == "true" ? "moon.fill" : "sun.max.fill",
                         title: isEnglish ? "Display mode" : "Mode tampilan",
-                        subtitle: darkOverride == "true" ? (isEnglish ? "Dark mode" : "Mode gelap") : (isEnglish ? "Light mode" : "Mode terang"),
+                        subtitle: isDark ? (isEnglish ? "Dark mode" : "Mode gelap") : (isEnglish ? "Light mode" : "Mode terang"),
                         isOn: Binding(
                             get: { colorScheme == .dark },
-                            set: { darkOverride = $0 ? "true" : "false"; followSystem = "0" }
-                        )
+                            set: { value in
+                                guard followSystem != "1" else { return }
+                                darkOverride = value ? "true" : "false"
+                            }
+                        ),
+                        isDisabled: followSystem == "1"
                     )
                     Divider().opacity(0.45)
                     appearanceSwitchRow(
@@ -359,7 +363,7 @@ private struct SettingsAppearanceSheet: View {
                             get: { followSystem == "1" },
                             set: { value in
                                 followSystem = value ? "1" : "0"
-                                if !value { darkOverride = colorScheme == .dark ? "true" : "false" }
+                                darkOverride = value ? "system" : (colorScheme == .dark ? "true" : "false")
                             }
                         )
                     )
@@ -435,7 +439,7 @@ private struct SettingsAppearanceSheet: View {
         .presentationCornerRadius(28)
     }
 
-    private func appearanceSwitchRow(symbol: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
+    private func appearanceSwitchRow(symbol: String, title: String, subtitle: String, isOn: Binding<Bool>, isDisabled: Bool = false) -> some View {
         HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppAppearance.accent)
                 .frame(width: 36, height: 36).background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
@@ -444,7 +448,7 @@ private struct SettingsAppearanceSheet: View {
                 Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
             }
             Spacer()
-            Toggle("", isOn: isOn).labelsHidden().tint(AppAppearance.primary)
+            Toggle("", isOn: isOn).labelsHidden().tint(AppAppearance.primary).disabled(isDisabled).opacity(isDisabled ? 0.4 : 1)
         }
         .padding(.vertical, 14)
     }
@@ -455,15 +459,22 @@ private struct SettingsNotificationsSheet: View {
     @Binding var weekly: Bool
     @Binding var day: String
     let isEnglish: Bool
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var financeStore: FinanceStore
     @State private var showReminderSettings = false
+    @State private var permissionMessage: String?
+    @State private var isRequestingPermission = false
 
     private var isDark: Bool { colorScheme == .dark }
     private var primary: Color { AppAppearance.primary }
     private var accent: Color { AppAppearance.accent }
     private var dayLabels: [String] {
         isEnglish ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"]
+    }
+    private var selectedDayLabel: String {
+        dayLabels[min(6, max(0, Int(day) ?? 0))]
     }
 
     var body: some View {
@@ -472,21 +483,20 @@ private struct SettingsNotificationsSheet: View {
                 .fill(Color.secondary.opacity(0.28))
                 .frame(width: 36, height: 4)
                 .padding(.top, 12)
-                .padding(.bottom, 14)
 
             HStack(spacing: 10) {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(AppAppearance.card2(dark: isDark))
-                    .frame(width: 38, height: 38)
+                    .frame(width: 36, height: 36)
                     .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(accent))
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundStyle(enabled ? accent : Color.secondary))
                 Text(isEnglish ? "Notifications" : "Notifikasi")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .black))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                         .background(AppAppearance.card2(dark: isDark), in: Circle())
@@ -494,39 +504,37 @@ private struct SettingsNotificationsSheet: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 10)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    Button { showReminderSettings = true } label: {
-                        HStack(spacing: 12) {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(AppAppearance.card2(dark: isDark))
-                                .frame(width: 36, height: 36)
-                                .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(accent))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(isEnglish ? "Transaction reminder" : "Pengingat Transaksi")
-                                    .font(MeowlettTypography.font(size: 14, weight: .bold))
-                                    .foregroundStyle(.primary)
-                                Text(enabled
-                                     ? (isEnglish ? "Notifications active" : "Notifikasi aktif")
-                                     : (isEnglish ? "Notifications off" : "Notifikasi nonaktif"))
-                                    .font(MeowlettTypography.font(size: 11, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.tertiary)
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(AppAppearance.card2(dark: isDark))
+                            .frame(width: 36, height: 36)
+                            .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundStyle(enabled ? accent : Color.secondary))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isEnglish ? "Daily Reminder" : "Pengingat Harian")
+                                .font(MeowlettTypography.font(size: 14, weight: .bold))
+                                .foregroundStyle(.primary)
+                            Text(enabled
+                                 ? (isEnglish ? "Active — every day at 9 PM" : "Aktif — setiap hari jam 9 malam")
+                                 : (isEnglish ? "Inactive" : "Nonaktif"))
+                                .font(MeowlettTypography.font(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.vertical, 14)
-                        .contentShape(Rectangle())
+                        Spacer(minLength: 8)
+                        switchControl(isOn: enabled, isLoading: isRequestingPermission) {
+                            Task { await updateNotifications(to: !enabled) }
+                        }
                     }
-                    .buttonStyle(.plain)
-
-                    Divider().overlay(AppAppearance.border(dark: isDark))
+                    .padding(.vertical, 14)
+                    .overlay(alignment: .bottom) {
+                        Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1)
+                    }
 
                     VStack(spacing: 10) {
                         HStack(spacing: 12) {
@@ -535,17 +543,21 @@ private struct SettingsNotificationsSheet: View {
                                 .frame(width: 36, height: 36)
                                 .overlay(Image(systemName: "chart.bar.fill")
                                     .font(.system(size: 16, weight: .semibold))
-                                    .foregroundStyle(weekly ? accent : .secondary))
+                                    .foregroundStyle(weekly ? accent : Color.secondary))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(isEnglish ? "Weekly summary" : "Ringkasan Mingguan")
+                                Text(isEnglish ? "Weekly Summary" : "Ringkasan Mingguan")
                                     .font(MeowlettTypography.font(size: 14, weight: .bold))
-                                Text(weekly ? (isEnglish ? "Every \(dayLabels[Int(day) ?? 0])" : "\(dayLabels[Int(day) ?? 0]) tiap minggu") : (isEnglish ? "Off" : "Nonaktif"))
+                                    .foregroundStyle(.primary)
+                                Text(weekly
+                                     ? (isEnglish ? "Every \(selectedDayLabel)" : "\(selectedDayLabel) tiap minggu")
+                                     : (isEnglish ? "Off" : "Nonaktif"))
                                     .font(MeowlettTypography.font(size: 11, weight: .medium))
                                     .foregroundStyle(.secondary)
                             }
-                            Spacer()
+                            Spacer(minLength: 8)
                             switchControl(isOn: weekly) { weekly.toggle() }
                         }
+
                         if weekly {
                             HStack(spacing: 6) {
                                 ForEach(Array(dayLabels.enumerated()), id: \.offset) { index, title in
@@ -555,7 +567,7 @@ private struct SettingsNotificationsSheet: View {
                                             .font(MeowlettTypography.font(size: 11, weight: .bold))
                                             .foregroundStyle(selected ? .white : Color.secondary)
                                             .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 8)
+                                            .padding(.vertical, 6)
                                             .background(selected ? primary : AppAppearance.card2(dark: isDark), in: Capsule())
                                     }
                                     .buttonStyle(.plain)
@@ -565,20 +577,68 @@ private struct SettingsNotificationsSheet: View {
                         }
                     }
                     .padding(.vertical, 14)
+                    .overlay(alignment: .bottom) {
+                        if weekly {
+                            Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1)
+                        }
+                    }
 
+                    Button {
+                        showReminderSettings = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(AppAppearance.card2(dark: isDark))
+                                .frame(width: 36, height: 36)
+                                .overlay(Image(systemName: "bell.badge")
+                                    .font(.system(size: 17, weight: .regular))
+                                    .foregroundStyle(accent))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(isEnglish ? "Transaction Reminder" : "Pengingat Transaksi")
+                                    .font(MeowlettTypography.font(size: 14, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Text(isEnglish
+                                     ? "Notify if no spending recorded today"
+                                     : "Notif kalau belum input pengeluaran hari ini")
+                                    .font(MeowlettTypography.font(size: 11, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 4)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
+                        .overlay(alignment: .top) {
+                            Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+                .padding(.bottom, 28)
             }
         }
         .background(AppAppearance.modal(dark: isDark))
         .sheet(isPresented: $showReminderSettings) { SettingsReminderSheet() }
+        .alert(
+            isEnglish ? "Notifications unavailable" : "Notifikasi tidak tersedia",
+            isPresented: Binding(
+                get: { permissionMessage != nil },
+                set: { if !$0 { permissionMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { permissionMessage = nil }
+        } message: {
+            Text(permissionMessage ?? "")
+        }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(28)
     }
 
-    private func switchControl(isOn: Bool, action: @escaping () -> Void) -> some View {
+    private func switchControl(isOn: Bool, isLoading: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Capsule()
                 .fill(isOn ? primary : Color.secondary.opacity(isDark ? 0.25 : 0.20))
@@ -590,13 +650,72 @@ private struct SettingsNotificationsSheet: View {
                         .shadow(color: .black.opacity(0.16), radius: 3, x: 0, y: 1)
                         .padding(4)
                 }
+                .opacity(isLoading ? 0.55 : 1)
                 .animation(.easeInOut(duration: 0.18), value: isOn)
         }
         .buttonStyle(.plain)
+        .disabled(isLoading)
         .accessibilityLabel(isOn ? (isEnglish ? "On" : "Aktif") : (isEnglish ? "Off" : "Nonaktif"))
     }
 
+    @MainActor
+    private func updateNotifications(to value: Bool) async {
+        guard !isRequestingPermission else { return }
+        isRequestingPermission = true
+        defer { isRequestingPermission = false }
 
+        guard value else {
+            enabled = false
+            MeowlettReminderScheduler.removePendingRequests()
+            return
+        }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound, .badge])
+            guard granted else {
+                enabled = false
+                permissionMessage = isEnglish
+                    ? "Notification permission was denied. Enable it in iPhone Settings."
+                    : "Izin notifikasi ditolak. Aktifkan melalui Pengaturan iPhone."
+                return
+            }
+
+            enabled = true
+            scheduleNotifications()
+
+            let confirmation = UNMutableNotificationContent()
+            confirmation.title = "Meowlett"
+            confirmation.body = isEnglish
+                ? "Reminder on! You'll be notified every day at 9 PM."
+                : "Pengingat aktif! Kamu akan diingatkan setiap hari jam 9 malam."
+            confirmation.sound = .default
+            let request = UNNotificationRequest(
+                identifier: "meowlett-reminder-activated",
+                content: confirmation,
+                trigger: nil
+            )
+            UNUserNotificationCenter.current().add(request)
+        } catch {
+            enabled = false
+            permissionMessage = error.localizedDescription
+        }
+    }
+
+    private func scheduleNotifications() {
+        let defaults = UserDefaults.standard
+        let rawDays = defaults.string(forKey: "gm_reminder_days") ?? "[1,2,3,4,5]"
+        let reminderDays = (try? JSONDecoder().decode([Int].self, from: Data(rawDays.utf8))) ?? [1,2,3,4,5]
+        let hour = Int(defaults.string(forKey: "gm_reminder_hour") ?? "21") ?? 21
+        let smart = defaults.string(forKey: "gm_reminder_smart") != "0"
+        MeowlettReminderScheduler.schedule(
+            days: reminderDays,
+            hour: min(23, max(0, hour)),
+            smart: smart,
+            language: isEnglish ? "en" : "id",
+            transactions: financeStore.transactions
+        )
+    }
 }
 
 private struct SettingsCategoryMenuSheet: View {
