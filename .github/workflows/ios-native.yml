@@ -209,8 +209,8 @@ jobs:
           import AppKit
           import Foundation
 
-          let directory = "(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
-          let output = "(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/Meowlett-Native-Preview.jpg"
+          let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
+          let output = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/Meowlett-Native-Preview.jpg"
           let screens: [(String, String)] = [
               ("01-onboarding.png", "Onboarding"),
               ("02-dashboard.png", "Dashboard"),
@@ -253,7 +253,7 @@ jobs:
           for (index, screen) in screens.enumerated() {
               let path = URL(fileURLWithPath: directory).appendingPathComponent(screen.0).path
               guard let image = NSImage(contentsOfFile: path) else {
-                  fatalError("Missing preview screenshot: (path)")
+                  fatalError("Missing preview screenshot: \(path)")
               }
 
               let column = index % columns
@@ -285,7 +285,7 @@ jobs:
               fatalError("Could not encode preview contact sheet.")
           }
           try data.write(to: URL(fileURLWithPath: output))
-          print("Single preview image created at (output)")
+          print("Single preview image created at \(output)")
           SWIFT
           swift "$RUNNER_TEMP/MakeMeowlettPreview.swift"
 
