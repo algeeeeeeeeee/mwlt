@@ -17,6 +17,7 @@ struct DateTabView: View {
     @State private var wishlistLoaded = false
     @State private var showWishlistForm = false
     @State private var wishlistInput = ""
+    @FocusState private var wishlistFieldFocused: Bool
     @State private var activeDateID: UUID?
     @State private var recentlyDeletedDateTransaction: MeowlettTransaction?
     @State private var showDateUndoToast = false
@@ -147,7 +148,7 @@ struct DateTabView: View {
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, 20)
             } else {
                 VStack(spacing: 8) {
                     ForEach(wishlist) { item in
@@ -159,7 +160,7 @@ struct DateTabView: View {
                                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(item.done ? datePink : Color.primary.opacity(isDark ? 0.2 : 0.15), lineWidth: 2))
                                     .overlay {
                                         if item.done {
-                                            Image(systemName: "checkmark")
+                                            Image(systemName: "checkmark.circle")
                                                 .font(.system(size: 10, weight: .black))
                                                 .foregroundStyle(.white)
                                         }
@@ -173,9 +174,9 @@ struct DateTabView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             Button { removeWishlist(item) } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(.system(size: 13, weight: .regular))
                                     .foregroundStyle(.secondary)
-                                    .frame(width: 24, height: 24)
+                                    .frame(width: 17, height: 17)
                             }
                             .buttonStyle(.plain)
                         }
@@ -228,7 +229,7 @@ struct DateTabView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 22)
+                .padding(.vertical, 32)
             } else {
                 VStack(spacing: 9) {
                     ForEach(allDateTransactions) { transaction in
@@ -275,7 +276,7 @@ struct DateTabView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(datePink.opacity(0.65))
                         .rotationEffect(.degrees(active ? 180 : 0))
                 }
@@ -396,6 +397,7 @@ struct DateTabView: View {
                 .buttonStyle(.plain)
             }
             TextField(isEnglish ? "e.g. Rooftop dinner..." : "Contoh: Dinner di rooftop...", text: $wishlistInput)
+                .focused($wishlistFieldFocused)
                 .font(MeowlettTypography.font(size: 16, weight: .regular))
                 .padding(13)
                 .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
@@ -416,6 +418,7 @@ struct DateTabView: View {
         .padding(.top, 22)
         .padding(.bottom, 36)
         .background(AppAppearance.card(dark: isDark))
+        .onAppear { wishlistFieldFocused = true }
     }
 
     private var cardBackground: Color {
@@ -437,7 +440,12 @@ struct DateTabView: View {
     }
 
     private func dateLine(_ item: MeowlettTransaction) -> String {
-        let dateText = item.date.formatted(.dateTime.year().month(.twoDigits).day(.twoDigits))
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.timeZone = Calendar.current.timeZone
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateText = formatter.string(from: item.date)
         return item.location.isEmpty ? dateText : "\(dateText) · \(item.location)"
     }
 
