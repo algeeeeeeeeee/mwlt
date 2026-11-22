@@ -76,7 +76,8 @@ struct SettingsView: View {
                         subtitle: notificationsEnabled == "1"
                             ? (isEnglish ? "Notifications enabled" : "Notifikasi aktif")
                             : (isEnglish ? "Notifications disabled" : "Notifikasi nonaktif"),
-                        symbol: "bell"
+                        symbol: "bell",
+                        statusDot: notificationsEnabled != "1"
                     ) { showNotifications = true }
                 }
 
@@ -266,11 +267,16 @@ struct SettingsView: View {
             .shadow(color: .black.opacity(isDark ? 0 : 0.025), radius: 4, x: 0, y: 1)
     }
 
-    private func settingsRow(title: String, subtitle: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func settingsRow(title: String, subtitle: String, symbol: String, statusDot: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(.primary)
+                    HStack(spacing: 6) {
+                        Text(title).font(MeowlettTypography.font(size: 14, weight: .bold)).foregroundStyle(.primary)
+                        if statusDot {
+                            Circle().fill(Color(hex: "#ef4444")).frame(width: 7, height: 7)
+                        }
+                    }
                     Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 6)
