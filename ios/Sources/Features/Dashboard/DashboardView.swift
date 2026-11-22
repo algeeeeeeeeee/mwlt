@@ -38,14 +38,22 @@ struct DashboardView: View {
               let state = try? JSONDecoder().decode(DashboardStreakData.self, from: data) else { return 0 }
         return state.count
     }
+    private var thisWeekStart: Date {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let weekday = calendar.component(.weekday, from: today) // Sunday = 1
+        let daysSinceMonday = (weekday + 5) % 7
+        return calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) ?? today
+    }
+    private var tomorrowStart: Date {
+        Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: .now)) ?? .now
+    }
     private var thisWeekTransactions: [MeowlettTransaction] {
-        guard let interval = Calendar.current.dateInterval(of: .weekOfYear, for: .now) else { return [] }
-        return store.transactions.filter { interval.contains($0.date) }
+        store.transactions.filter { $0.date >= thisWeekStart && $0.date < tomorrowStart }
     }
     private var lastWeekTransactions: [MeowlettTransaction] {
-        guard let previous = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: .now),
-              let interval = Calendar.current.dateInterval(of: .weekOfYear, for: previous) else { return [] }
-        return store.transactions.filter { interval.contains($0.date) }
+        let previousStart = Calendar.current.date(byAdding: .day, value: -7, to: thisWeekStart) ?? thisWeekStart
+        return store.transactions.filter { $0.date >= previousStart && $0.date < thisWeekStart }
     }
     private var thisWeekSpent: Int64 {
         thisWeekTransactions.reduce(Int64(0)) { $0 + $1.amount }
@@ -129,11 +137,19 @@ struct DashboardView: View {
             (key, values.reduce(Int64(0)) { $0 + $1.amount })
         }.sorted { $0.amount > $1.amount }
     }
-    private var dailyTotals: [Int64] {
+    private var dailySparklinePoints: [DashboardSparklinePoint] {
         let calendar = Calendar.current
-        return (0..<7).map { offset in
-            guard let day = calendar.date(byAdding: .day, value: -(6 - offset), to: .now) else { return 0 }
-            return store.transactions.filter { calendar.isDate($0.date, inSameDayAs: day) }.reduce(Int64(0)) { $0 + $1.amount }
+        return (0..<7).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: -(6 - offset), to: .now) else { return nil }
+            let total = store.transactions
+                .filter { calendar.isDate($0.date, inSameDayAs: day) }
+                .reduce(Int64(0)) { $0 + $1.amount }
+            let label = day.formatted(.dateTime.weekday(.abbreviated).locale(Locale(identifier: "id_ID")))
+            return DashboardSparklinePoint(
+                total: total,
+                dayLabel: label,
+                isToday: calendar.isDateInToday(day)
+            )
         }
     }
     private var currentMonthLabel: String {
@@ -149,7 +165,7 @@ struct DashboardView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     balanceCard
 
-                    HStack(spacing: 8) {
+                    DashboardWeightedRow(weights: [1, 2], spacing: 12) {
                         streakCard
                         weeklyInsightCard
                     }
@@ -369,93 +385,190 @@ struct DashboardView: View {
 
     private var streakCard: some View {
         let factsID = [
-            "ATM pertama dipasang di London tahun 1967.",
-            "Uang kertas pertama berasal dari Tiongkok.",
-            "Warren Buffett membeli saham pertama pada usia 11 tahun.",
-            "Koin pertama dicetak di Lydia sekitar 600 SM.",
-            "Aturan 50/30/20 membagi kebutuhan, keinginan, dan tabungan.",
-            "Dana darurat ideal umumnya 3–6 bulan pengeluaran.",
-            "Bunga majemuk membantu tabungan berkembang."
+            "ATM pertama dipasang London 1967.",
+            "Uang kertas pertama dari Tiongkok abad ke-7.",
+            "'Salary' dari Latin — Romawi digaji garam.",
+            "Warren Buffett beli saham pertama usia 11 tahun.",
+            "Koin pertama dicetak di Lydia (Turki) ~600 SM.",
+            "Orang 12-18% lebih boros bayar kartu vs tunai.",
+            "Belanja pengalaman lebih membahagiakan dari beli barang.",
+            "Simbol '$' dari singkatan peso Spanyol.",
+            "Penny AS biaya produksi > nilai nominalnya.",
+            "Uang Monopoly dicetak lebih banyak dari dolar asli.",
+            "Swedia hampir jadi negara cashless pertama.",
+            "Bunga majemuk = keajaiban ke-8 dunia (Einstein).",
+            "Dana darurat ideal 3-6 bulan pengeluaran.",
+            "Aturan 50/30/20: kebutuhan/keinginan/tabungan.",
+            "Inflasi 5%/tahun buat Rp1jt jadi Rp614rb dalam 10 tahun.",
+            "Aturan 72: bagi 72 dgn bunga = tahun uang berlipat.",
+            "Jeff Bezos mulai Amazon dari garasi, modal $250rb.",
+            "Bitcoin pertama ditambang 3 Januari 2009.",
+            "Bursa saham pertama di Amsterdam tahun 1602.",
+            "Pasar saham global tak pernah rugi dalam 20 tahun mana pun.",
+            "1,7 miliar orang dewasa dunia tak punya rekening bank.",
+            "Rata-rata orang kaya punya 7 sumber pendapatan.",
+            "Index fund kalahkan fund aktif 85% waktu dalam 15 tahun.",
+            "Dollar Cost Averaging lebih baik dari timing pasar.",
+            "Stres finansial = penyebab konflik #1 dalam hubungan.",
+            "Kaya bukan soal berapa banyak kamu hasilkan tapi yang disimpan.",
+            "Waktu terbaik investasi: 20 tahun lalu. Kedua: sekarang.",
+            "Orang kaya beli aset, bukan liabilitas.",
+            "Dana pensiun Indonesia rata-rata hanya cukup 3-5 tahun.",
+            "QRIS diluncurkan Bank Indonesia tahun 2019."
         ]
         let factsEN = [
-            "The first ATM was installed in London in 1967.",
-            "Paper money originated in China.",
-            "Warren Buffett bought his first stock at age 11.",
-            "The first coins were minted in Lydia around 600 BC.",
-            "The 50/30/20 rule divides needs, wants, and savings.",
-            "A common emergency fund goal is 3–6 months of expenses.",
-            "Compound interest helps savings grow over time."
+            "First ATM installed London 1967.",
+            "Paper money originated China 7th century.",
+            "'Salary' from Latin — Romans paid in salt.",
+            "Warren Buffett bought first stock at age 11.",
+            "World's first coin minted Lydia (Turkey) ~600 BC.",
+            "People spend 12-18% more paying by card vs cash.",
+            "Experiences bring more happiness than buying things.",
+            "'$' symbol from Spanish peso abbreviation.",
+            "US penny costs more to make than its face value.",
+            "More Monopoly money printed annually than real dollars.",
+            "Sweden close to becoming first cashless society.",
+            "Compound interest = 8th wonder of world (Einstein).",
+            "Ideal emergency fund: 3-6 months expenses.",
+            "50/30/20 rule: needs/wants/savings.",
+            "5% annual inflation turns $1,000 into $614 over 10 years.",
+            "Rule of 72: divide 72 by rate = years to double.",
+            "Jeff Bezos started Amazon in garage with $250k.",
+            "Bitcoin first mined January 3, 2009.",
+            "World's first stock exchange founded Amsterdam 1602.",
+            "Global stock market never lost money over any 20-year period.",
+            "1.7 billion adults worldwide lack bank accounts.",
+            "Average wealthy person has 7 income streams.",
+            "Index funds beat active funds 85% of the time.",
+            "Dollar Cost Averaging beats market timing consistently.",
+            "Financial stress = #1 cause of relationship conflict.",
+            "Wealth is not how much you earn but how much you keep.",
+            "Best time to invest: 20 years ago. Second best: now.",
+            "Rich people buy assets, not liabilities.",
+            "FOMO is one of the leading causes of poor investment decisions.",
+            "Paying yourself first is the #1 wealth-building habit."
         ]
-        let day = Calendar.current.component(.day, from: .now)
-        let month = Calendar.current.component(.month, from: .now)
-        let facts = isEnglish ? factsEN : factsID
-        let fact = facts[(day + month * 31 + currentStreak) % facts.count]
+        let today = Calendar.current.dateComponents([.day, .month], from: .now)
+        let index = ((today.day ?? 1) + ((today.month ?? 1) - 1) * 31 + currentStreak) % 30
+        let fact = (isEnglish ? factsEN : factsID)[index]
+
         return VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 5) {
-                Image(systemName: "flame.fill").foregroundStyle(Color(hex: "#fb923c"))
-                Text("STREAK").foregroundStyle(.secondary)
-            }
-            .font(MeowlettTypography.font(size: 9, weight: .heavy))
-            Text("\(currentStreak) " + (isEnglish ? "days" : "hari"))
-                .font(MeowlettTypography.font(size: 26, weight: .black))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            HStack(spacing: 4) {
-                Image(systemName: currentStreak >= 7 ? "flame.fill" : currentStreak >= 3 ? "sparkles" : "calendar")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(currentStreak >= 7 ? Color(hex: "#fb923c") : Color(hex: "#4ade80"))
-                Text(currentStreak >= 7 ? (isEnglish ? "On fire!" : "Konsisten!") : currentStreak >= 3 ? (isEnglish ? "Keep going!" : "Teruskan!") : (isEnglish ? "Open daily" : "Buka tiap hari"))
-                    .font(MeowlettTypography.font(size: 9, weight: .semibold))
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(hex: AppAppearance.accentHex).opacity(0.13))
+                    .frame(width: 26, height: 26)
+                    .overlay(
+                        Image(systemName: "flame")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: AppAppearance.accentHex))
+                    )
+                Text("STREAK")
+                    .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                    .tracking(0.3)
                     .foregroundStyle(.secondary)
             }
-            Text("“\(fact)”")
-                .font(MeowlettTypography.font(size: 8, weight: .medium))
+            .padding(.bottom, 4)
+
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text("\(currentStreak)")
+                    .font(MeowlettTypography.font(size: 28, weight: .black))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(isEnglish ? " days" : " hari")
+                    .font(MeowlettTypography.font(size: 13, weight: .bold))
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 4) {
+                Image(systemName: currentStreak >= 7 ? "flame" : currentStreak >= 3 ? "diamond" : "calendar")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(currentStreak >= 7 ? Color(hex: AppAppearance.accentHex) : Color(hex: "#4ade80"))
+                Text(currentStreak >= 7 ? (isEnglish ? "On fire!" : "Konsisten!") : currentStreak >= 3 ? (isEnglish ? "Keep going!" : "Teruskan!") : (isEnglish ? "Open daily" : "Buka tiap hari"))
+                    .font(MeowlettTypography.font(size: 10, weight: .regular))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.bottom, 6)
+
+            Text("\"\(fact)\"")
+                .font(MeowlettTypography.font(size: 9, weight: .regular))
                 .italic()
                 .foregroundStyle(.secondary)
-                .lineLimit(3)
+                .lineSpacing(1)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 2)
         }
-        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
-        .padding(12)
-        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     private var weeklyInsightCard: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 5) {
-                Image(systemName: "bolt.fill").foregroundStyle(Color(hex: AppAppearance.accentHex))
-                Text(isEnglish ? "THIS WEEK" : "MINGGU INI").foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(hex: AppAppearance.accentHex).opacity(0.13))
+                    .frame(width: 26, height: 26)
+                    .overlay(
+                        Image(systemName: "bolt")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color(hex: AppAppearance.accentHex))
+                    )
+                Text(isEnglish ? "THIS WEEK" : "MINGGU INI")
+                    .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                    .tracking(0.3)
+                    .foregroundStyle(.secondary)
             }
-            .font(MeowlettTypography.font(size: 9, weight: .heavy))
+            .padding(.bottom, 0)
+
             if thisWeekSpent == 0 {
                 Text(isEnglish ? "No spending this week yet." : "Belum ada transaksi minggu ini.")
-                    .font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .font(MeowlettTypography.font(size: 12, weight: .regular))
                     .foregroundStyle(.secondary)
             } else {
                 Text(rupiah(thisWeekSpent))
-                    .font(MeowlettTypography.font(size: 17, weight: .black))
+                    .font(MeowlettTypography.font(size: 18, weight: .black))
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
+                    .padding(.bottom, 3)
+
                 if lastWeekSpent > 0 && thisWeekSpent != lastWeekSpent {
                     let difference = thisWeekSpent - lastWeekSpent
                     Text("\(difference > 0 ? "▲" : "▼") \(rupiah(abs(difference))) " + (isEnglish ? "vs last week" : "vs minggu lalu"))
-                        .font(MeowlettTypography.font(size: 10, weight: .bold))
+                        .font(MeowlettTypography.font(size: 11, weight: .bold))
                         .foregroundStyle(difference > 0 ? Color(hex: "#f87171") : Color(hex: "#4ade80"))
+                        .padding(.bottom, 3)
                 }
+
                 if let topWeeklyCategory {
-                    Text((isEnglish ? "Most: " : "Terbanyak: ") + MeowlettCategory.name(for: topWeeklyCategory, language: language))
-                        .font(MeowlettTypography.font(size: 10, weight: .semibold))
-                        .foregroundStyle(MeowlettCategory.color(for: topWeeklyCategory))
-                        .lineLimit(1)
+                    (
+                        Text(isEnglish ? "Most: " : "Terbanyak: ")
+                            .foregroundColor(AppAppearance.textSub(dark: isDark))
+                        + Text(MeowlettCategory.name(for: topWeeklyCategory, language: language))
+                            .fontWeight(.bold)
+                            .foregroundColor(MeowlettCategory.color(for: topWeeklyCategory))
+                    )
+                    .font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .lineLimit(1)
+                    .padding(.bottom, 6)
                 }
-                Sparkline(values: dailyTotals.map(Double.init))
-                    .frame(height: 25)
+
+                DashboardWeeklySparkline(
+                    values: dailySparklinePoints,
+                    accent: Color(hex: AppAppearance.accentHex),
+                    card: AppAppearance.card(dark: isDark),
+                    textSub: AppAppearance.textSub(dark: isDark)
+                )
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
-        .padding(12)
-        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        .shadow(color: .black.opacity(isDark ? 0.5 : 0.06), radius: 4, x: 0, y: 1)
     }
 
     @ViewBuilder
@@ -1193,6 +1306,101 @@ private struct NativeMoneyEntrySheet: View {
             formatter.locale = Locale(identifier: "id_ID")
             formatter.numberStyle = .decimal
             amountText = initialValue > 0 ? (formatter.string(from: NSNumber(value: initialValue)) ?? String(initialValue)) : ""
+        }
+    }
+}
+
+private struct DashboardSparklinePoint {
+    let total: Int64
+    let dayLabel: String
+    let isToday: Bool
+}
+
+private struct DashboardWeeklySparkline: View {
+    let values: [DashboardSparklinePoint]
+    let accent: Color
+    let card: Color
+    let textSub: Color
+
+    var body: some View {
+        VStack(spacing: 2) {
+            GeometryReader { proxy in
+                let maximum = Double(max(values.map(\.total).max() ?? 0, 1))
+                let points = values.enumerated().map { index, item in
+                    CGPoint(
+                        x: proxy.size.width * CGFloat(index) / CGFloat(max(values.count - 1, 1)),
+                        y: 28 - CGFloat(Double(item.total) / maximum) * 28
+                    )
+                }
+
+                ZStack {
+                    Path { path in
+                        guard let first = points.first else { return }
+                        path.move(to: first)
+                        for point in points.dropFirst() { path.addLine(to: point) }
+                    }
+                    .stroke(accent.opacity(0.7), style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+
+                    ForEach(Array(values.enumerated()), id: \.offset) { index, item in
+                        if item.total > 0 {
+                            let point = points[index]
+                            Circle()
+                                .fill(item.isToday ? accent : card)
+                                .frame(width: item.isToday ? 6 : 4, height: item.isToday ? 6 : 4)
+                                .overlay(Circle().stroke(accent, lineWidth: 1.5))
+                                .position(point)
+                        }
+                    }
+                }
+            }
+            .frame(height: 30)
+
+            HStack(spacing: 0) {
+                ForEach(Array(values.enumerated()), id: \.offset) { _, item in
+                    Text(String(item.dayLabel.prefix(2)))
+                        .font(MeowlettTypography.font(size: 8, weight: item.isToday ? .heavy : .semibold))
+                        .foregroundStyle(item.isToday ? accent : textSub.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+}
+
+private struct DashboardWeightedRow: Layout {
+    let weights: [CGFloat]
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? subviews.reduce(0) { $0 + $1.sizeThatFits(.unspecified).width } + spacing * CGFloat(max(0, subviews.count - 1))
+        let gaps = spacing * CGFloat(max(0, subviews.count - 1))
+        let available = max(0, width - gaps)
+        let totalWeight = weights.prefix(subviews.count).reduce(0, +)
+        var heights: [CGFloat] = []
+
+        for (index, subview) in subviews.enumerated() {
+            let weight = index < weights.count ? weights[index] : 1
+            let childWidth = totalWeight > 0 ? available * weight / totalWeight : available / CGFloat(max(1, subviews.count))
+            heights.append(subview.sizeThatFits(ProposedViewSize(width: childWidth, height: proposal.height)).height)
+        }
+
+        return CGSize(width: width, height: heights.max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let gaps = spacing * CGFloat(max(0, subviews.count - 1))
+        let available = max(0, bounds.width - gaps)
+        let totalWeight = weights.prefix(subviews.count).reduce(0, +)
+        var x = bounds.minX
+
+        for (index, subview) in subviews.enumerated() {
+            let weight = index < weights.count ? weights[index] : 1
+            let width = totalWeight > 0 ? available * weight / totalWeight : available / CGFloat(max(1, subviews.count))
+            subview.place(
+                at: CGPoint(x: x, y: bounds.minY),
+                proposal: ProposedViewSize(width: width, height: bounds.height)
+            )
+            x += width + spacing
         }
     }
 }
