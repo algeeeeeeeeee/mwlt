@@ -17,9 +17,13 @@ final class FinanceStore: ObservableObject {
         // Defer UserNotifications service IPC until after the first app frame.
         // Calling this synchronously from FinanceStore.init can stall cold launch
         // on a freshly booted simulator while the notification daemon starts.
-        let startupTransactions = transactions
-        Task { @MainActor in
-            MeowlettReminderScheduler.scheduleFromDefaults(transactions: startupTransactions)
+        // Avoid touching UserNotifications on every cold launch when reminders are off.
+        // Settings removes pending requests when the user explicitly disables notifications.
+        if UserDefaults.standard.string(forKey: "gm_notif") == "1" {
+            let startupTransactions = transactions
+            Task { @MainActor in
+                MeowlettReminderScheduler.scheduleFromDefaults(transactions: startupTransactions)
+            }
         }
     }
 
