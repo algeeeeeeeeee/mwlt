@@ -146,6 +146,11 @@ struct MainTabView: View {
     private var primary: Color {
         Color(hex: AppAppearance.primaryHex)
     }
+    private var settingsHeaderIconColor: Color {
+        colorSchemeIsDark
+            ? Color(hex: AppAppearance.lighten(AppAppearance.primaryHex, ratio: 0.55))
+            : AppAppearance.readablePrimaryOnLight()
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -208,7 +213,7 @@ struct MainTabView: View {
     }
 
     private var topHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             VStack(alignment: .leading, spacing: 1) {
                 if selected == .dashboard {
                     Text(greeting)
@@ -250,14 +255,14 @@ struct MainTabView: View {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "gearshape")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(primary)
+                        .foregroundStyle(settingsHeaderIconColor)
                         .frame(width: 34, height: 34)
                         .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
                     if notificationsEnabled != "1" {
                         Circle().fill(Color(hex: "#ef4444"))
                             .frame(width: 7, height: 7)
-                            .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1))
-                            .offset(x: -1, y: 1)
+                            .overlay(Circle().strokeBorder(AppAppearance.background(dark: colorSchemeIsDark), lineWidth: 1.5))
+                            .offset(x: -4, y: 4)
                     }
                 }
             }
@@ -278,9 +283,10 @@ struct MainTabView: View {
                             }
                         }
                         .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
-                    Circle().fill(tint).frame(width: 11, height: 11)
+                    Circle().fill(tint).frame(width: 12, height: 12)
                         .overlay(Image(systemName: "camera").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
-                        .overlay(Circle().strokeBorder(Color(uiColor: .systemBackground), lineWidth: 1.5))
+                        .overlay(Circle().strokeBorder(AppAppearance.background(dark: colorSchemeIsDark), lineWidth: 2))
+                        .offset(x: 1, y: 1)
                 }
             }
             .buttonStyle(.plain)
@@ -294,7 +300,7 @@ struct MainTabView: View {
                 .opacity(colorSchemeIsDark ? 0.65 : 0.60)
                 .background(.ultraThinMaterial)
         }
-        .overlay(alignment: .bottom) { Rectangle().fill(Color.primary.opacity(0.04)).frame(height: 0.5) }
+        .shadow(color: Color.black.opacity(colorSchemeIsDark ? 0.5 : 0.06), radius: 2, x: 0, y: 1)
     }
 
     private var profileUIImage: UIImage? {
