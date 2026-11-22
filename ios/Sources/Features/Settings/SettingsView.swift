@@ -59,8 +59,9 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 profileCard
+                    .padding(.bottom, 4)
 
                 settingsCard {
                     settingsRow(
@@ -112,7 +113,6 @@ struct SettingsView: View {
                 profilePhoto = "data:image/jpeg;base64," + data.base64EncodedString()
             }
         }
-        .sheet(isPresented: $showNameEditor) { nameEditor }
         .sheet(isPresented: $showAppearance) { SettingsAppearanceSheet() }
         .sheet(isPresented: $showNotifications) {
             SettingsNotificationsSheet(
@@ -163,7 +163,7 @@ struct SettingsView: View {
                                     .frame(width: 27, height: 27)
                             }
                         }
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 1.5))
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 2.5))
                     Circle().fill(primary).frame(width: 18, height: 18)
                         .overlay(Image(systemName: "camera").font(.system(size: 8, weight: .medium)).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(AppAppearance.background(dark: isDark), lineWidth: 2))
@@ -225,31 +225,6 @@ struct SettingsView: View {
     private func saveProfileName() {
         userName = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         showNameEditor = false
-    }
-
-    private var nameEditor: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(isEnglish ? "Profile name" : "Nama profil")
-                .font(MeowlettTypography.font(size: 17, weight: .black))
-            TextField(isEnglish ? "Your name" : "Namamu", text: $nameDraft)
-                .font(MeowlettTypography.font(size: 15, weight: .regular))
-                .padding(14)
-                .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
-            HStack(spacing: 10) {
-                Button(isEnglish ? "Cancel" : "Batal") { showNameEditor = false }
-                    .frame(maxWidth: .infinity).frame(height: 44)
-                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-                Button(isEnglish ? "Save" : "Simpan") {
-                    userName = nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    showNameEditor = false
-                }
-                .fontWeight(.bold).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 44)
-                .background(primary, in: RoundedRectangle(cornerRadius: 12))
-            }
-        }
-        .padding(20)
-        .presentationDetents([.height(210)])
-        .presentationDragIndicator(.visible)
     }
 
     private var cardColor: Color {
