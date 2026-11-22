@@ -1266,6 +1266,7 @@ private struct SettingsDataSheet: View {
             formatter.dateFormat = "yyyy-MM-dd"
             guard let date = formatter.date(from: row.date) else { return nil }
             return MeowlettTransaction(
+                id: UUID(uuidString: row.id) ?? UUID(),
                 date: date,
                 amount: row.amount,
                 category: row.category,
