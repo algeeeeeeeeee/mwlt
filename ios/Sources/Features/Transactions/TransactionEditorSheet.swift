@@ -177,6 +177,7 @@ struct TransactionEditorSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.primary.opacity(0.08), lineWidth: 1))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isEnglish ? "Open calculator" : "Buka kalkulator")
             .accessibilityIdentifier("mwlt.transactionEditor.calculator")
         }
     }
