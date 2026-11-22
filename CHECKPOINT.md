@@ -260,3 +260,125 @@ No test, app source, workflow, or PR setting was changed in this check. This che
 - To keep this workflow-only commit to a single run, the `pull_request.paths` list no longer includes `.github/workflows/ios-native.yml`; this commit therefore triggers through the `push` event, while the PR path filter remains for `ios/**` and `public/meow.png` changes.
 - `concurrency.group` and `cancel-in-progress: true` are unchanged.
 - Both workflow and checkpoint are included in this single `ci:` commit before push. The resulting push run is the run to inspect; do not push follow-up documentation or any other commit until the run has been evaluated.
+
+
+## CI diagnosis — Runs #289 and #290 on SHA `c70cc91` (23 November 2026)
+
+### Workflow phase and aggregate result
+
+| Run | Event | Build simulator | Run native UI smoke tests | Result |
+|---|---|---|---|---|
+| [#289](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45057702642) | push | **success** | **failure** | failure |
+| [#290](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45057706796) | pull_request | **success** | **failure** | failure |
+
+Both runs built the simulator successfully. The failing step was specifically `Run native UI smoke tests`, step 8; the subsequent device build and preview steps were skipped.
+
+Exact aggregate lines:
+
+- #289: `Executed 12 tests, with 1 failure (0 unexpected) in 693.233 (693.342) seconds`
+- #290: `Executed 12 tests, with 1 failure (0 unexpected) in 451.897 (451.911) seconds`
+
+### Test results — Run #289
+
+| Test | Result |
+|---|---|
+| `testDatePreviewLaunchStartsOnDateTab` | passed |
+| `testDateWishlistSheetCanBeOpened` | passed |
+| `testMainTabsQuickAddAndCalculatorPresentation` | **failed** |
+| `testNativeOpeningSplashAppearsAndDismisses` | passed |
+| `testQuickAddSavesTransactionAndShowsItInTransactionsList` | passed |
+| `testQuickAddStandardTapVersusCoordinateTap` | passed |
+| `testSettingsBackupActionBuildsAndRequestsExport` | passed |
+| `testSettingsHeaderStandardTapVersusCoordinateTap` | passed (see paired-leg caveat below) |
+| `testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss` | passed |
+| `testSettingsNotificationsShowSystemPermissionStatus` | passed |
+| `testSettingsResetRequiresConfirmationAndCanBeCancelled` | passed |
+| `testSettingsRestoreActionRequestsImport` | passed |
+
+Exact failure line:
+
+```text
+2026-11-22T19:02:37.5131770Z /Users/runner/work/mwlt/mwlt/ios/Tests/MeowlettUITests.swift:54: error: -[MeowlettUITests.MeowlettUITests testMainTabsQuickAddAndCalculatorPresentation] : Failed to get matching snapshot: No matches found for Elements matching predicate '"mwlt.screen.settings" IN identifiers' from input {(
+```
+
+The diagnostic hierarchy immediately following begins with Dashboard labels (`Selamat malam`, `Isi namamu`, `Beranda`, `NOV 2026`) rather than a Settings heading. This is evidence that the expected Settings identifier was absent from the captured hierarchy when the snapshot query failed.
+
+### Test results — Run #290
+
+| Test | Result |
+|---|---|
+| `testDatePreviewLaunchStartsOnDateTab` | passed |
+| `testDateWishlistSheetCanBeOpened` | passed |
+| `testMainTabsQuickAddAndCalculatorPresentation` | passed |
+| `testNativeOpeningSplashAppearsAndDismisses` | passed |
+| `testQuickAddSavesTransactionAndShowsItInTransactionsList` | passed |
+| `testQuickAddStandardTapVersusCoordinateTap` | passed |
+| `testSettingsBackupActionBuildsAndRequestsExport` | passed |
+| `testSettingsHeaderStandardTapVersusCoordinateTap` | passed (see paired-leg caveat below) |
+| `testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss` | **failed** |
+| `testSettingsNotificationsShowSystemPermissionStatus` | passed |
+| `testSettingsResetRequiresConfirmationAndCanBeCancelled` | passed |
+| `testSettingsRestoreActionRequestsImport` | passed |
+
+Exact failure line:
+
+```text
+2026-11-22T19:12:59.6334850Z /Users/runner/work/mwlt/mwlt/ios/Tests/MeowlettUITests.swift:54: error: -[MeowlettUITests.MeowlettUITests testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss] : Failed to get matching snapshot: No matches found for Elements matching predicate '"mwlt.screen.settings" IN identifiers' from input {(
+```
+
+The captured hierarchy again starts with Dashboard labels (`Selamat malam`, `Isi namamu`, `Beranda`, `NOV 2026`) rather than the expected Settings heading.
+
+### Paired Settings log evidence
+
+Run #289 contains this exact record:
+
+```text
+2026-11-22T19:06:34.3324740Z [MeowlettTapComparison] control=settings leg=standard phase=pre-tap dashboardReady=true headerExists=true hittableBeforeWait=false hittableAfterWait=false timestamp=2026-11-22T19:06:34Z
+```
+
+Run #290 contains:
+
+```text
+2026-11-22T19:11:49.2398370Z [MeowlettTapComparison] control=settings leg=standard phase=pre-tap dashboardReady=true headerExists=true hittableBeforeWait=false hittableAfterWait=false timestamp=2026-11-22T19:11:49Z
+```
+
+After those lines, both logs record the standard tap failing with the same AX signature. For example, #289:
+
+```text
+Failed: Failed to scroll to visible (by AX action) Button, {{288.0, 69.0}, {44.0, 44.0}}, identifier: 'mwlt.header.settings', label: 'Pengaturan', error: Error kAXErrorCannotComplete performing AXAction kAXScrollToVisibleAction
+```
+
+Both runs then show `XCTExpectFailure: matcher accepted Assertion Failure` and the corresponding `MeowlettUITests.swift:554: Expected failure` record, followed directly by `Tear Down` and a Test Case `passed` record. **There are no Settings log records for standard `opened`, no coordinate-leg start/result, and no coordinate timestamp in either run.** The paired Settings test was reported as passed by XCTest, but the requested A/B comparison did not complete. Why execution leaves the test immediately after the matched expected failure is **BELUM TERBUKTI** from the job logs alone.
+
+Therefore:
+- `hittableBeforeWait=false` and `hittableAfterWait=false` are proven in both runs.
+- Settings `opened=true/false` after the standard tap is **BELUM TERBUKTI** (no post-tap record).
+- Coordinate Settings `opened=true/false` is **BELUM TERBUKTI** (coordinate leg did not produce a log).
+- The evidence does **not** satisfy classification (a) or (b). Final paired Settings classification: **(c) / BELUM TERBUKTI**.
+
+### Are the failures the same?
+
+No. #289 failed `testMainTabsQuickAddAndCalculatorPresentation`; #290 failed `testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss`. Each had 11 passing tests and one failure, but the failing test case differed.
+
+### Artifact evidence
+
+Both runs uploaded the diagnostics artifact from `$RUNNER_TEMP/MeowlettUITests.xcresult` successfully:
+
+| Run | Artifact | Size |
+|---|---|---:|
+| #289 | [Meowlett-UI-Test-Diagnostics-45057702642-1](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45057702642/artifacts/14768736855) | **100,976,263 bytes** |
+| #290 | [Meowlett-UI-Test-Diagnostics-45057706796-1](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45057706796/artifacts/14768721980) | **119,964,242 bytes** |
+
+The job logs show the source path for the upload as `$RUNNER_TEMP/MeowlettUITests.xcresult`; both artifact uploads completed successfully.
+
+### Failure classification against #267 / #276
+
+1. **#289 — `testMainTabsQuickAddAndCalculatorPresentation`: OLD test-case instability, new failure signature.** The same test case failed in #276 with the different assertion `XCTAssertTrue failed - The dashboard screen heading did not appear after selecting its navigation item.` It passed in #267. In #289, the failure instead reports a missing `mwlt.screen.settings` identifier while the diagnostic hierarchy is still Dashboard. Thus the failing test case is not new, but this exact line-54 snapshot-query error is not established in the older evidence. Exact root cause: **BELUM TERBUKTI**.
+
+2. **#290 — `testSettingsMainSubmenusAndNestedCategoryFlowsOpenAndDismiss`: OLD test-case instability, new failure signature.** This test already failed in #267 with `Asynchronous wait failed: Exceeded timeout of 5 seconds, with unfulfilled expectations: "Expect predicate `hittable == 1` for object "mwlt.header.settings" Button".` In #290, the new recorded error is the line-54 missing Settings identifier/snapshot query, and the hierarchy shows Dashboard. So the test case is a recurrence, but the exact failure mechanism differs from #267. Whether the app navigation failed before the snapshot helper or the helper itself obscured the original assertion is **BELUM TERBUKTI**.
+
+3. **Paired Settings standard-tap AX error:** the `kAXErrorCannotComplete` / `kAXScrollToVisibleAction` failure is **OLD**, already present in #276 for the same fixed 44×44 Settings header. In #289/#290, `hittable` remained false after the readiness wait. The absent coordinate leg is a **new/incomplete paired-test result** for the current test implementation; it cannot be counted as evidence that coordinate tap succeeded.
+
+4. **Quick Add:** `testQuickAddSavesTransactionAndShowsItInTransactionsList` and `testQuickAddStandardTapVersusCoordinateTap` passed in both #289 and #290. Their historical Quick Add failure in #267 was not reproduced in these two runs; this does not by itself prove all Quick Add presenter edge cases fixed.
+
+No app source or workflow changes are implied by this diagnosis. P0 remains open; K6 (five green validations) remains **BELUM TERVERIFIKASI**. Do not create `checkpoint/p0-done`. PR #2 remains Draft.
