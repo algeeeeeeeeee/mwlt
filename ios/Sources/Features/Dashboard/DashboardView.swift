@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct DashboardView: View {
     var onSeeAllTransactions: () -> Void = {}
@@ -1365,18 +1366,20 @@ struct DashboardView: View {
                 .padding(.vertical, 40)
             } else {
                 HStack(alignment: .center, spacing: 16) {
+                    let chartSize = min(170, max(130, UIScreen.main.bounds.width * 0.36))
                     ZStack {
                         DonutBreakdown(
                             values: categoryTotals,
-                            totalText: rupiah(spent)
+                            totalText: rupiah(spent),
+                            textSub: AppAppearance.textSub(dark: isDark),
+                            textColor: AppAppearance.text(dark: isDark),
+                            size: chartSize
                         )
-                        // The PWA SVG uses a 90pt outer radius inside a 200pt viewBox.
-                        // With a 140pt rendered chart, its path diameter is 126pt.
-                        // A 104pt SwiftUI circle plus its 11.2pt stroke inset/outset
-                        // reproduces the same 126pt outside diameter.
-                        .frame(width: 104, height: 104)
+                        // Match the PWA SVG's 90% outer diameter, 58% inner diameter,
+                        // and 11.2pt ring thickness at a 140pt rendered chart.
+                        .frame(width: chartSize * 104 / 140, height: chartSize * 104 / 140)
                     }
-                    .frame(width: 140, height: 140)
+                    .frame(width: chartSize, height: chartSize)
 
                     VStack(alignment: .leading, spacing: 8) {
                         ForEach(categoryTotals, id: \.category) { item in
@@ -1942,6 +1945,9 @@ private struct Sparkline: View {
 private struct DonutBreakdown: View {
     let values: [(category: String, amount: Int64)]
     let totalText: String
+    let textSub: Color
+    let textColor: Color
+    let size: CGFloat
 
     private var total: Double {
         Double(values.reduce(Int64(0)) { $0 + $1.amount })
@@ -1958,7 +1964,7 @@ private struct DonutBreakdown: View {
                     .trim(from: start, to: max(start, end - gap))
                     .stroke(
                         MeowlettCategory.color(for: item.category).opacity(0.92),
-                        style: StrokeStyle(lineWidth: 22.4, lineCap: .butt)
+                        style: StrokeStyle(lineWidth: size * 0.16, lineCap: .butt)
                     )
                     .rotationEffect(.degrees(-90))
             }
@@ -1966,10 +1972,11 @@ private struct DonutBreakdown: View {
             VStack(spacing: 0) {
                 Text("Total")
                     .font(MeowlettTypography.font(size: 9, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .font(MeowlettTypography.font(size: size * 13 / 200, weight: .semibold))
+                    .foregroundStyle(textSub)
                 Text(totalText)
-                    .font(MeowlettTypography.font(size: 11, weight: .heavy))
-                    .foregroundStyle(.primary)
+                    .font(MeowlettTypography.font(size: size * 15 / 200, weight: .heavy))
+                    .foregroundStyle(textColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
