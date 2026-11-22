@@ -64,8 +64,8 @@ struct SettingsView: View {
 
                 settingsCard {
                     settingsRow(
-                        title: isEnglish ? "Display mode" : "Mode tampilan",
-                        subtitle: "\(isDark ? (isEnglish ? "Dark" : "Gelap") : (isEnglish ? "Light" : "Terang")) · \(selectedThemeName)",
+                        title: isEnglish ? "Display Mode" : "Mode Tampilan",
+                        subtitle: "\(isDark ? (isEnglish ? "Dark mode active" : "Mode gelap aktif") : (isEnglish ? "Light mode active" : "Mode terang aktif")) · \(selectedThemeName)",
                         symbol: darkOverride == "true" ? "moon.fill" : "sun.max.fill"
                     ) { showAppearance = true }
                 }
@@ -316,35 +316,49 @@ private struct SettingsAppearanceSheet: View {
     @AppStorage("gm_custom_accent") private var customAccent = "#fb7185"
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
+
     private var isEnglish: Bool { language == "en" }
     private var isDark: Bool { colorScheme == .dark }
+    private var categoryBackground: Color {
+        isDark ? AppAppearance.card2(dark: true) : AppAppearance.background(dark: false)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
+            Capsule()
+                .fill(AppAppearance.border(dark: isDark))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+
             HStack(spacing: 10) {
                 Image(systemName: isDark ? "moon.fill" : "sun.max.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .regular))
                     .foregroundStyle(AppAppearance.accent)
                     .frame(width: 36, height: 36)
-                    .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-                Text(isEnglish ? "Appearance" : "Tampilan")
+                    .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
+                Text(isEnglish ? "APPEARANCE" : "TAMPILAN")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
+                    .foregroundStyle(.primary)
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.secondary).frame(width: 32, height: 32)
-                        .background(AppAppearance.card2(dark: isDark), in: Circle())
-                }.buttonStyle(.plain)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .background(categoryBackground, in: Circle())
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20).padding(.vertical, 14)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     appearanceSwitchRow(
-                        symbol: darkOverride == "true" ? "moon.fill" : "sun.max.fill",
-                        title: isEnglish ? "Display mode" : "Mode tampilan",
-                        subtitle: isDark ? (isEnglish ? "Dark mode" : "Mode gelap") : (isEnglish ? "Light mode" : "Mode terang"),
+                        symbol: isDark ? "moon.fill" : "sun.max.fill",
+                        title: isEnglish ? "Display Mode" : "Mode Tampilan",
+                        subtitle: isDark ? (isEnglish ? "Dark mode active" : "Mode gelap aktif") : (isEnglish ? "Light mode active" : "Mode terang aktif"),
                         isOn: Binding(
                             get: { colorScheme == .dark },
                             set: { value in
@@ -352,80 +366,151 @@ private struct SettingsAppearanceSheet: View {
                                 darkOverride = value ? "true" : "false"
                             }
                         ),
-                        isDisabled: followSystem == "1"
+                        isDisabled: followSystem == "1",
+                        iconColor: AppAppearance.accent
                     )
-                    Divider().opacity(0.45)
+
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
                     appearanceSwitchRow(
-                        symbol: "desktopcomputer",
-                        title: isEnglish ? "Follow system" : "Ikuti sistem",
-                        subtitle: followSystem == "1" ? (isEnglish ? "Using device appearance" : "Mengikuti tampilan perangkat") : (isEnglish ? "Manual mode" : "Mode manual"),
+                        symbol: "sun.horizon",
+                        title: isEnglish ? "Follow System" : "Ikuti Sistem",
+                        subtitle: followSystem == "1"
+                            ? (isEnglish ? "Automatic from device settings" : "Otomatis dari pengaturan HP")
+                            : (isEnglish ? "Mode set manually" : "Mode diatur manual"),
                         isOn: Binding(
                             get: { followSystem == "1" },
                             set: { value in
                                 followSystem = value ? "1" : "0"
                                 darkOverride = value ? "system" : (colorScheme == .dark ? "true" : "false")
                             }
-                        )
+                        ),
+                        iconColor: AppAppearance.primary
                     )
-                    Divider().opacity(0.45)
-                    HStack {
+
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
+                    HStack(spacing: 12) {
+                        Image(systemName: "globe")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundStyle(AppAppearance.primary)
+                            .frame(width: 36, height: 36)
+                            .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(isEnglish ? "Language" : "Bahasa").font(MeowlettTypography.font(size: 14, weight: .bold))
-                            Text(isEnglish ? "Choose app language" : "Pilih bahasa aplikasi").font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
+                            Text(isEnglish ? "Language" : "Bahasa")
+                                .font(MeowlettTypography.font(size: 14, weight: .bold))
+                                .foregroundStyle(.primary)
+                            Text(isEnglish ? "Choose display language" : "Pilih bahasa tampilan")
+                                .font(MeowlettTypography.font(size: 11, weight: .regular))
+                                .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Picker("", selection: $language) {
-                            Text("ID").tag("id")
-                            Text("EN").tag("en")
+                        HStack(spacing: 6) {
+                            languageButton("id")
+                            languageButton("en")
                         }
-                        .pickerStyle(.segmented)
-                        .frame(width: 105)
                     }
                     .padding(.vertical, 14)
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "paintpalette.fill").foregroundStyle(AppAppearance.primary)
-                            Text(isEnglish ? "Color theme" : "Tema warna").font(MeowlettTypography.font(size: 14, weight: .bold))
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "paintpalette")
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundStyle(AppAppearance.primary)
+                                .frame(width: 36, height: 36)
+                                .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
+                            Text(isEnglish ? "Colour Theme" : "Tema Warna")
+                                .font(MeowlettTypography.font(size: 14, weight: .bold))
+                                .foregroundStyle(.primary)
                         }
+
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                             ForEach(AppAppearance.presets, id: \.id) { preset in
-                                let active = themePreset == preset.id
+                                let selected = themePreset == preset.id
                                 Button { themePreset = preset.id } label: {
-                                    VStack(spacing: 6) {
+                                    VStack(spacing: 5) {
                                         HStack(spacing: 3) {
-                                            Circle().fill(Color(hex: preset.primary)).frame(width: 15, height: 15)
-                                            Circle().fill(Color(hex: preset.accent)).frame(width: 15, height: 15)
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(Color(hex: preset.primary))
+                                                .frame(width: 14, height: 14)
+                                            RoundedRectangle(cornerRadius: 4)
+                                                .fill(Color(hex: preset.accent))
+                                                .frame(width: 14, height: 14)
                                         }
-                                        Text(isEnglish ? preset.nameEN : preset.nameID).font(MeowlettTypography.font(size: 11, weight: .bold))
-                                        if active { Label(isEnglish ? "Active" : "Aktif", systemImage: "checkmark.circle.fill").font(.system(size: 9, weight: .bold)) }
+                                        HStack(spacing: 4) {
+                                            Image(systemName: presetIcon(preset.id))
+                                                .font(.system(size: 11, weight: .semibold))
+                                            Text(isEnglish ? preset.nameEN : preset.nameID)
+                                                .font(MeowlettTypography.font(size: 11, weight: .bold))
+                                        }
                                     }
-                                    .foregroundStyle(active ? Color(hex: preset.accent) : .secondary)
-                                    .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                    .background(active ? Color(hex: preset.primary).opacity(0.12) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
-                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(active ? Color(hex: preset.accent) : Color.primary.opacity(0.07), lineWidth: active ? 2.5 : 1))
+                                    .foregroundStyle(selected ? Color(hex: preset.accent) : Color.secondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        selected ? Color(hex: preset.primary).opacity(0.13) : categoryBackground,
+                                        in: RoundedRectangle(cornerRadius: 14)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(selected ? Color(hex: preset.accent) : AppAppearance.border(dark: isDark),
+                                                    lineWidth: selected ? 2.5 : 1.5)
+                                    )
                                 }
                                 .buttonStyle(.plain)
                             }
-                            Button { themePreset = "custom" } label: {
-                                VStack(spacing: 6) {
-                                    Image(systemName: "paintbrush.pointed.fill").font(.system(size: 17))
-                                    Text(isEnglish ? "Custom" : "Kustom").font(MeowlettTypography.font(size: 11, weight: .bold))
-                                    if themePreset == "custom" { Label(isEnglish ? "Active" : "Aktif", systemImage: "checkmark.circle.fill").font(.system(size: 9, weight: .bold)) }
-                                }
-                                .foregroundStyle(themePreset == "custom" ? Color(hex: customAccent) : .secondary)
-                                .frame(maxWidth: .infinity).padding(.vertical, 10)
-                                .background(themePreset == "custom" ? Color(hex: customPrimary).opacity(0.12) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
-                                .overlay(RoundedRectangle(cornerRadius: 14).stroke(themePreset == "custom" ? Color(hex: customAccent) : Color.primary.opacity(0.07), lineWidth: themePreset == "custom" ? 2.5 : 1))
-                            }
-                            .buttonStyle(.plain)
                         }
+
                         VStack(spacing: 10) {
-                            ColorPicker(isEnglish ? "Primary color" : "Warna utama", selection: Binding(get: { Color(hex: customPrimary) }, set: { customPrimary = $0.meowlettHex; themePreset = "custom" }))
-                            ColorPicker(isEnglish ? "Accent color" : "Warna aksen", selection: Binding(get: { Color(hex: customAccent) }, set: { customAccent = $0.meowlettHex; themePreset = "custom" }))
+                            HStack(spacing: 5) {
+                                Image(systemName: "paintbrush.pointed")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(AppAppearance.primary)
+                                Text(isEnglish ? "Custom" : "Kustom")
+                                    .font(MeowlettTypography.font(size: 12, weight: .heavy))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Button { themePreset = "custom" } label: {
+                                    Group {
+                                        if themePreset == "custom" {
+                                            Label(isEnglish ? "Active" : "Aktif", systemImage: "checkmark.circle.fill")
+                                        } else {
+                                            Text(isEnglish ? "Use" : "Gunakan")
+                                        }
+                                    }
+                                    .font(MeowlettTypography.font(size: 11, weight: .bold))
+                                    .foregroundStyle(themePreset == "custom" ? Color.white : Color.primary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(themePreset == "custom" ? AppAppearance.primary : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 8))
+                                }
+                                .buttonStyle(.plain)
+                            }
+
+                            HStack(alignment: .top, spacing: 10) {
+                                customColorControl(
+                                    title: isEnglish ? "PRIMARY" : "UTAMA",
+                                    value: Binding(
+                                        get: { Color(hex: customPrimary) },
+                                        set: { customPrimary = $0.meowlettHex; themePreset = "custom" }
+                                    ),
+                                    hex: customPrimary
+                                )
+                                customColorControl(
+                                    title: isEnglish ? "ACCENT" : "AKSEN",
+                                    value: Binding(
+                                        get: { Color(hex: customAccent) },
+                                        set: { customAccent = $0.meowlettHex; themePreset = "custom" }
+                                    ),
+                                    hex: customAccent
+                                )
+                            }
                         }
-                        .padding(14)
-                        .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+                        .padding(12)
+                        .background(categoryBackground, in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
                     }
                     .padding(.top, 14)
                     .padding(.bottom, 26)
@@ -433,24 +518,107 @@ private struct SettingsAppearanceSheet: View {
                 .padding(.horizontal, 20)
             }
         }
-        .background(AppAppearance.modal(dark: isDark))
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .background(AppAppearance.card(dark: isDark))
+        .presentationDetents([.fraction(0.9)])
+        .presentationDragIndicator(.hidden)
         .presentationCornerRadius(28)
     }
 
-    private func appearanceSwitchRow(symbol: String, title: String, subtitle: String, isOn: Binding<Bool>, isDisabled: Bool = false) -> some View {
+    private func appearanceSwitchRow(
+        symbol: String,
+        title: String,
+        subtitle: String,
+        isOn: Binding<Bool>,
+        isDisabled: Bool = false,
+        iconColor: Color
+    ) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppAppearance.accent)
-                .frame(width: 36, height: 36).background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .regular))
+                .foregroundStyle(iconColor)
+                .frame(width: 36, height: 36)
+                .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold))
-                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
+                Text(title)
+                    .font(MeowlettTypography.font(size: 14, weight: .bold))
+                    .foregroundStyle(.primary)
+                Text(subtitle)
+                    .font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .foregroundStyle(.secondary)
             }
             Spacer()
-            Toggle("", isOn: isOn).labelsHidden().tint(AppAppearance.primary).disabled(isDisabled).opacity(isDisabled ? 0.4 : 1)
+            switchControl(isOn: isOn.wrappedValue, isDisabled: isDisabled) {
+                isOn.wrappedValue.toggle()
+            }
         }
         .padding(.vertical, 14)
+    }
+
+    private func switchControl(isOn: Bool, isDisabled: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Capsule()
+                .fill(isOn ? AppAppearance.primary : AppAppearance.border(dark: isDark))
+                .frame(width: 48, height: 28)
+                .overlay(alignment: isOn ? .trailing : .leading) {
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 20, height: 20)
+                        .shadow(color: .black.opacity(0.16), radius: 3, x: 0, y: 1)
+                        .padding(4)
+                }
+                .opacity(isDisabled ? 0.4 : 1)
+                .animation(.easeInOut(duration: 0.18), value: isOn)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .accessibilityLabel(isOn ? (isEnglish ? "On" : "Aktif") : (isEnglish ? "Off" : "Nonaktif"))
+    }
+
+    private func languageButton(_ code: String) -> some View {
+        let selected = language == code
+        return Button { language = code } label: {
+            Text(code.uppercased())
+                .font(MeowlettTypography.font(size: 12, weight: .bold))
+                .foregroundStyle(selected ? (isDark ? Color(hex: "#fca5a5") : AppAppearance.primary) : Color.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(selected ? AppAppearance.primary.opacity(0.13) : categoryBackground, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(selected ? AppAppearance.primary : AppAppearance.border(dark: isDark), lineWidth: 1.5)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func presetIcon(_ id: String) -> String {
+        switch id {
+        case "green": return "leaf"
+        case "blue": return "water.waves"
+        case "purple": return "sparkles"
+        case "rose": return "heart"
+        case "orange": return "sun.max"
+        default: return "wind"
+        }
+    }
+
+    private func customColorControl(title: String, value: Binding<Color>, hex: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(MeowlettTypography.font(size: 10, weight: .bold))
+                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(hex: hex))
+                    .frame(width: 28, height: 28)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
+                ColorPicker("", selection: value)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 28)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -620,7 +788,7 @@ private struct SettingsNotificationsSheet: View {
                 .padding(.bottom, 28)
             }
         }
-        .background(AppAppearance.modal(dark: isDark))
+        .background(AppAppearance.card(dark: isDark))
         .sheet(isPresented: $showReminderSettings) { SettingsReminderSheet() }
         .alert(
             isEnglish ? "Notifications unavailable" : "Notifikasi tidak tersedia",
