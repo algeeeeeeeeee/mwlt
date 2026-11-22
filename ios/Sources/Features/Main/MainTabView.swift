@@ -123,6 +123,20 @@ private struct MeowlettTabShape: Shape {
     }
 }
 
+@MainActor
+final class ModalBlurCoordinator: ObservableObject {
+    @Published private(set) var activePresentations: Set<String> = []
+
+    var isBlurred: Bool { !activePresentations.isEmpty }
+
+    func set(_ identifier: String, isPresented: Bool) {
+        var updated = activePresentations
+        if isPresented { updated.insert(identifier) }
+        else { updated.remove(identifier) }
+        activePresentations = updated
+    }
+}
+
 struct MainTabView: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_theme_preset") private var themePreset = "rose"
@@ -133,6 +147,7 @@ struct MainTabView: View {
     @AppStorage("gm_profile_photo") private var profilePhoto = ""
     @AppStorage("gm_notif") private var notificationsEnabled = "0"
     @EnvironmentObject private var store: FinanceStore
+    @StateObject private var modalBlurCoordinator = ModalBlurCoordinator()
     @State private var selected: MeowlettTab = .dashboard
     @State private var showQuickAdd = false
     @State private var selectedHeaderPhoto: PhotosPickerItem?
@@ -177,6 +192,7 @@ struct MainTabView: View {
                         }
                     }
                     .environmentObject(store)
+                    .environmentObject(modalBlurCoordinator)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .frame(width: geometry.size.width)
                 }
@@ -187,8 +203,8 @@ struct MainTabView: View {
         .overlay(alignment: .bottom) {
             bottomNavigation
         }
-        .blur(radius: showQuickAdd ? 8 : 0)
-        .animation(.easeInOut(duration: 0.2), value: showQuickAdd)
+        .blur(radius: (showQuickAdd || modalBlurCoordinator.isBlurred) ? 8 : 0)
+        .animation(.easeInOut(duration: 0.2), value: showQuickAdd || modalBlurCoordinator.isBlurred)
         .tint(tint)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
