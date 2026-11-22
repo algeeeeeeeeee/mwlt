@@ -203,38 +203,49 @@ jobs:
           simctl_with_timeout 240 install "$DEVICE_ID" "$APP_PATH"
           mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
 
-          echo "Capturing onboarding preview (first launch, maximum 120 seconds)..."
-          # The first cold launch after a new iOS runtime boot can take longer
-          # while SpringBoard and app services finish their first-run setup.
-          simctl_with_timeout 120 launch "$DEVICE_ID" com.mwlt.meowlett
-          sleep 3
-          simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/01-onboarding.png"
-          simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
+          CAPTURED_COUNT=0
+
+          capture_preview() {
+            local filename="$1"
+            shift
+            local output="$RUNNER_TEMP/MeowlettPreviews/$filename"
+            local attempt
+            for attempt in 1 2; do
+              echo "Launching preview $filename (attempt $attempt)..."
+              if simctl_with_timeout 75 launch "$DEVICE_ID" com.mwlt.meowlett "$@"; then
+                sleep 2
+                if simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$output"; then
+                  echo "Captured $filename"
+                  CAPTURED_COUNT=$((CAPTURED_COUNT + 1))
+                  simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett >/dev/null 2>&1 || true
+                  return 0
+                fi
+              fi
+              echo "::warning::Could not capture $filename on attempt $attempt; retrying."
+              simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett >/dev/null 2>&1 || true
+              sleep 2
+            done
+            echo "::warning::Skipping $filename after two failed attempts."
+            return 1
+          }
+
+          # Onboarding is optional: a slow first cold launch must not prevent
+          # the primary app screens from being captured.
+          capture_preview "01-onboarding.png" || true
           simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
 
-          echo "Capturing dashboard preview..."
-          simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data
-          sleep 3
-          simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/02-dashboard.png"
-
-          # Capture every top-level native tab with representative simulator-only data.
+          capture_preview "02-dashboard.png" --mwlt-preview-seed-data || true
           for TAB in transactions report date settings; do
-            simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
-            echo "Capturing $TAB preview..."
-            simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB"
-            sleep 2
-            simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/03-$TAB.png"
+            capture_preview "03-$TAB.png" --mwlt-preview-seed-data "--mwlt-preview-tab=$TAB" || true
           done
+          capture_preview "08-quick-add.png" --mwlt-preview-seed-data --mwlt-preview-quick-add || true
 
-          # Capture the native quick-add sheet as a separate preview state.
-          simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett || true
-          echo "Capturing quick-add preview..."
-          simctl_with_timeout 45 launch "$DEVICE_ID" com.mwlt.meowlett --mwlt-preview-seed-data --mwlt-preview-quick-add
-          sleep 2
-          simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$RUNNER_TEMP/MeowlettPreviews/08-quick-add.png"
-
-          echo "All native previews captured:"
+          echo "Captured $CAPTURED_COUNT native preview screen(s):"
           ls -lh "$RUNNER_TEMP/MeowlettPreviews"
+          if [ "$CAPTURED_COUNT" -eq 0 ]; then
+            echo "::error::No native preview screenshots could be captured."
+            exit 1
+          fi
 
       - name: Assemble a single native preview image
         run: |
@@ -254,12 +265,19 @@ jobs:
               ("08-quick-add.png", "Quick Add")
           ]
 
+          let availableScreens = screens.filter {
+              FileManager.default.fileExists(atPath: URL(fileURLWithPath: directory).appendingPathComponent($0.0).path)
+          }
+          guard !availableScreens.isEmpty else {
+              fatalError("No preview screenshots are available.")
+          }
+
           let columns = 2
           let tileWidth = 390
           let tileHeight = 844
           let titleHeight = 44
           let gap = 14
-          let rows = (screens.count + columns - 1) / columns
+          let rows = (availableScreens.count + columns - 1) / columns
           let canvasWidth = gap + columns * (tileWidth + gap)
           let canvasHeight = gap + rows * (titleHeight + tileHeight + gap)
 
@@ -283,7 +301,7 @@ jobs:
           NSColor(calibratedWhite: 0.95, alpha: 1).setFill()
           NSRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight).fill()
 
-          for (index, screen) in screens.enumerated() {
+          for (index, screen) in availableScreens.enumerated() {
               let path = URL(fileURLWithPath: directory).appendingPathComponent(screen.0).path
               guard let image = NSImage(contentsOfFile: path) else {
                   fatalError("Missing preview screenshot: \(path)")
