@@ -968,7 +968,7 @@ struct DashboardView: View {
                         .foregroundStyle(.primary)
                         .padding(.bottom, 4)
 
-                    Text("Yuk, buat target pertamamu!")
+                    Text(isEnglish ? "Create your first savings goal!" : "Yuk, buat target pertamamu!")
                         .font(MeowlettTypography.font(size: 12, weight: .regular))
                         .foregroundStyle(.secondary)
                         .padding(.bottom, 14)
