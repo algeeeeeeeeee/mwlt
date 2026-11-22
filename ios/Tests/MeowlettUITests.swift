@@ -484,8 +484,6 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
-    func testDatePreviewLaunchStartsOnDateTab() {
-    @MainActor
     func testSettingsHeaderStandardTapVersusCoordinateTap() {
         let app = XCUIApplication()
         launchUITestApp(app)
@@ -538,6 +536,9 @@ final class MeowlettUITests: XCTestCase {
     }
 
 
+
+    @MainActor
+    func testDatePreviewLaunchStartsOnDateTab() {
         let app = XCUIApplication()
         launchUITestApp(app, additionalArguments: ["--mwlt-preview-tab=date"])
 
