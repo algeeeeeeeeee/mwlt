@@ -236,3 +236,17 @@ Hanya `CHECKPOINT.md` yang diperbarui. Tidak ada perubahan app source, test/help
 - No app source, Quick Add paired test, other tests, workflow, or P1 files were changed.
 - Next run inspection: confirm both activity logs are present even if standard .tap() reports an AX failure; compare each leg's pre/post-wait hittable values; verify opened=true independently for both; check that both timestamps and hit-point snapshots are attached. CI was not awaited as requested.
 - Not yet verified: compilation and CI execution of this change; both paired Settings legs passing on a runner.
+
+
+## CI check — SHA `c3c09c6` / Run #285 (23 November 2026)
+
+- Run: [#285 — Meowlett Native iOS Build](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45056786313), head SHA `c3c09c6c7dc86c3f36cafbf5786b37264cbbd846`.
+- Status at the single check: **completed / cancelled**. Job `Build Meowlett for iOS` also completed with conclusion `cancelled`.
+- Step `Build simulator`: **success**. Step `Run native UI smoke tests`: **cancelled**. The job log shows `xcodebuild test` starting and creates the result-bundle path at `18:46:50Z`; cancellation occurs at `18:47:22.6321520Z` while Swift compilation is still running. No `Test Case` or `[MeowlettTapComparison]` records appear in the job log.
+- Diagnostic artifact [Meowlett-UI-Test-Diagnostics-45056786313-1](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45056786313/artifacts/14767658682) uploaded, but its reported size is only **394 bytes**. It is not a usable test-result snapshot; no paired-leg diagnostics were captured.
+
+### Paired Settings result — classification (c)
+
+**BELUM TERBUKTI.** Neither leg has a recorded `hittable` value before/after readiness wait, `opened=true/false`, nor timestamp. The UI test step was cancelled before the test case produced its paired-leg output. Therefore this run supports neither (a) timing/stability nor (b) predicate/hit-point. Do not infer either cause from this run.
+
+No test, app source, workflow, or PR setting was changed in this check. This checkpoint update records the cancelled run only; it does not claim that the paired Settings comparison passed. The branch had advanced to `f110feeb40b2b3d28a0436c5f049083f29d63a98` after the run's head SHA; this documentation change is based on that current branch head. PR #2 remains Draft; no CI polling or rerun was performed.
