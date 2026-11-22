@@ -24,7 +24,9 @@ permissions:
 
 # Keep only the newest native build for a branch; intermediate commits are superseded.
 concurrency:
-  group: meowlett-native-ios-${{ github.ref }}
+  # Version the group so a runner cleanup from an older workflow cannot hold
+  # a newer native build in the pending state.
+  group: meowlett-native-ios-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
