@@ -1,6 +1,11 @@
 import SwiftUI
 import UIKit
 
+private enum DashboardPresentedSheet: String, Identifiable {
+    case overallBudget, goalEditor, incomeEditor
+    var id: String { rawValue }
+}
+
 struct DashboardView: View {
     var onSeeAllTransactions: () -> Void = {}
     var onAddTransaction: () -> Void = {}
@@ -11,7 +16,7 @@ struct DashboardView: View {
     @AppStorage("gm_categories") private var categoriesJSON = ""
     @AppStorage("gm_username") private var userName = ""
     @AppStorage("gm_income") private var incomeRaw = "5000000"
-    @State private var showIncomeEditor = false
+    @State private var activeSheet: DashboardPresentedSheet?
     @State private var incomeDraft = ""
     @State private var recentCount = 5
     @AppStorage("gm_streak") private var streakRaw = "{\"count\":0,\"lastDate\":\"\"}"
@@ -21,8 +26,6 @@ struct DashboardView: View {
     @State private var budgets: [String: Int64] = [:]
     @State private var savingsGoals: [DashboardSavingsGoal] = []
     @State private var storageLoaded = false
-    @State private var showOverallBudgetEditor = false
-    @State private var showGoalEditor = false
     @State private var editingGoal: DashboardSavingsGoal?
     @State private var quickAddGoalID: Int64?
     @State private var quickAddAmount = ""
@@ -196,48 +199,50 @@ struct DashboardView: View {
             }
             .onChange(of: budgets) { _, value in persistBudgets(value) }
             .onChange(of: savingsGoals) { _, value in persistSavingsGoals(value) }
-            .sheet(isPresented: $showOverallBudgetEditor) {
-                NativeMoneyEntrySheet(
-                    title: isEnglish ? "Monthly budget" : "Budget bulanan",
-                    initialValue: Int64(overallBudgetRaw) ?? 0,
-                    accent: Color(hex: AppAppearance.accentHex),
-                    onSave: { overallBudgetRaw = String($0) }
-                )
-            }
-            .sheet(isPresented: $showGoalEditor) {
-                DashboardGoalEditorSheet(goal: editingGoal) { saved in
-                    if let index = savingsGoals.firstIndex(where: { $0.id == saved.id }) {
-                        savingsGoals[index] = saved
-                    } else {
-                        savingsGoals.append(saved)
-                    }
-                    editingGoal = nil
-                }
-            }
-            .sheet(isPresented: $showIncomeEditor) {
-                NavigationStack {
-                    Form {
-                        Section(isEnglish ? "Monthly income" : "Pemasukan bulanan") {
-                            TextField(isEnglish ? "Amount (IDR)" : "Jumlah (Rupiah)", text: $incomeDraft)
-                                .keyboardType(.numberPad)
+                        .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .overallBudget:
+                    NativeMoneyEntrySheet(
+                        title: isEnglish ? "Monthly budget" : "Budget bulanan",
+                        initialValue: Int64(overallBudgetRaw) ?? 0,
+                        accent: Color(hex: AppAppearance.accentHex),
+                        onSave: { overallBudgetRaw = String($0) }
+                    )
+                case .goalEditor:
+                    DashboardGoalEditorSheet(goal: editingGoal) { saved in
+                        if let index = savingsGoals.firstIndex(where: { $0.id == saved.id }) {
+                            savingsGoals[index] = saved
+                        } else {
+                            savingsGoals.append(saved)
                         }
+                        editingGoal = nil
                     }
-                    .navigationTitle(isEnglish ? "Edit income" : "Ubah pemasukan")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button(isEnglish ? "Cancel" : "Batal") { showIncomeEditor = false }
+                case .incomeEditor:
+                    NavigationStack {
+                        Form {
+                            Section(isEnglish ? "Monthly income" : "Pemasukan bulanan") {
+                                TextField(isEnglish ? "Amount (IDR)" : "Jumlah (Rupiah)", text: $incomeDraft)
+                                    .keyboardType(.numberPad)
+                            }
                         }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button(isEnglish ? "Save" : "Simpan") {
-                                incomeRaw = String(Int64(incomeDraft.filter(\.isNumber)) ?? 0)
-                                showIncomeEditor = false
+                        .navigationTitle(isEnglish ? "Edit income" : "Ubah pemasukan")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button(isEnglish ? "Cancel" : "Batal") { activeSheet = nil }
+                            }
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button(isEnglish ? "Save" : "Simpan") {
+                                    incomeRaw = String(Int64(incomeDraft.filter(\.isNumber)) ?? 0)
+                                    activeSheet = nil
+                                }
                             }
                         }
                     }
+                    .presentationDetents([.medium])
                 }
-                .presentationDetents([.medium])
             }
+
         }
     }
 
@@ -248,7 +253,7 @@ struct DashboardView: View {
             HStack(alignment: .top) {
                 Button {
                     incomeDraft = income == 0 ? "" : String(income)
-                    showIncomeEditor = true
+                    activeSheet = .incomeEditor
                 } label: {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 4) {
@@ -722,7 +727,7 @@ struct DashboardView: View {
                     }
                     Spacer(minLength: 4)
                     Button {
-                        showOverallBudgetEditor = true
+                        activeSheet = .overallBudget
                     } label: {
                         Text(isEnglish ? "Set Budget" : "Atur Anggaran")
                             .font(MeowlettTypography.font(size: 11, weight: .heavy))
@@ -751,7 +756,7 @@ struct DashboardView: View {
                             .font(MeowlettTypography.font(size: 14, weight: .heavy))
                             .foregroundStyle(.primary)
                         Spacer()
-                        Button { showOverallBudgetEditor = true } label: {
+                        Button { activeSheet = .overallBudget } label: {
                             Image(systemName: "pencil")
                                 .font(.system(size: 13, weight: .regular))
                                 .foregroundStyle(.secondary)
@@ -919,7 +924,7 @@ struct DashboardView: View {
                 if !savingsGoals.isEmpty {
                     Button {
                         editingGoal = nil
-                        showGoalEditor = true
+                        activeSheet = .goalEditor
                     } label: {
                         HStack(spacing: 3) {
                             Image(systemName: "plus")
@@ -965,7 +970,7 @@ struct DashboardView: View {
 
                     Button {
                         editingGoal = nil
-                        showGoalEditor = true
+                        activeSheet = .goalEditor
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "plus")
@@ -1021,7 +1026,7 @@ struct DashboardView: View {
                     .foregroundStyle(percentage >= 100 ? Color(hex: "#4ade80") : color)
                 Button {
                     editingGoal = goal
-                    showGoalEditor = true
+                    activeSheet = .goalEditor
                 } label: {
                     Image(systemName: "pencil").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
                 }

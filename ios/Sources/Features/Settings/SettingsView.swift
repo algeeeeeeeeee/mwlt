@@ -4,6 +4,11 @@ import UIKit
 import UserNotifications
 import UniformTypeIdentifiers
 
+private enum SettingsPresentedSheet: String, Identifiable {
+    case appearance, notifications, budgets, categoryMenu, categoryManager, data
+    var id: String { rawValue }
+}
+
 struct SettingsView: View {
     @AppStorage("gm_lang") private var language = "id"
     @AppStorage("gm_categories") private var categoriesJSON = ""
@@ -25,12 +30,7 @@ struct SettingsView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var nameDraft = ""
     @State private var showNameEditor = false
-    @State private var showAppearance = false
-    @State private var showNotifications = false
-    @State private var showBudgets = false
-    @State private var showCategoryMenu = false
-    @State private var showCategoryManager = false
-    @State private var showData = false
+    @State private var activeSheet: SettingsPresentedSheet?
 
     private var isEnglish: Bool { language == "en" }
     private var isDark: Bool { colorScheme == .dark }
@@ -67,7 +67,7 @@ struct SettingsView: View {
                         title: isEnglish ? "Display Mode" : "Mode Tampilan",
                         subtitle: "\(isDark ? (isEnglish ? "Dark mode active" : "Mode gelap aktif") : (isEnglish ? "Light mode active" : "Mode terang aktif")) · \(selectedThemeName)",
                         symbol: isDark ? "moon.fill" : "sun.max.fill"
-                    ) { showAppearance = true }
+                    ) { activeSheet = .appearance }
                 }
 
                 settingsCard {
@@ -78,7 +78,7 @@ struct SettingsView: View {
                             : (isEnglish ? "Inactive" : "Nonaktif"),
                         symbol: "bell",
                         statusDot: notificationsEnabled != "1"
-                    ) { showNotifications = true }
+                    ) { activeSheet = .notifications }
                 }
 
                 settingsCard {
@@ -86,7 +86,7 @@ struct SettingsView: View {
                         title: isEnglish ? "Category" : "Kategori",
                         subtitle: isEnglish ? "Manage & organise categories" : "Atur & kelola kategori",
                         symbol: "square.grid.2x2"
-                    ) { showCategoryMenu = true }
+                    ) { activeSheet = .categoryMenu }
                 }
 
                 settingsCard {
@@ -94,7 +94,7 @@ struct SettingsView: View {
                         title: "Data",
                         subtitle: isEnglish ? "Backup, restore & reset" : "Cadangkan, pulihkan & atur ulang",
                         symbol: "externaldrive"
-                    ) { showData = true }
+                    ) { activeSheet = .data }
                 }
 
             }
@@ -112,31 +112,38 @@ struct SettingsView: View {
                 profilePhoto = "data:image/jpeg;base64," + data.base64EncodedString()
             }
         }
-        .sheet(isPresented: $showAppearance) { SettingsAppearanceSheet() }
-        .sheet(isPresented: $showNotifications) {
-            SettingsNotificationsSheet(
-                enabled: Binding(get: { notificationsEnabled == "1" }, set: { notificationsEnabled = $0 ? "1" : "0" }),
-                weekly: Binding(get: { weeklyNotification == "true" }, set: { weeklyNotification = $0 ? "true" : "false" }),
-                day: Binding(get: { weeklyNotificationDay }, set: { weeklyNotificationDay = $0 }),
-                isEnglish: isEnglish
-            )
+                .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .appearance:
+                SettingsAppearanceSheet()
+            case .notifications:
+                SettingsNotificationsSheet(
+                    enabled: Binding(get: { notificationsEnabled == "1" }, set: { notificationsEnabled = $0 ? "1" : "0" }),
+                    weekly: Binding(get: { weeklyNotification == "true" }, set: { weeklyNotification = $0 ? "true" : "false" }),
+                    day: Binding(get: { weeklyNotificationDay }, set: { weeklyNotificationDay = $0 }),
+                    isEnglish: isEnglish
+                )
+            case .budgets:
+                SettingsBudgetSheet(isEnglish: isEnglish)
+            case .categoryMenu:
+                SettingsCategoryMenuSheet(
+                    isEnglish: isEnglish,
+                    onBudget: {
+                        activeSheet = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { activeSheet = .budgets }
+                    },
+                    onManage: {
+                        activeSheet = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { activeSheet = .categoryManager }
+                    }
+                )
+            case .categoryManager:
+                SettingsCategoryManagerSheet()
+            case .data:
+                SettingsDataSheet(isEnglish: isEnglish, incomeRaw: $incomeRaw)
+            }
         }
-        .sheet(isPresented: $showBudgets) { SettingsBudgetSheet(isEnglish: isEnglish) }
-        .sheet(isPresented: $showCategoryMenu) {
-            SettingsCategoryMenuSheet(
-                isEnglish: isEnglish,
-                onBudget: {
-                    showCategoryMenu = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { showBudgets = true }
-                },
-                onManage: {
-                    showCategoryMenu = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { showCategoryManager = true }
-                }
-            )
-        }
-        .sheet(isPresented: $showCategoryManager) { SettingsCategoryManagerSheet() }
-        .sheet(isPresented: $showData) { SettingsDataSheet(isEnglish: isEnglish, incomeRaw: $incomeRaw) }
+
     }
 
     private var selectedThemeName: String {

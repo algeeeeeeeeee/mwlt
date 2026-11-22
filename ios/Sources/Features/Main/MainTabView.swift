@@ -307,6 +307,7 @@ struct MainTabView: View {
             AppAppearance.background(dark: colorSchemeIsDark)
                 .opacity(colorSchemeIsDark ? 0.65 : 0.60)
                 .background(.ultraThinMaterial)
+                .ignoresSafeArea(edges: .top)
         }
         .shadow(color: Color.black.opacity(colorSchemeIsDark ? 0.5 : 0.06), radius: 2, x: 0, y: 1)
     }

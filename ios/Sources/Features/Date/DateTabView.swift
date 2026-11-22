@@ -1,5 +1,10 @@
 import SwiftUI
 
+private enum DateTabPresentedSheet: String, Identifiable {
+    case wishlist, transaction
+    var id: String { rawValue }
+}
+
 private struct DateWishlistItem: Identifiable, Codable, Equatable {
     // PWA stores Date.now() as a numeric ID; keep the same JSON shape for migration compatibility.
     var id: Int64
@@ -15,14 +20,13 @@ struct DateTabView: View {
 
     @State private var wishlist: [DateWishlistItem] = []
     @State private var wishlistLoaded = false
-    @State private var showWishlistForm = false
+    @State private var activeSheet: DateTabPresentedSheet?
     @State private var wishlistInput = ""
     @FocusState private var wishlistFieldFocused: Bool
     @State private var activeDateID: UUID?
     @State private var recentlyDeletedDateTransaction: MeowlettTransaction?
     @State private var showDateUndoToast = false
     @State private var undoDateTask: Task<Void, Never>?
-    @State private var showEditor = false
     @State private var editingTransaction: MeowlettTransaction?
 
     private var isEnglish: Bool { language == "en" }
@@ -67,16 +71,19 @@ struct DateTabView: View {
         .onDisappear { undoDateTask?.cancel() }
         .onAppear(perform: loadWishlist)
         .onChange(of: wishlist) { _, value in saveWishlist(value) }
-        .sheet(isPresented: $showWishlistForm) {
-            wishlistAddSheet
-                .presentationDetents([.height(230)])
-                .presentationDragIndicator(.hidden)
-                .presentationCornerRadius(24)
+                .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .wishlist:
+                wishlistAddSheet
+                    .presentationDetents([.height(230)])
+                    .presentationDragIndicator(.hidden)
+                    .presentationCornerRadius(24)
+            case .transaction:
+                TransactionEditorSheet(transaction: editingTransaction, initialCategory: "date")
+                    .environmentObject(store)
+            }
         }
-        .sheet(isPresented: $showEditor) {
-            TransactionEditorSheet(transaction: editingTransaction, initialCategory: "date")
-                .environmentObject(store)
-        }
+
     }
 
     private var dateBudgetCard: some View {
@@ -123,7 +130,7 @@ struct DateTabView: View {
                 Spacer()
                 Button {
                     wishlistInput = ""
-                    showWishlistForm = true
+                    activeSheet = .wishlist
                 } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "plus").font(.system(size: 13, weight: .bold))
@@ -205,7 +212,7 @@ struct DateTabView: View {
                 Spacer()
                 Button {
                     editingTransaction = nil
-                    showEditor = true
+                    activeSheet = .transaction
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "plus").font(.system(size: 12, weight: .black))
@@ -291,7 +298,7 @@ struct DateTabView: View {
                 HStack(spacing: 8) {
                     Button {
                         editingTransaction = transaction
-                        showEditor = true
+                        activeSheet = .transaction
                         activeDateID = nil
                     } label: {
                         Label(isEnglish ? "Edit" : "Edit", systemImage: "pencil")
@@ -391,7 +398,7 @@ struct DateTabView: View {
                     .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
-                Button { showWishlistForm = false } label: {
+                Button { activeSheet = nil } label: {
                     Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -469,7 +476,7 @@ struct DateTabView: View {
         guard !value.isEmpty else { return }
         wishlist.append(DateWishlistItem(id: Int64(Date().timeIntervalSince1970 * 1000), label: value))
         wishlistInput = ""
-        showWishlistForm = false
+        activeSheet = nil
     }
 
     private func toggleWishlist(_ item: DateWishlistItem) {

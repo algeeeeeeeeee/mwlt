@@ -1,6 +1,11 @@
 import SwiftUI
 import UserNotifications
 
+private enum RecurringUtilitySheet: String, Identifiable {
+    case installments, splitBills
+    var id: String { rawValue }
+}
+
 private struct NativeRecurringItem: Codable, Identifiable, Equatable {
     var id: Int64
     var description: String
@@ -75,8 +80,7 @@ struct RecurringTransactionsSection: View {
     @State private var loaded = false
     @State private var showRecurring = false
     @State private var showRecurringIncome = false
-    @State private var showInstallments = false
-    @State private var showSplitBills = false
+    @State private var activeUtilitySheet: RecurringUtilitySheet?
 
     @State private var editingRecurringID: Int64?
     @State private var recurringName = ""
@@ -111,17 +115,20 @@ struct RecurringTransactionsSection: View {
         .onAppear(perform: load)
         .onChange(of: recurring) { _, value in persist(value, key: "gm_recurring") }
         .onChange(of: recurringIncome) { _, value in persist(value, key: "gm_recurring_income") }
-        .sheet(isPresented: $showInstallments) {
-            SettingsCicilanSheet()
+                .sheet(item: $activeUtilitySheet) { sheet in
+            switch sheet {
+            case .installments:
+                SettingsCicilanSheet()
+            case .splitBills:
+                NativeSplitBillsSheet()
+            }
         }
-        .sheet(isPresented: $showSplitBills) {
-            NativeSplitBillsSheet()
-        }
+
     }
 
     private var utilityLinks: some View {
         HStack(spacing: 0) {
-            Button { showInstallments = true } label: {
+            Button { activeUtilitySheet = .installments } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "creditcard")
                         .font(.system(size: 11, weight: .semibold))
@@ -147,7 +154,7 @@ struct RecurringTransactionsSection: View {
                 .fill(AppAppearance.border(dark: isDark))
                 .frame(width: 1, height: 16)
 
-            Button { showSplitBills = true } label: {
+            Button { activeUtilitySheet = .splitBills } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
                         .font(.system(size: 11, weight: .semibold))

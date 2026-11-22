@@ -2,6 +2,11 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
+private enum TransactionEditorPresentedSheet: String, Identifiable {
+    case calculator, camera
+    var id: String { rawValue }
+}
+
 struct TransactionEditorSheet: View {
     let transaction: MeowlettTransaction?
     let initialCategory: String
@@ -20,11 +25,10 @@ struct TransactionEditorSheet: View {
     @State private var location: String
     @State private var note: String
     @State private var paymentMethod: String
-    @State private var showCalculator = false
+    @State private var activeAuxiliarySheet: TransactionEditorPresentedSheet?
     @State private var selectedReceipt: PhotosPickerItem?
     @State private var receiptImage: UIImage?
     @State private var receiptDataURL: String?
-    @State private var showCameraPicker = false
 
     private var isEnglish: Bool { language == "en" }
     private var primary: Color { Color(hex: AppAppearance.primaryHex) }
@@ -93,20 +97,23 @@ struct TransactionEditorSheet: View {
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
         .presentationBackground(AppAppearance.modal(dark: dark))
-        .sheet(isPresented: $showCalculator) {
-            AmountCalculatorSheet(initialValue: amount, onApply: { amountText = Self.formatAmount($0) })
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-        }
-        .sheet(isPresented: $showCameraPicker) {
-            NativeCameraPicker { image in
-                acceptReceipt(image)
-                showCameraPicker = false
-            } onCancel: {
-                showCameraPicker = false
+                .sheet(item: $activeAuxiliarySheet) { sheet in
+            switch sheet {
+            case .calculator:
+                AmountCalculatorSheet(initialValue: amount, onApply: { amountText = Self.formatAmount($0) })
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
+            case .camera:
+                NativeCameraPicker { image in
+                    acceptReceipt(image)
+                    activeAuxiliarySheet = nil
+                } onCancel: {
+                    activeAuxiliarySheet = nil
+                }
+                .ignoresSafeArea()
             }
-            .ignoresSafeArea()
         }
+
         .onAppear(perform: loadReceipt)
         .onChange(of: selectedReceipt) { _, item in
             guard let item else { return }
@@ -158,7 +165,7 @@ struct TransactionEditorSheet: View {
             .frame(height: 42)
             .background(inputBackground, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(inputBorder, lineWidth: 1.5))
-            Button { showCalculator = true } label: {
+            Button { activeAuxiliarySheet = .calculator } label: {
                 Image(systemName: "function")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -286,7 +293,7 @@ struct TransactionEditorSheet: View {
                     .buttonStyle(.plain)
 
                     Button {
-                        showCameraPicker = true
+                        activeAuxiliarySheet = .camera
                     } label: {
                         Label(isEnglish ? "Camera" : "Kamera", systemImage: "camera")
                             .font(.system(size: 12, weight: .semibold))
