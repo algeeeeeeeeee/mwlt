@@ -66,6 +66,7 @@ struct TransactionsView: View {
     @State private var filterPayment = "all"
     @State private var activeTransactionID: UUID?
     @State private var showEditor = false
+    @State private var isRecurringUtilityPresented = false
     @State private var editingTransaction: MeowlettTransaction?
     @State private var recentlyDeletedTransaction: MeowlettTransaction?
     @State private var showUndoToast = false
@@ -172,7 +173,7 @@ struct TransactionsView: View {
                         }
                     }
                 }
-                RecurringTransactionsSection()
+                RecurringTransactionsSection(isUtilitySheetPresented: $isRecurringUtilityPresented)
                     .environmentObject(store)
                     .padding(.top, 8)
             }
@@ -183,8 +184,8 @@ struct TransactionsView: View {
             .frame(maxWidth: .infinity)
         }
         .background(AppAppearance.background(dark: isDark))
-        .blur(radius: showEditor ? 8 : 0)
-        .animation(.easeInOut(duration: 0.2), value: showEditor)
+        .blur(radius: (showEditor || isRecurringUtilityPresented) ? 8 : 0)
+        .animation(.easeInOut(duration: 0.2), value: showEditor || isRecurringUtilityPresented)
         .overlay(alignment: .bottom) {
             if showUndoToast, let deleted = recentlyDeletedTransaction {
                 undoToast(for: deleted)
