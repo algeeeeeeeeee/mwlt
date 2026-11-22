@@ -3,7 +3,8 @@ import UserNotifications
 
 @MainActor
 enum RecurringTransactionAutomation {
-    private static let processedDateKey = "gm_recurring_last_processed_date"
+    private static let manualReminderDateKey = "gm_recurring_manual_processed_date"
+    private static let manualReminderItemsKey = "gm_recurring_manual_processed_items"
 
     static func processDueItems(store: FinanceStore) {
         let defaults = UserDefaults.standard
@@ -18,13 +19,17 @@ enum RecurringTransactionAutomation {
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let todayKey = dateFormatter.string(from: now)
 
-        // Process once per local calendar day to prevent repeat entries and reminders.
-        guard defaults.string(forKey: processedDateKey) != todayKey else { return }
+        // Track manual reminders per recurring item, not per whole day. This lets
+        // newly added or edited recurring items still run after a later app launch.
+        var processedManualReminders = Set(
+            defaults.string(forKey: manualReminderDateKey) == todayKey
+                ? (defaults.stringArray(forKey: manualReminderItemsKey) ?? [])
+                : []
+        )
 
         let raw = defaults.string(forKey: "gm_recurring") ?? "[]"
         guard let data = raw.data(using: .utf8),
               let items = try? JSONDecoder().decode([NativeRecurringItem].self, from: data) else {
-            defaults.set(todayKey, forKey: processedDateKey)
             return
         }
 
@@ -36,11 +41,12 @@ enum RecurringTransactionAutomation {
                   !item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
 
             if item.autoApply {
+                // Match the PWA: date, description and amount determine duplicates.
+                // A manual entry with the same values also prevents double counting.
                 let alreadyAdded = store.transactions.contains {
                     calendar.isDate($0.date, inSameDayAs: now) &&
                     $0.description == item.description &&
-                    $0.amount == item.amount &&
-                    $0.location == "Rutin"
+                    $0.amount == item.amount
                 }
                 guard !alreadyAdded else { continue }
 
@@ -62,18 +68,21 @@ enum RecurringTransactionAutomation {
                     )
                 }
             } else if notificationsEnabled {
-                postNotification(
-                    title: isEnglish ? "Payment reminder" : "Pengingat Tagihan",
-                    body: isEnglish
-                        ? "Time to record: \(item.description) — \(rupiah(item.amount))"
-                        : "Waktunya catat: \(item.description) — \(rupiah(item.amount))"
-                )
+                let reminderSignature = "\(item.id)|\(item.description)|\(item.amount)"
+                if processedManualReminders.insert(reminderSignature).inserted {
+                    postNotification(
+                        title: isEnglish ? "Payment reminder" : "Pengingat Tagihan",
+                        body: isEnglish
+                            ? "Time to record: \(item.description) — \(rupiah(item.amount))"
+                            : "Waktunya catat: \(item.description) — \(rupiah(item.amount))"
+                    )
+                }
             }
         }
 
-        defaults.set(todayKey, forKey: processedDateKey)
+        defaults.set(todayKey, forKey: manualReminderDateKey)
+        defaults.set(processedManualReminders.sorted(), forKey: manualReminderItemsKey)
     }
-
     private static func rupiah(_ amount: Int64) -> String {
         let formatter = NumberFormatter()
         formatter.locale = Locale(identifier: "id_ID")
