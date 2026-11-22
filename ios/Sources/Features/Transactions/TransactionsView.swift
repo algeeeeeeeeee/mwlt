@@ -494,29 +494,32 @@ struct TransactionsView: View {
     private func undoToast(for transaction: MeowlettTransaction) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "trash")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color(hex: "#ef4444"))
             Text(isEnglish ? "Transaction deleted" : "Transaksi dihapus")
-                .font(MeowlettTypography.font(size: 12, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(MeowlettTypography.font(size: 13, weight: .semibold))
+                .foregroundStyle(isDark ? Color(hex: "#fca5a5") : Color(hex: "#b91c1c"))
                 .lineLimit(1)
             Spacer(minLength: 4)
-            Button(isEnglish ? "Undo" : "Urungkan") {
+            Button(isEnglish ? "Undo" : "Batal") {
                 undoDeletedTransaction()
             }
-            .font(MeowlettTypography.font(size: 12, weight: .black))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(.white.opacity(0.18), in: Capsule())
+            .font(MeowlettTypography.font(size: 12, weight: .heavy))
+            .foregroundStyle(Color(hex: "#ef4444"))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(Color(hex: "#ef4444").opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: "#ef4444").opacity(0.40), lineWidth: 1))
             .buttonStyle(.plain)
             .accessibilityLabel(isEnglish ? "Undo delete" : "Batalkan penghapusan")
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
-        .background(Color(hex: "#27272a"), in: Capsule())
-        .overlay(Capsule().stroke(.white.opacity(0.12), lineWidth: 1))
-        .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 4)
+        .padding(.leading, 16)
+        .padding(.trailing, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 320)
+        .background(Color(hex: isDark ? "#1a0d0d" : "#fff5f5"), in: RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(hex: "#ef4444").opacity(0.35), lineWidth: 1))
+        .shadow(color: .black.opacity(0.25), radius: 16, x: 0, y: 8)
         .accessibilityElement(children: .contain)
     }
 
