@@ -6,7 +6,7 @@ enum RecurringTransactionAutomation {
     private static let manualReminderDateKey = "gm_recurring_manual_processed_date"
     private static let manualReminderItemsKey = "gm_recurring_manual_processed_items"
 
-    static func processDueItems(store: FinanceStore) {
+    static func processDueItems(store: FinanceStore, itemIDs: Set<Int64>? = nil) {
         let defaults = UserDefaults.standard
         let now = Date.now
         let calendar = Calendar.current
@@ -36,7 +36,7 @@ enum RecurringTransactionAutomation {
         let notificationsEnabled = defaults.string(forKey: "gm_notif") == "1"
         let isEnglish = defaults.string(forKey: "gm_lang") == "en"
 
-        for item in items where item.day == dayOfMonth {
+        for item in items where item.day == dayOfMonth && (itemIDs.map { $0.contains(item.id) } ?? true) {
             guard item.amount > 0,
                   !item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
 
