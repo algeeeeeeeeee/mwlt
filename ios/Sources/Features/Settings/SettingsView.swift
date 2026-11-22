@@ -74,8 +74,8 @@ struct SettingsView: View {
                     settingsRow(
                         title: isEnglish ? "Notifications" : "Notifikasi",
                         subtitle: notificationsEnabled == "1"
-                            ? (isEnglish ? "Notifications enabled" : "Notifikasi aktif")
-                            : (isEnglish ? "Notifications disabled" : "Notifikasi nonaktif"),
+                            ? (isEnglish ? "Active — every day at 9 PM" : "Aktif — setiap hari jam 9 malam")
+                            : (isEnglish ? "Inactive" : "Nonaktif"),
                         symbol: "bell",
                         statusDot: notificationsEnabled != "1"
                     ) { showNotifications = true }
@@ -92,7 +92,7 @@ struct SettingsView: View {
                 settingsCard {
                     settingsRow(
                         title: "Data",
-                        subtitle: isEnglish ? "Backup, restore & reset" : "Backup, pulihkan & reset",
+                        subtitle: isEnglish ? "Backup, restore & reset" : "Cadangkan, pulihkan & atur ulang",
                         symbol: "externaldrive"
                     ) { showData = true }
                 }
@@ -834,9 +834,9 @@ private struct SettingsDataSheet: View {
     private var cardBorder: Color { Color.primary.opacity(isDark ? 0.10 : 0.07) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Data").font(MeowlettTypography.font(size: 17, weight: .black))
+                Text("Data").font(MeowlettTypography.font(size: 16, weight: .bold))
                 Spacer()
                 Button(isEnglish ? "Done" : "Selesai") { dismiss() }
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -844,6 +844,7 @@ private struct SettingsDataSheet: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 6)
                     .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
+                    .padding(.bottom, 10)
             }
             Button {
                 backupFile = makeBackupFile()
@@ -851,8 +852,8 @@ private struct SettingsDataSheet: View {
             } label: {
                 dataAction(
                     symbol: "arrow.down.to.line",
-                    title: isEnglish ? "Backup data" : "Backup data",
-                    subtitle: isEnglish ? "Export a full JSON backup" : "Ekspor cadangan data lengkap",
+                    title: isEnglish ? "Backup Data" : "Cadangkan Data",
+                    subtitle: isEnglish ? "Download all data as JSON" : "Unduh semua data sebagai JSON",
                     color: AppAppearance.accent,
                     variant: "accent"
                 )
@@ -862,8 +863,8 @@ private struct SettingsDataSheet: View {
             Button { showImporter = true } label: {
                 dataAction(
                     symbol: "arrow.up.to.line",
-                    title: isEnglish ? "Restore backup" : "Pulihkan backup",
-                    subtitle: isEnglish ? "Restore from a Meowlett JSON file" : "Pulihkan dari file JSON Meowlett",
+                    title: isEnglish ? "Restore Backup" : "Pulihkan Cadangan",
+                    subtitle: isEnglish ? "Import from backup file" : "Impor dari file cadangan",
                     color: AppAppearance.primary,
                     variant: "neutral"
                 )
@@ -875,8 +876,8 @@ private struct SettingsDataSheet: View {
             Button { showResetConfirm = true } label: {
                 dataAction(
                     symbol: "trash",
-                    title: isEnglish ? "Reset data" : "Reset data",
-                    subtitle: isEnglish ? "Delete finance data on this device" : "Hapus data keuangan di perangkat ini",
+                    title: isEnglish ? "Reset All Data" : "Atur Ulang Semua Data",
+                    subtitle: isEnglish ? "Delete all data permanently" : "Hapus semua data permanen",
                     color: Color(hex: "#ef4444"),
                     variant: "danger"
                 )
@@ -889,7 +890,9 @@ private struct SettingsDataSheet: View {
                     .foregroundStyle(Color(hex: "#ef4444"))
             }
         }
-        .padding(20)
+        .padding(.horizontal, 22)
+        .padding(.top, 22)
+        .padding(.bottom, 40)
         .background(AppAppearance.modal(dark: isDark))
         .presentationDetents([.height(370)])
         .presentationDragIndicator(.hidden)
@@ -919,7 +922,7 @@ private struct SettingsDataSheet: View {
             }
         }
         .confirmationDialog(
-            isEnglish ? "Restore this backup?" : "Pulihkan backup ini?",
+            isEnglish ? "Restore this backup?" : "Pulihkan cadangan ini?",
             isPresented: $showRestoreConfirm,
             titleVisibility: .visible
         ) {
@@ -928,10 +931,10 @@ private struct SettingsDataSheet: View {
             }
             Button(isEnglish ? "Cancel" : "Batal", role: .cancel) { pendingRestore = nil }
         } message: {
-            Text(isEnglish ? "Current finance data will be replaced." : "Data keuangan saat ini akan diganti.")
+            Text(isEnglish ? "Current data will be replaced." : "Data saat ini akan diganti.")
         }
         .confirmationDialog(
-            isEnglish ? "Reset all finance data?" : "Reset semua data keuangan?",
+            isEnglish ? "Are you sure you want to delete all data? This cannot be undone." : "Yakin ingin menghapus semua data? Tidak bisa dibatalkan.",
             isPresented: $showResetConfirm,
             titleVisibility: .visible
         ) {
@@ -1030,7 +1033,7 @@ private struct SettingsDataSheet: View {
         let foreground = isAccent ? color : (isDanger ? color : Color.primary)
         let surface = isAccent ? color.opacity(0.09) : (isDanger ? color.opacity(0.07) : AppAppearance.card2(dark: isDark))
         let iconSurface = isAccent ? color.opacity(0.15) : (isDanger ? color.opacity(0.12) : AppAppearance.card2(dark: isDark))
-        let borderColor = isAccent ? color.opacity(0.40) : (isDanger ? color.opacity(0.21) : cardBorder)
+        let borderColor = isAccent ? color.opacity(0.25) : (isDanger ? color.opacity(0.21) : cardBorder)
 
         return HStack(spacing: 12) {
             Image(systemName: symbol).font(.system(size: 18, weight: .regular)).foregroundStyle(foreground)
