@@ -59,6 +59,7 @@ struct SettingsCategoryManagerSheet: View {
                 Text(isEnglish ? "Manage Categories" : "Kelola Kategori")
                     .font(MeowlettTypography.font(size: 16, weight: .heavy))
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.settings.sheet.categoryManager.title")
                 Spacer()
                 Button {
                     editingKey = nil
@@ -75,6 +76,7 @@ struct SettingsCategoryManagerSheet: View {
                         .background(categoryBackground, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.settings.sheet.categoryManager.close")
             }
             .padding(.horizontal, 22)
             .padding(.top, 22)
