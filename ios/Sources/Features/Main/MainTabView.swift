@@ -308,7 +308,10 @@ struct MainTabView: View {
             }
             .buttonStyle(.plain)
             Button {
-                selectTab(.settings)
+                // Preserve the stable header navigation interaction from the last working baseline.
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                    selected = .settings
+                }
             } label: {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "gearshape")
