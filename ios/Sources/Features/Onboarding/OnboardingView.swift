@@ -17,7 +17,6 @@ struct OnboardingView: View {
     @State private var name = ""
     @State private var income = ""
     @State private var isDark = false
-    @State private var showCustomColors = false
 
     private var isEnglish: Bool { language == "en" }
 
@@ -102,7 +101,7 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 20)
 
-            primaryButton(isEnglish ? "Start Setup →" : "Mulai Setup →") {
+            primaryButton(isEnglish ? "Start Setup →" : "Mulai Setup →", fontSize: 15, cornerRadius: 16, verticalPadding: 16) {
                 go(to: 1)
             }
         }
@@ -134,7 +133,7 @@ struct OnboardingView: View {
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(name.isEmpty ? AppAppearance.border(dark: isDark) : accent, lineWidth: 2))
                 .padding(.bottom, 12)
 
-            primaryButton(isEnglish ? "Next →" : "Lanjut →") {
+            primaryButton(isEnglish ? "Next →" : "Lanjut →", fontSize: 14, cornerRadius: 14, verticalPadding: 15) {
                 go(to: 2)
             }
             .padding(.bottom, 8)
@@ -196,33 +195,44 @@ struct OnboardingView: View {
     }
 
     private var appearanceStep: some View {
-        VStack(alignment: .leading, spacing: 15) {
+        VStack(alignment: .leading, spacing: 0) {
             stepLabel(4)
+                .padding(.bottom, 6)
+
             Text(isEnglish ? "Choose your\nlook" : "Pilih\ntampilan")
-                .font(MeowlettTypography.font(size: 30, weight: .black))
+                .font(MeowlettTypography.font(size: 26, weight: .black))
+                .lineSpacing(1)
                 .foregroundStyle(.primary)
+                .padding(.bottom, 4)
 
             Text(isEnglish ? "You can change this anytime in Settings." : "Bisa diganti kapan saja di Pengaturan.")
-                .font(MeowlettTypography.font(size: 14, weight: .regular))
+                .font(MeowlettTypography.font(size: 13, weight: .regular))
                 .foregroundStyle(.secondary)
+                .padding(.bottom, 14)
 
             Text(isEnglish ? "DISPLAY MODE" : "MODE TAMPILAN")
                 .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(1)
                 .foregroundStyle(.secondary)
+                .padding(.bottom, 8)
 
-            HStack(spacing: 9) {
+            HStack(spacing: 8) {
                 modeButton(title: isEnglish ? "Light" : "Terang", dark: false)
                 modeButton(title: isEnglish ? "Dark" : "Gelap", dark: true)
             }
+            .padding(.bottom, 18)
 
             Text(isEnglish ? "COLOR THEME" : "TEMA WARNA")
                 .font(MeowlettTypography.font(size: 10, weight: .black))
                 .tracking(1)
                 .foregroundStyle(.secondary)
-                .padding(.top, 2)
+                .padding(.bottom, 8)
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 52), spacing: 12)], alignment: .leading, spacing: 12) {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 44, maximum: 44), spacing: 12)],
+                alignment: .leading,
+                spacing: 12
+            ) {
                 ForEach(AppAppearance.presets, id: \.id) { preset in
                     Button {
                         themePreset = preset.id
@@ -237,7 +247,12 @@ struct OnboardingView: View {
                                         .foregroundStyle(Color(hex: preset.accent))
                                 }
                             }
-                            .overlay(Circle().stroke(themePreset == preset.id ? Color(hex: preset.accent) : .clear, lineWidth: 3))
+                            .overlay(
+                                Circle().stroke(
+                                    themePreset == preset.id ? Color(hex: preset.accent) : .clear,
+                                    lineWidth: 3
+                                )
+                            )
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(isEnglish ? preset.nameEN : preset.nameID)
@@ -245,35 +260,109 @@ struct OnboardingView: View {
 
                 Button {
                     themePreset = "custom"
-                    showCustomColors.toggle()
                 } label: {
                     Circle()
                         .fill(themePreset == "custom" ? Color(hex: customPrimary) : Color.gray)
                         .frame(width: 44, height: 44)
-                        .overlay(Image(systemName: "paintpalette.fill").foregroundStyle(.white))
-                        .overlay(Circle().stroke(themePreset == "custom" ? Color(hex: customAccent) : .clear, lineWidth: 3))
+                        .overlay {
+                            Image(systemName: themePreset == "custom" ? "checkmark" : "paintpalette.fill")
+                                .font(.system(size: 14, weight: .black))
+                                .foregroundStyle(.white)
+                        }
+                        .overlay(
+                            Circle().stroke(
+                                themePreset == "custom" ? Color(hex: customAccent) : .clear,
+                                lineWidth: 3
+                            )
+                        )
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isEnglish ? "Custom color" : "Warna kustom")
             }
+            .padding(.bottom, 12)
 
-            if themePreset == "custom" || showCustomColors {
-                VStack(spacing: 10) {
-                    ColorPicker(isEnglish ? "Primary color" : "Warna utama", selection: primaryBinding)
-                    ColorPicker(isEnglish ? "Accent color" : "Warna aksen", selection: accentBinding)
+            if themePreset == "custom" {
+                HStack(alignment: .top, spacing: 10) {
+                    onboardingColorControl(
+                        title: isEnglish ? "PRIMARY" : "WARNA UTAMA",
+                        value: primaryBinding,
+                        hex: customPrimary
+                    )
+                    onboardingColorControl(
+                        title: isEnglish ? "ACCENT" : "WARNA AKSEN",
+                        value: accentBinding,
+                        hex: customAccent
+                    )
                 }
-                .padding(14)
-                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                .padding(12)
+                .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5)
+                )
+                .padding(.bottom, 14)
             }
 
-            primaryButton(isEnglish ? "Done, Let's Go!" : "Selesai, Mulai!") {
+            Button {
                 finish()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 16, weight: .bold))
+                    Text(isEnglish ? "Done, Let's Go!" : "Selesai, Mulai!")
+                        .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(
+                    LinearGradient(colors: [accent, primary], startPoint: .leading, endPoint: .trailing),
+                    in: RoundedRectangle(cornerRadius: 14)
+                )
             }
+            .buttonStyle(.plain)
+            .padding(.bottom, 8)
 
             secondaryButton(isEnglish ? "← Back" : "← Kembali") {
                 go(to: 2)
             }
         }
+    }
+
+    private func onboardingColorControl(
+        title: String,
+        value: Binding<Color>,
+        hex: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(MeowlettTypography.font(size: 10, weight: .black))
+                .tracking(0.5)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(hex: hex))
+                    ColorPicker("", selection: value)
+                        .labelsHidden()
+                        .opacity(0.02)
+                }
+                .frame(width: 32, height: 32)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.primary.opacity(0.12), lineWidth: 2)
+                )
+
+                Text(hex.uppercased())
+                    .font(MeowlettTypography.font(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func stepLabel(_ number: Int) -> some View {
@@ -294,12 +383,12 @@ struct OnboardingView: View {
                     Image(systemName: "checkmark.circle.fill")
                 }
             }
-            .font(.system(size: 12, weight: .bold))
+            .font(.system(size: 13, weight: .bold))
             .foregroundStyle(selected ? accent : Color.primary.opacity(0.65))
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
+            .padding(.vertical, 10)
             .background(selected ? accent.opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.secondary.opacity(0.15), lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.secondary.opacity(0.15), lineWidth: 2))
         }
         .buttonStyle(.plain)
     }
@@ -317,21 +406,21 @@ struct OnboardingView: View {
             .font(.system(size: 13, weight: .bold))
             .foregroundStyle(selected ? accent : Color.primary.opacity(0.7))
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 13)
+            .padding(.vertical, 11)
             .background(selected ? accent.opacity(0.12) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.secondary.opacity(0.15), lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? accent : Color.secondary.opacity(0.15), lineWidth: 2))
         }
         .buttonStyle(.plain)
     }
 
-    private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
+    private func primaryButton(_ title: String, fontSize: CGFloat = 14, cornerRadius: CGFloat = 14, verticalPadding: CGFloat = 15, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(MeowlettTypography.font(size: 15, weight: .black))
+                .font(MeowlettTypography.font(size: fontSize, weight: .heavy))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(LinearGradient(colors: [accent, primary], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 15))
+                .padding(.vertical, verticalPadding)
+                .background(LinearGradient(colors: [accent, primary], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: cornerRadius))
         }
         .buttonStyle(.plain)
     }
@@ -342,7 +431,7 @@ struct OnboardingView: View {
                 .font(MeowlettTypography.font(size: 13, weight: .semibold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, 10)
         }
         .buttonStyle(.plain)
     }
