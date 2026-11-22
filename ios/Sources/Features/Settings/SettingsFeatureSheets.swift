@@ -9,153 +9,118 @@ struct SettingsReminderSheet: View {
     @AppStorage("gm_reminder_smart") private var reminderSmart = "1"
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var financeStore: FinanceStore
     @State private var reminderDays = [1,2,3,4,5]
     @State private var loaded = false
-    @State private var permissionMessage = ""
+    @State private var permissionMessage: String?
+    @State private var isRequestingPermission = false
 
     private var isEnglish: Bool { language == "en" }
-    private var hour: Int { Int(reminderHour) ?? 21 }
-    private var dayLabels: [String] { isEnglish ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] : ["Min","Sen","Sel","Rab","Kam","Jum","Sab"] }
+    private var isDark: Bool { colorScheme == .dark }
+    private var accent: Color { AppAppearance.accent }
+    private var primary: Color { AppAppearance.primary }
+    private var categoryBackground: Color {
+        isDark ? AppAppearance.card2(dark: true) : AppAppearance.background(dark: false)
+    }
+    private var hour: Int { min(23, max(0, Int(reminderHour) ?? 21)) }
+    private var dayLabels: [String] {
+        isEnglish ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"] : ["Min","Sen","Sel","Rab","Kam","Jum","Sab"]
+    }
+    private var timeLabel: String { String(format: "%02d:00", hour) }
 
     var body: some View {
         VStack(spacing: 0) {
-            Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
-            HStack {
-                Label(isEnglish ? "Transaction reminders" : "Pengingat Transaksi", systemImage: "bell")
-                    .font(.system(size: 16, weight: .black))
+            Capsule()
+                .fill(AppAppearance.border(dark: isDark))
+                .frame(width: 36, height: 4)
+                .padding(.top, 12)
+
+            HStack(spacing: 9) {
+                Image(systemName: "bell")
+                    .font(.system(size: 18, weight: .regular))
+                    .foregroundStyle(accent)
+                Text(isEnglish ? "Transaction Reminder" : "Pengingat Transaksi")
+                    .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.secondary).frame(width: 30, height: 30)
-                        .background(Color(uiColor: .secondarySystemBackground), in: Circle())
-                }.buttonStyle(.plain)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(AppAppearance.textSub(dark: isDark))
+                        .frame(width: 30, height: 30)
+                        .background(categoryBackground, in: Circle())
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 20).padding(.vertical, 14)
-            Divider().opacity(0.5)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 14)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1)
+            }
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    HStack(spacing: 14) {
-                        Image(systemName: "bell.badge.fill")
-                            .font(.system(size: 22, weight: .semibold))
+                    heroCard
+                    pushNotificationsRow
+
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
+                    reminderTimeRow
+
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
+                    activeDaysSection
+
+                    Divider().overlay(AppAppearance.border(dark: isDark))
+
+                    smartReminderRow
+
+                    notificationPreview
+
+                    Button {
+                        saveDays()
+                        if notificationEnabled == "1" { scheduleNotifications() }
+                        dismiss()
+                    } label: {
+                        Text(isEnglish ? "Save Settings" : "Simpan Pengaturan")
+                            .font(MeowlettTypography.font(size: 14, weight: .heavy))
                             .foregroundStyle(.white)
-                            .frame(width: 50, height: 50)
-                            .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 16))
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(isEnglish ? "Stay on track" : "Jangan lupa mencatat")
-                                .font(MeowlettTypography.font(size: 14, weight: .heavy))
-                            Text(isEnglish ? "Choose when Meowlett reminds you." : "Atur kapan Meowlett mengingatkanmu.")
-                                .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary)
-                        }
-                        Spacer(minLength: 0)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(
+                                LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                in: RoundedRectangle(cornerRadius: 14)
+                            )
                     }
-                    .padding(16)
-                    .background(AppAppearance.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppAppearance.accent.opacity(0.18), lineWidth: 1))
-                    .padding(16)
-
-                    settingsToggle(
-                        symbol: notificationEnabled == "1" ? "bell.fill" : "bell.slash",
-                        title: isEnglish ? "Notifications" : "Notifikasi",
-                        subtitle: notificationEnabled == "1" ? (isEnglish ? "Active" : "Aktif") : (isEnglish ? "Off" : "Nonaktif"),
-                        isOn: Binding(get: { notificationEnabled == "1" }, set: { value in Task { await setNotifications(value) } })
-                    )
-                    Divider().padding(.leading, 20)
-
-                    HStack(spacing: 12) {
-                        Image(systemName: "alarm").font(.system(size: 18)).foregroundStyle(.secondary)
-                            .frame(width: 38, height: 38).background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(isEnglish ? "Reminder time" : "Waktu pengingat").font(MeowlettTypography.font(size: 14, weight: .bold))
-                            Text(isEnglish ? "Notifications are sent at this time" : "Notifikasi dikirim pada jam ini").font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Picker("", selection: $reminderHour) {
-                            ForEach([6,7,8,9,10,12,15,18,19,20,21,22], id: \.self) { value in
-                                Text(String(format: "%02d:00", value)).tag(String(value))
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .tint(AppAppearance.accent)
-                        .font(MeowlettTypography.font(size: 15, weight: .black))
-                    }
-                    .padding(.horizontal, 20).padding(.vertical, 14)
-                    Divider().padding(.leading, 20)
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(isEnglish ? "Reminder days" : "Hari pengingat")
-                            .font(MeowlettTypography.font(size: 12, weight: .bold)).foregroundStyle(.secondary)
-                        HStack(spacing: 6) {
-                            ForEach(0..<7, id: \.self) { day in
-                                let selected = reminderDays.contains(day)
-                                Button {
-                                    if selected { reminderDays.removeAll { $0 == day } }
-                                    else { reminderDays.append(day); reminderDays.sort() }
-                                } label: {
-                                    Text(dayLabels[day])
-                                        .font(MeowlettTypography.font(size: 11, weight: .heavy))
-                                        .foregroundStyle(selected ? AppAppearance.accent : Color.secondary)
-                                        .frame(maxWidth: .infinity).frame(height: 38)
-                                        .background(selected ? AppAppearance.accent.opacity(0.13) : Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
-                                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? AppAppearance.accent.opacity(0.45) : Color.primary.opacity(0.07), lineWidth: 1.5))
-                                }.buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20).padding(.vertical, 14)
-                    Divider().padding(.leading, 20)
-
-                    settingsToggle(
-                        symbol: "sparkles",
-                        title: isEnglish ? "Smart reminder" : "Pengingat pintar",
-                        subtitle: isEnglish ? "Adapt reminder content to your activity" : "Sesuaikan isi pengingat dengan aktivitasmu",
-                        isOn: Binding(get: { reminderSmart != "0" }, set: { reminderSmart = $0 ? "1" : "0" })
-                    )
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(isEnglish ? "NOTIFICATION PREVIEW" : "PREVIEW NOTIFIKASI")
-                            .font(MeowlettTypography.font(size: 10, weight: .heavy)).tracking(0.5).foregroundStyle(.secondary)
-                        VStack(alignment: .leading, spacing: 7) {
-                            HStack(spacing: 8) {
-                                Text("🐱").font(MeowlettTypography.font(size: 15, weight: .regular)).frame(width: 28, height: 28).background(AppAppearance.accent.opacity(0.15), in: RoundedRectangle(cornerRadius: 8))
-                                Text("Meowlett").font(MeowlettTypography.font(size: 11, weight: .bold)).foregroundStyle(.secondary)
-                                Spacer()
-                                Text(String(format: "%02d:00", hour)).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
-                            }
-                            Text(isEnglish
-                                 ? "💸 Haven't logged expenses today! Don't forget to record your transactions 🐱"
-                                 : "💸 Belum catat pengeluaran hari ini! Jangan lupa input transaksi 🐱")
-                                .font(MeowlettTypography.font(size: 12, weight: .heavy))
-                        }
-                        .padding(14)
-                        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 15))
-                    }
-                    .padding(16)
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 14)
+                    .padding(.bottom, 24)
                 }
-                .padding(.bottom, 18)
             }
-            Button(isEnglish ? "Save settings" : "Simpan Pengaturan") {
-                saveDays()
-                if notificationEnabled == "1" { scheduleNotifications() }
-                dismiss()
-            }
-            .font(.system(size: 14, weight: .heavy))
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity).frame(height: 48)
-            .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .background(Color(uiColor: .systemBackground))
         }
-        .background(Color(uiColor: .systemBackground))
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .background(AppAppearance.modal(dark: isDark))
+        .alert(
+            isEnglish ? "Notifications unavailable" : "Notifikasi tidak tersedia",
+            isPresented: Binding(
+                get: { permissionMessage != nil },
+                set: { if !$0 { permissionMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { permissionMessage = nil }
+        } message: {
+            Text(permissionMessage ?? "")
+        }
+        .presentationDetents([.fraction(0.9)])
+        .presentationDragIndicator(.hidden)
         .presentationCornerRadius(24)
         .onAppear {
+            guard !loaded else { return }
             if let data = reminderDaysRaw.data(using: .utf8),
                let decoded = try? JSONDecoder().decode([Int].self, from: data) {
-                reminderDays = decoded
+                reminderDays = decoded.filter { (0...6).contains($0) }.sorted()
             }
             loaded = true
         }
@@ -163,50 +128,295 @@ struct SettingsReminderSheet: View {
             saveDays()
             if notificationEnabled == "1" { scheduleNotifications() }
         }
-        .onChange(of: reminderHour) { _, _ in if notificationEnabled == "1" { scheduleNotifications() } }
-        .onChange(of: reminderSmart) { _, _ in if notificationEnabled == "1" { scheduleNotifications() } }
+        .onChange(of: reminderHour) { _, _ in
+            if notificationEnabled == "1" { scheduleNotifications() }
+        }
+        .onChange(of: reminderSmart) { _, _ in
+            if notificationEnabled == "1" { scheduleNotifications() }
+        }
     }
 
-    private func settingsToggle(symbol: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 17, weight: .semibold)).foregroundStyle(AppAppearance.accent)
-                .frame(width: 38, height: 38).background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(MeowlettTypography.font(size: 14, weight: .bold))
-                Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .regular)).foregroundStyle(.secondary)
+    private var heroCard: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "bell")
+                .font(.system(size: 22, weight: .regular))
+                .foregroundStyle(.white)
+                .frame(width: 50, height: 50)
+                .background(
+                    LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: 16)
+                )
+            VStack(alignment: .leading, spacing: 3) {
+                Text(isEnglish ? "Transaction Reminder" : "Pengingat Transaksi")
+                    .font(MeowlettTypography.font(size: 14, weight: .heavy))
+                    .foregroundStyle(.primary)
+                Text(isEnglish
+                     ? "Notify if no spending recorded today"
+                     : "Notif kalau belum input pengeluaran hari ini")
+                    .font(MeowlettTypography.font(size: 12, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(
+            LinearGradient(colors: [accent.opacity(0.09), primary.opacity(0.16)], startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: 16)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(accent.opacity(0.15), lineWidth: 1))
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 0)
+    }
+
+    private var pushNotificationsRow: some View {
+        Button {
+            Task { await setNotifications(notificationEnabled != "1") }
+        } label: {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(categoryBackground)
+                    .frame(width: 38, height: 38)
+                    .overlay(Image(systemName: "bell")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundStyle(notificationEnabled == "1" ? accent : AppAppearance.textSub(dark: isDark)))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(isEnglish ? "Push Notifications" : "Notifikasi")
+                        .font(MeowlettTypography.font(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Text(notificationEnabled == "1"
+                         ? (isEnglish ? "Active — every day at 9 PM" : "Aktif — setiap hari jam 9 malam")
+                         : (isEnglish ? "Inactive" : "Nonaktif"))
+                        .font(MeowlettTypography.font(size: 11, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 6)
+                reminderSwitch(isOn: notificationEnabled == "1", isLoading: isRequestingPermission)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isRequestingPermission)
+    }
+
+    private var reminderTimeRow: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(isEnglish ? "Reminder Time" : "Waktu Pengingat")
+                    .font(MeowlettTypography.font(size: 14, weight: .bold))
+                    .foregroundStyle(.primary)
+                Text(isEnglish ? "Notification sent at" : "Notif dikirim jam")
+                    .font(MeowlettTypography.font(size: 11, weight: .regular))
+                    .foregroundStyle(.secondary)
             }
             Spacer()
-            Toggle("", isOn: isOn).labelsHidden().tint(AppAppearance.primary)
+            Menu {
+                ForEach([6,7,8,9,10,12,15,18,19,20,21,22], id: \.self) { value in
+                    Button(String(format: "%02d:00", value)) {
+                        reminderHour = String(value)
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(timeLabel)
+                        .font(MeowlettTypography.font(size: 16, weight: .black))
+                        .foregroundStyle(accent)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(categoryBackground, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20).padding(.vertical, 14)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
     }
 
-    private func setNotifications(_ value: Bool) async {
-        if value {
-            do {
-                let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                await MainActor.run {
-                    notificationEnabled = granted ? "1" : "0"
-                    if granted { scheduleNotifications() }
-                    else { permissionMessage = isEnglish ? "Notification permission was denied." : "Izin notifikasi ditolak." }
-                }
-            } catch {
-                await MainActor.run {
-                    notificationEnabled = "0"
-                    permissionMessage = error.localizedDescription
+    private var activeDaysSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(isEnglish ? "Active Days" : "Hari Aktif")
+                .font(MeowlettTypography.font(size: 12, weight: .bold))
+                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                ForEach(0..<7, id: \.self) { index in
+                    let selected = reminderDays.contains(index)
+                    Button {
+                        if selected {
+                            reminderDays.removeAll { $0 == index }
+                        } else {
+                            reminderDays.append(index)
+                            reminderDays.sort()
+                        }
+                    } label: {
+                        Text(dayLabels[index])
+                            .font(MeowlettTypography.font(size: 11, weight: .heavy))
+                            .foregroundStyle(selected ? accent : AppAppearance.textSub(dark: isDark))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(selected ? accent.opacity(0.13) : categoryBackground, in: RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(selected ? accent.opacity(0.31) : AppAppearance.border(dark: isDark), lineWidth: 1.5)
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-        } else {
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+    }
+
+    private var smartReminderRow: some View {
+        Button {
+            reminderSmart = reminderSmart == "0" ? "1" : "0"
+        } label: {
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(categoryBackground)
+                    .frame(width: 38, height: 38)
+                    .overlay(Image(systemName: "bell")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundStyle(AppAppearance.textSub(dark: isDark)))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(isEnglish ? "Smart Reminder" : "Pengingat Cerdas")
+                        .font(MeowlettTypography.font(size: 14, weight: .bold))
+                        .foregroundStyle(.primary)
+                    Text(isEnglish
+                         ? "Skip if transaction already recorded today"
+                         : "Lewati kalau sudah ada transaksi hari ini")
+                        .font(MeowlettTypography.font(size: 11, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 6)
+                reminderSwitch(isOn: reminderSmart != "0")
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var notificationPreview: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(isEnglish ? "NOTIFICATION PREVIEW" : "PRATINJAU NOTIFIKASI")
+                .font(MeowlettTypography.font(size: 11, weight: .bold))
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 8) {
+                    Text("🐱")
+                        .font(MeowlettTypography.font(size: 14, weight: .regular))
+                        .frame(width: 28, height: 28)
+                        .background(
+                            LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            in: RoundedRectangle(cornerRadius: 8)
+                        )
+                    Text("Meowlett")
+                        .font(MeowlettTypography.font(size: 11, weight: .bold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(timeLabel)
+                        .font(MeowlettTypography.font(size: 11, weight: .regular))
+                        .foregroundStyle(Color.secondary)
+                }
+                Text(isEnglish ? "🐾 No spending recorded today!" : "🐾 Belum catat pengeluaran hari ini!")
+                    .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                    .foregroundStyle(.primary)
+                    .padding(.bottom, 3)
+                Text(isEnglish
+                     ? "Don't forget to log transactions to stay on track 🐱"
+                     : "Jangan lupa input transaksi biar keuanganmu tetap terkontrol 🐱")
+                    .font(MeowlettTypography.font(size: 12, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(14)
+            .background(categoryBackground, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppAppearance.border(dark: isDark), lineWidth: 1))
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+    }
+
+    private func reminderSwitch(isOn: Bool, isLoading: Bool = false) -> some View {
+        Capsule()
+            .fill(isOn
+                  ? LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing)
+                  : categoryBackground)
+            .frame(width: 46, height: 26)
+            .overlay(alignment: isOn ? .trailing : .leading) {
+                Circle()
+                    .fill(.white)
+                    .frame(width: 20, height: 20)
+                    .shadow(color: .black.opacity(0.18), radius: 3, x: 0, y: 1)
+                    .padding(3)
+            }
+            .overlay(Capsule().stroke(isOn ? Color.clear : AppAppearance.border(dark: isDark), lineWidth: 1.5))
+            .opacity(isLoading ? 0.55 : 1)
+            .animation(.easeInOut(duration: 0.18), value: isOn)
+    }
+
+    @MainActor
+    private func setNotifications(_ value: Bool) async {
+        guard !isRequestingPermission else { return }
+        isRequestingPermission = true
+        defer { isRequestingPermission = false }
+
+        guard value else {
             notificationEnabled = "0"
             MeowlettReminderScheduler.removePendingRequests()
+            return
+        }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound, .badge])
+            guard granted else {
+                notificationEnabled = "0"
+                permissionMessage = isEnglish
+                    ? "Notification permission was denied. Enable it in iPhone Settings."
+                    : "Izin notifikasi ditolak. Aktifkan melalui Pengaturan iPhone."
+                return
+            }
+
+            notificationEnabled = "1"
+            scheduleNotifications()
+
+            let confirmation = UNMutableNotificationContent()
+            confirmation.title = "Meowlett"
+            confirmation.body = isEnglish
+                ? "Reminder on! You'll be notified every day at 9 PM."
+                : "Pengingat aktif! Kamu akan diingatkan setiap hari jam 9 malam."
+            confirmation.sound = .default
+            let request = UNNotificationRequest(
+                identifier: "meowlett-reminder-activated",
+                content: confirmation,
+                trigger: nil
+            )
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            notificationEnabled = "0"
+            MeowlettReminderScheduler.removePendingRequests()
+            permissionMessage = error.localizedDescription
         }
     }
 
     private func saveDays() {
-        guard loaded, let data = try? JSONEncoder().encode(reminderDays), let json = String(data: data, encoding: .utf8) else { return }
+        guard loaded,
+              let data = try? JSONEncoder().encode(reminderDays),
+              let json = String(data: data, encoding: .utf8) else { return }
         reminderDaysRaw = json
     }
 
+    @MainActor
     private func scheduleNotifications() {
         MeowlettReminderScheduler.schedule(
             days: reminderDays,
