@@ -146,10 +146,10 @@ struct ReportsView: View {
     private var weeklyTrend: [(Date, Int64)] {
         let calendar = Calendar.current
         return (0..<8).reversed().compactMap { offset in
-            guard let date = calendar.date(byAdding: .weekOfYear, value: -offset, to: .now),
-                  let interval = calendar.dateInterval(of: .weekOfYear, for: date) else { return nil }
-            let sum = store.transactions.filter { interval.contains($0.date) }.reduce(Int64(0)) { $0 + $1.amount }
-            return (interval.start, sum)
+            guard let start = calendar.date(byAdding: .day, value: -7 * offset, to: thisWeekStart),
+                  let end = calendar.date(byAdding: .day, value: 7, to: start) else { return nil }
+            let sum = store.transactions.filter { $0.date >= start && $0.date < end }.reduce(Int64(0)) { $0 + $1.amount }
+            return (start, sum)
         }
     }
     private var dailyCategoryTotals: [(String, Int64)] {
@@ -192,77 +192,132 @@ struct ReportsView: View {
     }
 
     private var budgetWarningCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionHeading(isEnglish ? "Budget warnings" : "Peringatan Budget", symbol: "exclamationmark.triangle.fill")
+        VStack(spacing: 8) {
             ForEach(Array(budgetWarnings.enumerated()), id: \.offset) { _, warning in
-                let category = MeowlettCategory.all.first(where: { $0.id == warning.0 })
                 let over = warning.1 >= warning.2
-                let color = over ? Color(hex: "#ef4444") : Color(hex: "#f59e0b")
-                HStack(spacing: 9) {
-                    RoundedRectangle(cornerRadius: 9).fill(Color(hex: category?.color ?? "#94a3b8").opacity(0.14))
-                        .frame(width: 34, height: 34)
-                        .overlay(Image(systemName: category?.icon ?? "tag").font(.system(size: 15)).foregroundStyle(Color(hex: category?.color ?? "#94a3b8")))
+                let foreground = over ? Color(hex: "#b91c1c") : Color(hex: "#92400e")
+                let detail = over ? Color(hex: "#ef4444") : Color(hex: "#f59e0b")
+                let background = over ? Color(hex: "#fef2f2") : Color(hex: "#fffbeb")
+                let border = over ? Color(hex: "#fca5a5") : Color(hex: "#fde68a")
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.circle")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundStyle(over ? Color(hex: "#ef4444") : Color(hex: "#f59e0b"))
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("\(over ? (isEnglish ? "Exceeded" : "Terlampaui") : (isEnglish ? "Near limit" : "Mendekati limit")): \(MeowlettCategory.name(for: warning.0, language: language))")
-                            .font(MeowlettTypography.font(size: 12, weight: .bold))
-                            .foregroundStyle(color)
+                        Text("\(over ? (isEnglish ? "Exceeded" : "Terlampaui") : (isEnglish ? "Near limit" : "Mendekati batas")): \(MeowlettCategory.name(for: warning.0, language: language))")
+                            .font(MeowlettTypography.font(size: 13, weight: .bold))
+                            .foregroundStyle(foreground)
                         Text("\(rupiah(warning.1)) / \(rupiah(warning.2))")
-                            .font(MeowlettTypography.font(size: 11, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .font(MeowlettTypography.font(size: 11, weight: .regular))
+                            .foregroundStyle(detail)
                     }
-                    Spacer()
-                    Text("\(min(100, Int((Double(warning.1) / Double(warning.2) * 100).rounded())))%")
-                        .font(MeowlettTypography.font(size: 12, weight: .black))
-                        .foregroundStyle(color)
+                    Spacer(minLength: 0)
                 }
-                .padding(10)
-                .background(color.opacity(0.07), in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(background, in: RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(border, lineWidth: 1.5))
             }
         }
-        .cardStyle(dark: isDark)
     }
 
     private var categoryComparisonCard: some View {
-        VStack(alignment: .leading, spacing: 13) {
-            sectionHeading(isEnglish ? "Per Category — This vs Last Month" : "Per Kategori — Bulan Ini vs Lalu", symbol: "chart.bar.xaxis")
-            HStack {
-                Text(currentMonthLabel)
-                Spacer()
-                Text(previousMonthLabel)
+        let maxValue = max(categoryComparisons.map { max($0.1, $0.2) }.max() ?? 1, 1)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(primary.opacity(0.10))
+                    .frame(width: 28, height: 28)
+                    .overlay(
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(primary)
+                    )
+                Text(isEnglish ? "Per Category — This vs Last Month" : "Per Kategori — Bulan Ini vs Lalu")
+                    .font(MeowlettTypography.font(size: 13, weight: .heavy))
+                    .foregroundStyle(.primary)
             }
-            .font(MeowlettTypography.font(size: 10, weight: .bold))
-            .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 3).fill(primary).frame(width: 10, height: 10)
+                    Text(isEnglish ? "This month" : "Bulan ini")
+                        .font(MeowlettTypography.font(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.25)).frame(width: 10, height: 10)
+                    Text(isEnglish ? "Last month" : "Bulan lalu")
+                        .font(MeowlettTypography.font(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             if categoryComparisons.isEmpty {
                 emptyMessage(isEnglish ? "No spending data yet." : "Belum ada data pengeluaran.")
             } else {
-                ForEach(Array(categoryComparisons.enumerated()), id: \.offset) { _, item in
-                    let current = item.1
-                    let previous = item.2
-                    let maxValue = max(categoryComparisons.map { max($0.1, $0.2) }.max() ?? 1, 1)
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack(spacing: 6) {
-                            Circle().fill(MeowlettCategory.color(for: item.0)).frame(width: 7, height: 7)
-                            Text(MeowlettCategory.name(for: item.0, language: language))
-                                .font(MeowlettTypography.font(size: 12, weight: .bold))
-                            Spacer()
-                            Text(rupiah(current))
-                                .font(MeowlettTypography.font(size: 10, weight: .bold))
-                                .foregroundStyle(.primary)
-                            Text(rupiah(previous))
-                                .font(MeowlettTypography.font(size: 10, weight: .semibold))
-                                .foregroundStyle(.secondary.opacity(0.7))
-                        }
-                        GeometryReader { proxy in
-                            VStack(spacing: 3) {
-                                Capsule().fill(MeowlettCategory.color(for: item.0))
-                                    .frame(width: proxy.size.width * CGFloat(current) / CGFloat(maxValue), height: 5)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Capsule().fill(Color.secondary.opacity(0.35))
-                                    .frame(width: proxy.size.width * CGFloat(previous) / CGFloat(maxValue), height: 5)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(categoryComparisons.enumerated()), id: \.offset) { _, item in
+                        let current = item.1
+                        let previous = item.2
+                        let difference = current - previous
+                        let percent = previous > 0
+                            ? Int((Double(difference) / Double(previous) * 100).rounded())
+                            : nil
+                        let catColor = MeowlettCategory.color(for: item.0)
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 6) {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(catColor.opacity(0.14))
+                                    .frame(width: 20, height: 20)
+                                    .overlay(
+                                        Image(systemName: MeowlettCategory.all.first(where: { $0.id == item.0 })?.icon ?? "tag")
+                                            .font(.system(size: 11, weight: .regular))
+                                            .foregroundStyle(catColor)
+                                    )
+                                Text(MeowlettCategory.name(for: item.0, language: language))
+                                    .font(MeowlettTypography.font(size: 12, weight: .bold))
+                                    .foregroundStyle(.primary)
+                                Spacer(minLength: 4)
+                                if let percent {
+                                    HStack(spacing: 3) {
+                                        Text(percent > 0 ? "▲" : "▼")
+                                            .font(MeowlettTypography.font(size: 9, weight: .bold))
+                                        Text("\(abs(percent))%")
+                                            .font(MeowlettTypography.font(size: 11, weight: .bold))
+                                    }
+                                    .foregroundStyle(percent > 0 ? Color(hex: "#f87171") : Color(hex: "#4ade80"))
+                                }
                             }
+
+                            GeometryReader { proxy in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color.primary.opacity(isDark ? 0.07 : 0.07))
+                                    Capsule()
+                                        .fill(LinearGradient(colors: [primary, accent], startPoint: .leading, endPoint: .trailing))
+                                        .frame(width: proxy.size.width * CGFloat(current) / CGFloat(maxValue))
+                                }
+                            }
+                            .frame(height: 7)
+                            GeometryReader { proxy in
+                                ZStack(alignment: .leading) {
+                                    Capsule().fill(Color.primary.opacity(isDark ? 0.04 : 0.04))
+                                    Capsule()
+                                        .fill(Color.primary.opacity(isDark ? 0.20 : 0.12))
+                                        .frame(width: proxy.size.width * CGFloat(previous) / CGFloat(maxValue))
+                                }
+                            }
+                            .frame(height: 4)
+                            HStack {
+                                Text(rupiah(current))
+                                Spacer()
+                                Text(rupiah(previous))
+                                    .opacity(0.5)
+                            }
+                            .font(MeowlettTypography.font(size: 10, weight: .regular))
+                            .foregroundStyle(.secondary)
                         }
-                        .frame(height: 13)
                     }
                 }
             }
