@@ -1,5 +1,5 @@
 import { chromium } from "playwright";
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -36,6 +36,7 @@ const baseStorage = {
 
 await mkdir(outputDir, { recursive: true });
 const browser = await chromium.launch({ headless: true });
+const diagnosticsRuns = [];
 
 try {
   for (const mode of ["light", "dark"]) {
@@ -51,7 +52,80 @@ try {
 
     const page = await context.newPage();
     const pageErrors = [];
+    const fontHTTPResponses = [];
+    const fontProbePromises = [];
+    const probedGstaticURLs = new Set();
     page.on("pageerror", error => pageErrors.push(error.message));
+    page.on("response", response => {
+      const url = response.url();
+      if (/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i.test(url)) {
+        fontHTTPResponses.push({
+          url,
+          status: response.status(),
+          source: "page-response"
+        });
+      }
+    });
+
+    // Preserve the screenshot's local-font behavior: abort external page font requests,
+    // then probe those exact URLs separately and record their HTTP response status.
+    await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i, async route => {
+      const requestedURL = route.request().url();
+      await route.abort();
+
+      const probe = (async () => {
+        try {
+          const response = await context.request.get(requestedURL, { timeout: 15000 });
+          const statusRecord = {
+            url: response.url(),
+            requestedURL,
+            status: response.status(),
+            source: "diagnostic-probe"
+          };
+          fontHTTPResponses.push(statusRecord);
+
+          if (/^https:\/\/fonts\.googleapis\.com\//i.test(requestedURL) && response.ok()) {
+            const css = await response.text();
+            const gstaticURLs = new Set(
+              [...css.matchAll(/url\((?:["']?)(https:\/\/fonts\.gstatic\.com\/[^)"']+)(?:["']?)\)/gi)]
+                .map(match => match[1])
+            );
+            await Promise.all([...gstaticURLs].map(async fontURL => {
+              if (probedGstaticURLs.has(fontURL)) return;
+              probedGstaticURLs.add(fontURL);
+              try {
+                const fontResponse = await context.request.get(fontURL, { timeout: 15000 });
+                fontHTTPResponses.push({
+                  url: fontResponse.url(),
+                  requestedURL: fontURL,
+                  status: fontResponse.status(),
+                  source: "diagnostic-probe-from-google-css"
+                });
+                await fontResponse.dispose();
+              } catch (error) {
+                fontHTTPResponses.push({
+                  url: fontURL,
+                  requestedURL: fontURL,
+                  status: null,
+                  source: "diagnostic-probe-from-google-css",
+                  error: String(error)
+                });
+              }
+            }));
+          }
+          await response.dispose();
+        } catch (error) {
+          fontHTTPResponses.push({
+            url: requestedURL,
+            requestedURL,
+            status: null,
+            source: "diagnostic-probe",
+            error: String(error)
+          });
+        }
+      })();
+      fontProbePromises.push(probe);
+    });
 
     // setFixedTime freezes Date only; application timeout/animation timers keep running.
     await page.clock.setFixedTime(fixedTime);
@@ -79,15 +153,49 @@ try {
     const fontState = await page.evaluate(async () => {
       await document.fonts.load('400 16px "Plus Jakarta Sans"');
       await document.fonts.ready;
-      const faces = Array.from(document.fonts)
-        .filter(face => face.family.replaceAll('"', "") === "Plus Jakarta Sans")
-        .map(face => ({ family: face.family, weight: face.weight, status: face.status }));
+
+      const fontFaces = Array.from(document.fonts).map(face => ({
+        family: face.family,
+        weight: face.weight,
+        status: face.status
+      }));
+      const paragraphs = Array.from(document.querySelectorAll("p"));
+      const greetingTexts = new Set([
+        "Selamat pagi", "Selamat siang", "Selamat sore", "Selamat malam"
+      ]);
+      const greeting = paragraphs.find(element => greetingTexts.has(element.textContent.trim()));
+      const expenseLabel = paragraphs.find(element =>
+        element.textContent.trim() === "Pengeluaran bulan ini"
+      );
+      const expenseAmount = expenseLabel?.nextElementSibling ?? null;
+
+      const computedTypography = element => {
+        if (!element) return { found: false };
+        const style = getComputedStyle(element);
+        return {
+          found: true,
+          text: element.textContent.trim(),
+          tagName: element.tagName.toLowerCase(),
+          fontFamily: style.fontFamily,
+          fontWeight: style.fontWeight
+        };
+      };
+      const bodyStyle = getComputedStyle(document.body);
+
       return {
         ready: document.fonts.check('400 16px "Plus Jakarta Sans"'),
-        faces
+        fontFaces,
+        body: {
+          fontFamily: bodyStyle.fontFamily,
+          fontWeight: bodyStyle.fontWeight
+        },
+        greeting: computedTypography(greeting),
+        expenseAmount: computedTypography(expenseAmount)
       };
     });
-    if (!fontState.ready || !fontState.faces.some(face => face.status === "loaded")) {
+    if (!fontState.ready || !fontState.fontFaces.some(face =>
+      face.family.replaceAll('"', "") === "Plus Jakarta Sans" && face.status === "loaded"
+    )) {
       throw new Error(`Local Plus Jakarta Sans did not load for ${mode}: ${JSON.stringify(fontState)}`);
     }
 
@@ -101,9 +209,33 @@ try {
     if (pageErrors.length) {
       throw new Error(`Page errors in ${mode}: ${pageErrors.join(" | ")}`);
     }
-    console.log(`Captured ${outputPath}; font=${JSON.stringify(fontState)}`);
+
+    // Probe remote font URLs only after the screenshot has been captured so the
+    // diagnostics do not change font selection, layout, animation, or screenshot timing.
+    await Promise.all(fontProbePromises);
+    const modeDiagnostics = {
+      mode,
+      fontHTTPResponses,
+      documentFonts: fontState.fontFaces,
+      computedStyles: {
+        body: fontState.body,
+        greeting: fontState.greeting,
+        expenseAmount: fontState.expenseAmount
+      }
+    };
+    diagnosticsRuns.push(modeDiagnostics);
+    console.log(`Font diagnostics ${mode}: ${JSON.stringify(modeDiagnostics)}`);
+    console.log(`Captured ${outputPath}`);
     await context.close();
   }
+
+  const diagnosticsPath = path.join(outputDir, "font-diagnostics.json");
+  await writeFile(diagnosticsPath, JSON.stringify({
+    capturedAt: new Date().toISOString(),
+    note: "Google Fonts page requests are aborted to preserve local-font screenshots; HTTP statuses are collected using separate diagnostic probes after each screenshot.",
+    runs: diagnosticsRuns
+  }, null, 2) + "\\n");
+  console.log(`Wrote font diagnostics: ${diagnosticsPath}`);
 } finally {
   await browser.close();
 }

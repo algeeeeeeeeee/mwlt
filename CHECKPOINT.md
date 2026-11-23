@@ -511,42 +511,51 @@ Tidak ada deviasi lain yang disetujui. Khusus kartu saldo: pemasukan − pengelu
 
 ## R1a — PWA build + Beranda Light/Dark harness (23 November 2026)
 
-### Pemeriksaan run dari commit sebelumnya (`3ebd584`)
-- Native run #298: **failure**. Build simulator **success**. UI smoke tests: **11 passed / 1 failed** dari 12. Test gagal: `testSettingsHeaderStandardTapVersusCoordinateTap`, `MeowlettUITests.swift:577`. Error:
-  `Failed to scroll to visible (by AX action) Button, {{288.0, 69.0}, {44.0, 44.0}}, identifier: 'mwlt.header.settings', label: 'Pengaturan' ... kAXErrorCannotComplete ... kAXScrollToVisibleAction.`
-- Native run #299: `in_progress` saat pemeriksaan tunggal; tidak ditunggu, hasil akhir **BELUM TERVERIFIKASI**.
-- IPA run #2: **skipped** (commit sebelumnya tidak memuat marker `[ipa]`).
+### Pemeriksaan run sebelumnya (`1123b1d`)
+- Ref-shots run #1: **completed / failure** — [run #1](https://github.com/algeeeeeeeeee/mwlt/actions/runs/45117779789).
+- `npm install --no-audit --no-fund --no-package-lock`: **SUCCESS**, 62 packages added in 7s.
+- `npm run build`: **SUCCESS**, Vite 5.1.4, 1,590 modules transformed, JS bundle 297.13 kB (gzip 66.48 kB), completed in 2.45s. Service-worker cache key was stamped.
+- Patch copied build for fixed safe-area values and local font: **SUCCESS**.
+- Playwright package install: **SUCCESS**, 2 packages added.
+- Chromium installation: **FAILURE**. Exact log:
+  `BEWARE: your OS is not officially supported by Playwright; installing dependencies for ubuntu26.04-x64 as a fallback.`
+  `Cannot install dependencies for ubuntu26.04-x64 with Playwright 1.56.1!`
+  `ERROR: Playwright does not support chromium on ubuntu26.04-x64`
+- Because Chromium did not install, Vite preview and screenshot capture were skipped. The artifact upload step failed with:
+  `No files were found with the provided path: .../ref/*.png. No artifacts will be uploaded.`
+- Artifact name/size: **none**; no artifact was produced.
 
-### Kelengkapan snapshot `reference/pwa/`
-Semua jalur yang diminta ditemukan:
+### Snapshot completeness
+All requested paths exist under `reference/pwa/`:
 - `package.json`, `vite.config.js`, `index.html`
-- `src/main.jsx`, `src/App.jsx` (monolit), `src/icons.jsx`
+- `src/main.jsx`, `src/App.jsx`, `src/icons.jsx`
 - `src/utils/export.js`, `helpers.js`, `notifications.js`, `theme.js`
 - `src/constants/index.js`, `lang.js`
 - `src/components/AnimatedNumber.jsx`, `DonutChart.jsx`
-- Semua `public/*`: `_redirects`, `gundam.png`, `icon.svg`, `manifest.json`, `meow.png`, `sw.js`.
-- File yang kurang dari daftar tersebut: **tidak ada**.
-- Lockfile npm/yarn/pnpm: **tidak ada** (`package-lock.json`, `npm-shrinkwrap.json`, `yarn.lock`, `pnpm-lock.yaml` tidak ditemukan). Karena itu workflow menggunakan `npm install`, bukan `npm ci`.
-- `src/App.jsx` impor lokal yang dipakai disalin; `Tab*.jsx` dan `Modal*.jsx` sengaja tidak menjadi referensi.
+- All `public/*`: `_redirects`, `gundam.png`, `icon.svg`, `manifest.json`, `meow.png`, `sw.js`.
+- Missing required paths: **none**.
+- No npm/yarn/pnpm lockfile is present; `npm install` is therefore used instead of `npm ci`.
 
-### Font lokal
-- Variable TTF resmi Plus Jakarta Sans dan `OFL.txt` disimpan di `reference/fonts/`.
-- Catatan upstream: sumbu `wght` variable resmi 200–800. PWA CSS meminta 400, 500, 600, 700, 800, 900; bobot 900 tidak tersedia sebagai master/axis asli di file resmi tersebut. Jangan mengklaim 900 asli; Chromium akan menggunakan weight yang tersedia/emboldening synthetic untuk permintaan 900.
-- Build copy memakai @font-face lokal, menghapus link Google Fonts di HTML, dan memblokir request Google Fonts dari Playwright.
+### Changes in this follow-up commit
+1. `.github/workflows/ios-native.yml`: removed the `pull_request` trigger completely. Kept the existing `push` branches and exactly these `paths-ignore` patterns: `'**.md'`, `'docs/**'`, `'reference/**'`. The `concurrency` stanza (including `cancel-in-progress: true`) and all job contents are unchanged.
+2. `reference/harness/capture-home.mjs`: added font diagnostics:
+   - capture URL + HTTP status for `fonts.googleapis.com` and `fonts.gstatic.com` resources requested during initial load; Google CSS is probed and its referenced gstatic font URLs are probed separately.
+   - capture every `document.fonts` entry (family, weight, status).
+   - capture `getComputedStyle(document.body)` and computed `fontFamily`/`fontWeight` for the greeting (`Selamat pagi/siang/sore/malam`) and the monthly expense amount.
+   - print diagnostic JSON to Actions log and write `ref/font-diagnostics.json`.
+   - upload artifact now includes both PNG screenshots and `font-diagnostics.json`.
+   - Existing local font, page-clock setup, 4.1-second splash wait, viewport, context options, screenshot commands, and screenshot filenames are unchanged. Google Fonts page requests remain aborted; diagnostic requests run separately after the screenshot so they do not alter font selection/rendering.
+3. No screenshot result is claimed from the failed Run #1. Diagnostics are **not yet executed**; no conclusions about Google Font response status or actual runtime font weight are claimed.
 
-### Implementasi R1a
-- `.github/workflows/ref-shots.yml`: Ubuntu, push path `reference/**` (branch `native-swift-parity`) + `workflow_dispatch`, concurrency `ref-shots-${{ github.ref }}`, tidak membatalkan run lain.
-- Langkah: npm install + npm run build di `reference/pwa`; salin dist ke temp, ganti safe-area top/bottom hanya pada salinan, tambahkan font lokal, serve dengan `vite preview`; jalankan Playwright Chromium.
-- Playwright: viewport 390×844, DPR 3, isMobile, hasTouch, timezone `Asia/Pontianak`; hanya `page.clock.setFixedTime('2026-11-15T12:00:00+07:00')`, timer real tetap berjalan; tunggu 4.1 detik dan `document.fonts.ready`; Beranda fullPage Light + Dark.
-- Fixture minimal: 15 transaksi (12 bulan November + 3 Agustus 2026), income 5.000.000, satu savings goal, streak 5 tanggal 2026-11-15, bahasa Indonesia, preset rose dan onboarded.
+### Font weight 900
+- The official variable font metadata indicates a native `wght` axis of 200–800, while PWA CSS requests up to 900.
+- Whether Chromium renders the 900 request through synthetic weight, fallback, or another face in the actual screenshot remains **BELUM TERVERIFIKASI**. The next successful diagnostics run is required before drawing any conclusion.
 
-### Filter native workflow
-- Push: ditambah `reference/**` ke `paths-ignore`. Workflow files `ios-native.yml` dan `ref-shots.yml` juga dikecualikan dari push filter agar commit harness/config ini tidak memicu atau membatalkan native build.
-- Pull request: filter yang ada menggunakan allow-list `paths` untuk `ios/**` dan `public/meow.png`. GitHub Actions tidak mengizinkan `paths` dan `paths-ignore` sekaligus pada event yang sama; `!reference/**` ditambahkan sebagai pola negatif eksplisit sambil mempertahankan allow-list sempit (tidak memperluas CI native ke semua perubahan non-reference).
-
-### Bukti / batas
-- Kode workflow/harness/fixture/font telah disiapkan dan didorong dalam satu commit. Eksekusi `npm install`, `npm run build`, screenshot Light/Dark dan artifact CI baru bisa dinilai dari run R1a.
-- Build PWA dan screenshot: **BELUM TERVERIFIKASI** sampai run selesai; instruksi giliran ini tidak menunggu CI.
-- R1a mencakup hanya Beranda. Fixture penuh/semua layar/onboarding/modal ada pada R1b–R1d.
-- PR #2 tetap Draft. Tidak ada perubahan source app native atau test native.
+### Status
+- R1a PWA install/build: **VERIFIED successful**.
+- R1a Chromium capture and Beranda Light/Dark screenshots: **BELUM TERVERIFIKASI**.
+- Artifact name/size: **none** for run #1.
+- The next verification run must fix the runner/browser compatibility before R1a can be called complete.
+- R1b–R1d remain queued; this commit does not start them.
+- PR #2 remains Draft; native app source and UI tests remain unchanged.
 

@@ -141,6 +141,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: pwa-reference-home
-          path: ${{ github.workspace }}/ref/*.png
+          path: |
+            ${{ github.workspace }}/ref/*.png
+            ${{ github.workspace }}/ref/font-diagnostics.json
           if-no-files-found: error
           retention-days: 14
