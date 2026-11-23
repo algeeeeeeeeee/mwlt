@@ -1062,3 +1062,17 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - No changes directly to `main`, no branch/file/workflow deletions, and no merge.
 - Next required action: inspect Run #313 until the native job begins; verify simulator build, UI smoke tests including `testMeowIconCatalogContainsEveryDeclaredKey`, device build, IPA, and Light/Dark preview artifact. Inspect the preview before calling R2 complete. If another failure occurs, use the job logs/xcresult first and fix only the evidenced cause.
 - R2 is **NOT COMPLETE** until the UI test, native device build and previews all pass/are inspected. Do not begin R3 or claim full icon visual parity before then.
+
+## R2 — native CI concurrency refresh (23 November 2026)
+
+- The UI test linker failure repeated on Run #312 because the test bundle could not resolve `MeowIconCatalog.missingKeys` from the app target, despite public access. This approach has been abandoned.
+- Commit `79ffa4e113a5a666232a36fede318aa700efe21e` fixes the test architecture by compiling the same `ios/Sources/Theme/MeowIcon.swift` source into the `MeowlettUITests` target and copying `ios/Resources/Icons` into that test bundle. `@testable import Meowlett` was removed. The catalog remains internal. This lets the test directly run the real decompression/resource/geometry validation inside the test bundle.
+- Empty-tree CI trigger commit: `2fc5e40c28ef5d70bb006e6d4bca7e6f3ced2a6d` (no file changes).
+- Run #313 (`45229431224`) stayed queued without starting. The only native run queued was #313; previous native builds were completed. A fresh concurrency namespace was therefore introduced.
+- Commit `4b50c4b61f8002495c73e55ff5f9e43f3102b5a3` changes only `.github/workflows/ios-native.yml` concurrency group from `meowlett-native-ios-v9-` to `meowlett-native-ios-v10-`.
+- Commit `25c5045a81a49bce5232977539ff2f4d6594abfa` adds one explanatory comment to `MeowIcon.swift`; no runtime behavior changed.
+- Run #314 (`45229880305`) started with group v10, then was cancelled by the subsequent push that started Run #315. No source compile failure was reported by #314 before cancellation.
+- Run #315: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45229972731, SHA `25c5045a81a49bce5232977539ff2f4d6594abfa`. It is currently in progress at `Build simulator`; project generation and scheme discovery succeeded. No failure reported yet.
+- Current working branch head before this checkpoint update: `25c5045a81a49bce5232977539ff2f4d6594abfa`.
+- PR #2 remains OPEN, Draft, base `main`; do not merge or close it. No direct main edits, branch deletions, or file/workflow deletions.
+- Next: allow Run #315 to finish; inspect UI-test result and diagnostics. The required catalog test must pass with the resource loaded from the test bundle. Then inspect native device build, IPA, and Light/Dark preview artifact. R2 remains **NOT COMPLETE** until those validations pass; do not advance to R3.
