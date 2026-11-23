@@ -204,7 +204,7 @@ enum MeowIconCatalog {
         "camera.fill": "Camera", "gearshape": "Settings", "globe": "Globe",
         "moon": "Moon", "moon.fill": "Moon", "sun.max": "Sun", "sun.max.fill": "Sun",
         "sun.horizon": "Sun", "sparkles": "Sparkles", "diamond": "Diamond",
-        "heart.text.square": "HeartPulse", "arrow.right": "ArrowRight",
+        "heart.text.square": "HeartPulse", "info.circle": "BadgeInfo", "arrow.right": "ArrowRight",
         "arrow.down": "ArrowDown", "arrow.up.right": "ArrowUpRight",
         "rocket": "Rocket", "search": "Search", "magnifyingglass": "Search",
         "shippingbox": "Package", "shippingbox.fill": "Package",
@@ -217,6 +217,8 @@ enum MeowIconCatalog {
         "smartphone": "Smartphone", "iphone": "Smartphone", "shopping": "ShoppingBag",
         "searchicon": "Search", "dollar": "CircleDollarSign", "star": "Sparkles",
         "paintbrush.pointed": "PaintbrushVertical",
+        "pawprint.fill": "PawPrint", "square.grid.2x2": "Package", "square.grid.2x2.fill": "Package",
+        "water.waves": "Waves",
         "circle": "Circle"
     ]
 
@@ -290,7 +292,9 @@ enum MeowIconCatalog {
     }()
 
     static var missingKeys: [String] {
-        MeowIconKey.allCases.map(\.rawValue).filter { path(for: $0) == nil }
+        let missingDeclared = MeowIconKey.allCases.map(\.rawValue).filter { path(for: $0) == nil }
+        let missingAliases = aliases.keys.sorted().filter { path(for: $0) == nil }.map { "alias:\($0)" }
+        return missingDeclared + missingAliases
     }
 
     static func path(for key: String) -> Path? {
