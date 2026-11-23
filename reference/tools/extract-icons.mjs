@@ -29,49 +29,180 @@ function namedImport(source, specifier) {
   return match ? { block: match[1], full: match[0] } : null;
 }
 
-function extractIconNode(moduleSource, expectedName) {
-  const call = [...moduleSource.matchAll(/createLucideIcon\(\s*'([A-Za-z0-9]+)'\s*,\s*/g)]
-    .find((match) => match[1] === expectedName);
+function extractIconNode(moduleSource, expectedSlug) {
+  const call = /createLucideIcon\s*\(\s*(['"])([^'"]+)\1\s*,/g.exec(moduleSource);
   if (!call) throw new Error('createLucideIcon call not found in module');
-
-  const start = call.index + call[0].length;
-  if (moduleSource[start] !== '[') {
-    throw new Error('createLucideIcon iconNode argument is not a JSON array');
+  if (call[2] !== expectedSlug) {
+    throw new Error('module icon name "' + call[2] + '" does not match file "' + expectedSlug + '"');
   }
 
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
+  let argumentStart = call.index + call[0].length;
 
-  for (let i = start; i < moduleSource.length; i += 1) {
-    const ch = moduleSource[i];
+  function skipTrivia(source, position) {
+    let i = position;
+    while (i < source.length) {
+      if (/\s/.test(source[i])) { i += 1; continue; }
+      if (source.startsWith('//', i)) {
+        const newline = source.indexOf('\n', i + 2);
+        i = newline < 0 ? source.length : newline + 1;
+        continue;
+      }
+      if (source.startsWith('/*', i)) {
+        const close = source.indexOf('*/', i + 2);
+        if (close < 0) throw new Error('unterminated comment in icon module');
+        i = close + 2;
+        continue;
+      }
+      break;
+    }
+    return i;
+  }
 
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === '"') inString = false;
-      continue;
+  argumentStart = skipTrivia(moduleSource, argumentStart);
+  let literalStart = argumentStart;
+
+  if (moduleSource[literalStart] !== '[') {
+    const argument = /^[A-Za-z_$][\w$]*/.exec(moduleSource.slice(literalStart));
+    if (!argument) throw new Error('unsupported createLucideIcon iconNode argument');
+    if (argument[0] !== '__iconNode') {
+      throw new Error('unexpected iconNode reference: ' + argument[0]);
     }
 
-    if (ch === '"') {
-      inString = true;
-      continue;
-    }
-    if (ch === '[' || ch === '{') {
-      depth += 1;
-      continue;
-    }
-    if (ch === ']' || ch === '}') {
-      depth -= 1;
-      if (depth === 0) {
-        const iconNode = JSON.parse(moduleSource.slice(start, i + 1));
-        if (!Array.isArray(iconNode)) throw new Error('parsed iconNode is not an array');
-        return iconNode;
+    const declaration = /(?:export\s+)?(?:const|let|var)\s+__iconNode(?:\s*:\s*[^=\n]+)?\s*=/g.exec(moduleSource);
+    if (!declaration) throw new Error('__iconNode declaration not found in module');
+    literalStart = skipTrivia(moduleSource, declaration.index + declaration[0].length);
+  }
+
+  let index = literalStart;
+
+  function parseString() {
+    const quote = moduleSource[index];
+    index += 1;
+    let value = '';
+
+    while (index < moduleSource.length) {
+      const ch = moduleSource[index];
+      index += 1;
+
+      if (ch === quote) return value;
+      if (ch !== '\\') {
+        value += ch;
+        continue;
+      }
+
+      if (index >= moduleSource.length) throw new Error('unterminated string escape');
+      const escaped = moduleSource[index];
+      index += 1;
+
+      if (escaped === 'n') value += '\n';
+      else if (escaped === 'r') value += '\r';
+      else if (escaped === 't') value += '\t';
+      else if (escaped === 'b') value += '\b';
+      else if (escaped === 'f') value += '\f';
+      else if (escaped === 'v') value += '\v';
+      else if (escaped === '0') value += '\0';
+      else if (escaped === '\n') continue;
+      else if (escaped === '\r') {
+        if (moduleSource[index] === '\n') index += 1;
+      } else if (escaped === 'x') {
+        const hex = moduleSource.slice(index, index + 2);
+        if (!/^[\da-f]{2}$/i.test(hex)) throw new Error('invalid hexadecimal string escape');
+        value += String.fromCharCode(parseInt(hex, 16));
+        index += 2;
+      } else if (escaped === 'u') {
+        const hex = moduleSource.slice(index, index + 4);
+        if (!/^[\da-f]{4}$/i.test(hex)) throw new Error('invalid unicode string escape');
+        value += String.fromCharCode(parseInt(hex, 16));
+        index += 4;
+      } else {
+        value += escaped;
       }
     }
+
+    throw new Error('unterminated string literal in icon module');
   }
 
-  throw new Error('unterminated iconNode array in module');
+  function parseValue() {
+    index = skipTrivia(moduleSource, index);
+    const ch = moduleSource[index];
+
+    if (ch === '"' || ch === "'") return parseString();
+
+    if (ch === '[') {
+      index += 1;
+      const values = [];
+      index = skipTrivia(moduleSource, index);
+      while (moduleSource[index] !== ']') {
+        values.push(parseValue());
+        index = skipTrivia(moduleSource, index);
+        if (moduleSource[index] === ',') {
+          index += 1;
+          index = skipTrivia(moduleSource, index);
+          if (moduleSource[index] === ']') break;
+        } else if (moduleSource[index] !== ']') {
+          throw new Error('expected comma or closing bracket in icon node');
+        }
+      }
+      if (moduleSource[index] !== ']') throw new Error('unterminated array in icon module');
+      index += 1;
+      return values;
+    }
+
+    if (ch === '{') {
+      index += 1;
+      const object = {};
+      index = skipTrivia(moduleSource, index);
+      while (moduleSource[index] !== '}') {
+        const keyStart = moduleSource[index];
+        let key;
+        if (keyStart === '"' || keyStart === "'") {
+          key = parseString();
+        } else {
+          const identifier = /^[A-Za-z_$][\w$]*|^-?\d+(?:\.\d+)?/.exec(moduleSource.slice(index));
+          if (!identifier) throw new Error('invalid object key in icon node');
+          key = identifier[0];
+          index += key.length;
+        }
+
+        index = skipTrivia(moduleSource, index);
+        if (moduleSource[index] !== ':') throw new Error('expected colon after icon node property');
+        index += 1;
+        object[key] = parseValue();
+        index = skipTrivia(moduleSource, index);
+
+        if (moduleSource[index] === ',') {
+          index += 1;
+          index = skipTrivia(moduleSource, index);
+          if (moduleSource[index] === '}') break;
+        } else if (moduleSource[index] !== '}') {
+          throw new Error('expected comma or closing brace in icon node');
+        }
+      }
+      if (moduleSource[index] !== '}') throw new Error('unterminated object in icon module');
+      index += 1;
+      return object;
+    }
+
+    const number = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(moduleSource.slice(index));
+    if (number) {
+      index += number[0].length;
+      return Number(number[0]);
+    }
+
+    const keyword = /^(true|false|null)\b/.exec(moduleSource.slice(index));
+    if (keyword) {
+      index += keyword[0].length;
+      if (keyword[0] === 'true') return true;
+      if (keyword[0] === 'false') return false;
+      return null;
+    }
+
+    throw new Error('unsupported JavaScript value in icon node at offset ' + index);
+  }
+
+  const node = parseValue();
+  if (!Array.isArray(node)) throw new Error('parsed iconNode is not an array');
+  return node;
 }
 
 function specifiers(block) {
@@ -187,7 +318,7 @@ for (const name of [...iconUses.keys()].sort()) {
   const fullPath = path.join(iconsDir, file);
   try {
     const moduleSource = await readFile(fullPath, 'utf8');
-    const node = extractIconNode(moduleSource, name);
+    const node = extractIconNode(moduleSource, file.slice(0, -3));
     iconData.push({ name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: true, node, usedAs: [...iconUses.get(name)].sort() });
   } catch (error) {
     const item = { name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: false, reason: error.message || String(error), usedAs: [...iconUses.get(name)].sort() };
