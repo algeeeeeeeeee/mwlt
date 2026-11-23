@@ -25,8 +25,8 @@ const storageBase = {
 };
 for (const dir of [buildDir, liveDir, diffDir]) await mkdir(dir, { recursive: true });
 
-async function typography(page) {
-  return page.evaluate(async () => {
+async function typography(page, captureDOM = false) {
+  return page.evaluate(async (includeDOM) => {
     await document.fonts.ready;
     await new Promise(resolve => setTimeout(resolve, 1500));
 
@@ -55,15 +55,74 @@ async function typography(page) {
         fontFamily: s.fontFamily, fontWeight: s.fontWeight };
     };
     const body = getComputedStyle(document.body);
+    const domSnapshot = includeDOM ? (() => {
+      const root = document.querySelector("#root");
+      if (!root) throw new Error("DOM snapshot requested but #root was not found.");
+      const round = value => Math.round(value * 100) / 100;
+      const elements = Array.from(root.querySelectorAll("*")).map((el, index) => {
+        const rect = el.getBoundingClientRect();
+        return {
+          index,
+          tag: el.tagName.toLowerCase(),
+          text: (el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 20),
+          top: round(rect.top),
+          left: round(rect.left),
+          width: round(rect.width),
+          height: round(rect.height)
+        };
+      });
+      return {
+        elementCount: elements.length,
+        outerHTMLLength: root.outerHTML.length,
+        elements
+      };
+    })() : null;
     return {
       headerOffsetHeight: header ? header.offsetHeight : null,
       documentScrollHeight: document.documentElement.scrollHeight,
       faces,
       body: { fontFamily: body.fontFamily, fontWeight: body.fontWeight },
       greeting: styleOf(greeting), expenseAmount: styleOf(amount),
-      check900: document.fonts.check('900 16px "Plus Jakarta Sans"')
+      check900: document.fonts.check('900 16px "Plus Jakarta Sans"'),
+      domSnapshot
     };
-  });
+  }, captureDOM);
+}
+
+async function probeLiveMainBundle(context, page) {
+  const terms = ["FINANCIAL HEALTH", "gm_recurring_income", "ge-indicator", "Patungan"];
+  let result;
+  try {
+    const scriptURL = await page.evaluate(() => {
+      const scripts = Array.from(document.querySelectorAll("script[src]"));
+      const main = scripts.find(script => script.type === "module" && /\.m?js(?:[?#]|$)/i.test(script.src)) ||
+        scripts.find(script => /\.m?js(?:[?#]|$)/i.test(script.src));
+      return main ? main.src : null;
+    });
+    if (!scriptURL) throw new Error("Main JavaScript bundle URL was not found in script[src].");
+    const response = await context.request.get(scriptURL, { timeout: 30000 });
+    const status = response.status();
+    if (!response.ok()) {
+      await response.dispose();
+      throw new Error("Main JavaScript bundle returned HTTP " + status + ".");
+    }
+    const source = await response.text();
+    await response.dispose();
+    await writeFile(path.join(liveDir, "live-main-bundle.js"), source, "utf8");
+    result = {
+      downloaded: true,
+      url: scriptURL,
+      httpStatus: status,
+      bytes: Buffer.byteLength(source, "utf8"),
+      strings: Object.fromEntries(terms.map(term => [term, source.includes(term)])),
+      savedAs: "ref-live/live-main-bundle.js"
+    };
+  } catch (error) {
+    result = { downloaded: false, error: String(error), strings: null };
+  }
+  await writeFile(path.join(liveDir, "live-main-bundle-check.json"), JSON.stringify(result, null, 2) + "\n");
+  console.log("Live main bundle string check: " + JSON.stringify(result));
+  return result;
 }
 
 async function probeBuildFonts(context, responses, requested) {
@@ -150,9 +209,16 @@ async function capture(browser, target, mode) {
   if (!response?.ok()) throw new Error(target + " returned " + (response?.status() ?? "no response") + " for " + mode);
   await page.waitForTimeout(4100);
   await page.getByText("Beranda", { exact: true }).first().waitFor({ state: "visible", timeout: 20000 });
-  const fonts = await typography(page);
+  const fonts = await typography(page, mode === "light");
   const screenshot = path.join(outDir, "beranda-" + mode + ".png");
   await page.screenshot({ path: screenshot, fullPage: true });
+  const domSnapshot = fonts.domSnapshot ? { target, mode, ...fonts.domSnapshot } : null;
+  if (domSnapshot) {
+    const domPath = path.join(outDir, "beranda-" + mode + "-dom.json");
+    await writeFile(domPath, JSON.stringify(domSnapshot, null, 2) + "\n");
+    console.log("Saved DOM snapshot " + domPath + " (" + domSnapshot.elementCount + " descendants).");
+  }
+  const bundleStrings = live && mode === "light" ? await probeLiveMainBundle(context, page) : null;
   if (!live) await probeBuildFonts(context, fontResponses, requestedFonts);
   if (errors.length) throw new Error("Page errors " + target + "/" + mode + ": " + errors.join(" | "));
   const diagnostics = {
@@ -166,7 +232,92 @@ async function capture(browser, target, mode) {
   console.log("Font diagnostics " + target + "/" + mode + ": " + JSON.stringify(diagnostics));
   console.log("Captured " + screenshot);
   await context.close();
-  return { screenshot, diagnostics };
+  return { screenshot, diagnostics, domSnapshot, bundleStrings };
+}
+
+function compareDOM(build, live) {
+  if (!build || !live) return { verified: false, reason: "One or both target DOM snapshots are missing." };
+  const keyOf = element => element.tag + "\u0000" + element.text;
+  const a = build.elements, b = live.elements;
+  const cols = b.length + 1;
+  const dp = Array.from({ length: a.length + 1 }, () => new Uint32Array(cols));
+  for (let i = a.length - 1; i >= 0; i--) {
+    for (let j = b.length - 1; j >= 0; j--) {
+      dp[i][j] = keyOf(a[i]) === keyOf(b[j])
+        ? 1 + dp[i + 1][j + 1]
+        : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const matched = [];
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (keyOf(a[i]) === keyOf(b[j])) {
+      matched.push({ build: a[i], live: b[j] });
+      i++; j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+  const counts = elements => {
+    const map = new Map();
+    for (const element of elements) {
+      const key = keyOf(element);
+      map.set(key, (map.get(key) || 0) + 1);
+    }
+    return map;
+  };
+  const buildCounts = counts(a), liveCounts = counts(b);
+  const unmatchedByMultiplicity = (elements, otherCounts) => {
+    const seen = new Map(), missing = [];
+    for (const element of elements) {
+      const key = keyOf(element);
+      const occurrence = (seen.get(key) || 0) + 1;
+      seen.set(key, occurrence);
+      if (occurrence > (otherCounts.get(key) || 0)) {
+        missing.push({ index: element.index, tag: element.tag, text: element.text });
+      }
+    }
+    return missing;
+  };
+  const buildOnly = unmatchedByMultiplicity(a, liveCounts);
+  const liveOnly = unmatchedByMultiplicity(b, buildCounts);
+  const topDifferences = matched
+    .filter(pair => Math.abs(pair.build.top - pair.live.top) > 0.5)
+    .slice(0, 10)
+    .map(pair => ({
+      buildIndex: pair.build.index, liveIndex: pair.live.index,
+      tag: pair.build.tag, text: pair.build.text,
+      buildTop: pair.build.top, liveTop: pair.live.top,
+      differencePx: Number((pair.live.top - pair.build.top).toFixed(2))
+    }));
+  const firstHeightDifference = matched.find(pair => Math.abs(pair.build.height - pair.live.height) > 0.5);
+  return {
+    identityRule: "Multiset presence uses tag + first 20 normalized text characters; geometry pairs are aligned in DOM order using longest common subsequence.",
+    elementTotals: {
+      build: { elementCount: build.elementCount, outerHTMLLength: build.outerHTMLLength },
+      live: { elementCount: live.elementCount, outerHTMLLength: live.outerHTMLLength }
+    },
+    matchedInDOMOrder: matched.length,
+    topDifferencesFirst10: topDifferences,
+    firstHeightDifference: firstHeightDifference ? {
+      buildIndex: firstHeightDifference.build.index,
+      liveIndex: firstHeightDifference.live.index,
+      tag: firstHeightDifference.build.tag,
+      text: firstHeightDifference.build.text,
+      buildHeight: firstHeightDifference.build.height,
+      liveHeight: firstHeightDifference.live.height,
+      differencePx: Number((firstHeightDifference.live.height - firstHeightDifference.build.height).toFixed(2))
+    } : null,
+    presence: {
+      anyElementsUniqueToOneTarget: buildOnly.length > 0 || liveOnly.length > 0,
+      buildOnlyCount: buildOnly.length,
+      liveOnlyCount: liveOnly.length,
+      buildOnlyFirst20: buildOnly.slice(0, 20),
+      liveOnlyFirst20: liveOnly.slice(0, 20)
+    }
+  };
 }
 
 async function compare(buildPath, livePath, diffPath) {
@@ -254,8 +405,14 @@ try {
     const live = await capture(browser, "live", mode);
     const diff = path.join(diffDir, "beranda-" + mode + "-diff.png");
     const comparison = await compare(build.screenshot, live.screenshot, diff);
-    results.push({ mode, build: build.diagnostics, live: live.diagnostics, comparison, diff });
+    const domComparison = mode === "light" ? compareDOM(build.domSnapshot, live.domSnapshot) : null;
+    results.push({
+      mode, build: build.diagnostics, live: live.diagnostics, comparison, diff,
+      ...(domComparison ? { domComparison } : {}),
+      ...(live.bundleStrings ? { liveMainBundleStringCheck: live.bundleStrings } : {})
+    });
     console.log("Pixel comparison " + mode + ": " + JSON.stringify(comparison));
+    if (domComparison) console.log("DOM comparison light: " + JSON.stringify(domComparison));
     if (!comparison.dimensionsMatch) {
       console.log("SCREENSHOT DIMENSIONS DIFFER: build " +
         comparison.buildDimensions.width + "x" + comparison.buildDimensions.height +
@@ -276,6 +433,8 @@ try {
     context: { timezoneId: "Asia/Pontianak", viewport: { width: 390, height: 844 },
       deviceScaleFactor: 3, isMobile: true, hasTouch: true, serviceWorkers: "block" },
     liveSafeAreaPatch: "Intercepted JS/CSS responses only; top=47px and bottom=34px; deployed app not modified.",
+    domComparison: results.find(item => item.domComparison)?.domComparison || null,
+    liveMainBundleStringCheck: results.find(item => item.liveMainBundleStringCheck)?.liveMainBundleStringCheck || null,
     results
   };
   await writeFile(path.join(diffDir, "comparison-report.json"), JSON.stringify(report, null, 2) + "\n");

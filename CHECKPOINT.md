@@ -624,3 +624,24 @@ All requested paths exist under `reference/pwa/`:
 ### Status verifikasi
 - Trigger untuk commit `1aa1ae1`: **VERIFIED**, ref-shots run #4 completed/success.
 - Eksekusi pengukuran baru dan nilai layout/font dari run commit ini: **BELUM TERVERIFIKASI** sampai workflow berikutnya dijalankan. Tidak menunggu CI.
+
+
+## R1a-lanjutan — DOM structure dan pemeriksaan bundle live (23 November 2026)
+
+### Basis dan batas tugas
+- Membaca \`CHECKPOINT.md\` (blob sebelum perubahan: \`c005764a895fb314bb0447985b4ac6bad27c37f3\`) dan \`AUDIT.md\` (blob: \`b6049a77c56c752b48e2069f0376e55705b38db0\`) pada branch \`native-swift-parity\`; HEAD awal \`e236b58889e9fd6f1efa387304025a1c0e415174\`.
+- R1a masih membandingkan hasil build PWA dengan acuan live \`https://mwlt.pages.dev\`. Scope ini hanya memperluas harness referensi; tidak mengubah source aplikasi/PWA, aplikasi native, test, atau workflow native.
+- Mode yang dipakai untuk struktur DOM adalah **Light** untuk kedua target (build dan live); pengukuran dilakukan di fungsi typography setelah \`document.fonts.ready\` dan jeda 1500 ms yang telah ada.
+
+### Perubahan harness
+- Untuk setiap target, \`#root.querySelectorAll("*")\` direkam dalam urutan DOM. Setiap record menyimpan indeks, tag, 20 karakter pertama teks yang dinormalisasi, serta \`top\`, \`left\`, \`width\`, dan \`height\` dari \`getBoundingClientRect()\` yang dibulatkan ke 0,01 px.
+- Snapshot juga menyimpan jumlah descendant element (tidak menghitung elemen \`#root\` itu sendiri) dan panjang \`outerHTML\` dari \`#root\`.
+- JSON per target ditulis sebagai \`ref/beranda-light-dom.json\` dan \`ref-live/beranda-light-dom.json\`; keduanya masuk ke artifact yang sudah mencakup folder tersebut.
+- \`ref-diff/comparison-report.json\` menambahkan jumlah elemen dan panjang outerHTML build/live, 10 perbedaan \`top\` pertama yang melampaui 0,5 px (urut DOM), elemen pertama yang \`height\`-nya berbeda lebih dari 0,5 px beserta nilai build/live, serta pemeriksaan elemen yang hanya ada pada salah satu target. Identitas keberadaan menggunakan multiset \`tag + 20 karakter teks\`; geometri disejajarkan dalam urutan DOM.
+- Sebagai pemeriksaan read-only tambahan, harness mengambil URL script JavaScript utama dari halaman live, mengunduh bundle tersebut, menyimpan salinannya di \`ref-live/live-main-bundle.js\`, dan mencatat hasil pemeriksaan string \`FINANCIAL HEALTH\`, \`gm_recurring_income\`, \`ge-indicator\`, dan \`Patungan\` di \`ref-live/live-main-bundle-check.json\` serta comparison report. Tidak ada request write ke deployment live.
+
+### Verifikasi
+- Perubahan file yang direncanakan: hanya \`reference/harness/capture-home.mjs\` dan \`CHECKPOINT.md\`.
+- Sintaks harness diperiksa sebelum commit. Push dilakukan satu kali; nomor run ref-shots akan dicek satu kali setelah push.
+- Hasil capture DOM, perbedaan build/live, URL/status/ukuran bundle, keberadaan empat string, artifact, dan kesimpulan workflow: **BELUM TERVERIFIKASI** sampai workflow menghasilkan artifact/log. Tidak menunggu CI.
+- R1b–R1d tetap antre. PR #2 tetap Draft dan tidak di-merge.
