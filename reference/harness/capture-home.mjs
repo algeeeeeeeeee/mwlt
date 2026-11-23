@@ -28,14 +28,26 @@ for (const dir of [buildDir, liveDir, diffDir]) await mkdir(dir, { recursive: tr
 async function typography(page) {
   return page.evaluate(async () => {
     await document.fonts.ready;
-    const faces = Array.from(document.fonts).map(face => ({
-      family: face.family, weight: face.weight, status: face.status
-    }));
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
     const ps = Array.from(document.querySelectorAll("p"));
     const greetings = new Set(["Selamat pagi", "Selamat siang", "Selamat sore", "Selamat malam"]);
     const greeting = ps.find(el => greetings.has(el.textContent.trim()));
     const label = ps.find(el => el.textContent.trim() === "Pengeluaran bulan ini");
     const amount = label?.nextElementSibling || null;
+
+    // The Beranda header is the fixed top-level ancestor containing the greeting.
+    let header = greeting;
+    while (header && header !== document.body) {
+      const style = getComputedStyle(header);
+      if (style.position === "fixed" && style.top === "0px" && style.zIndex === "50") break;
+      header = header.parentElement;
+    }
+    if (header === document.body) header = null;
+
+    const faces = Array.from(document.fonts).map(face => ({
+      family: face.family, weight: face.weight, status: face.status
+    }));
     const styleOf = el => {
       if (!el) return { found: false };
       const s = getComputedStyle(el);
@@ -44,7 +56,10 @@ async function typography(page) {
     };
     const body = getComputedStyle(document.body);
     return {
-      faces, body: { fontFamily: body.fontFamily, fontWeight: body.fontWeight },
+      headerOffsetHeight: header ? header.offsetHeight : null,
+      documentScrollHeight: document.documentElement.scrollHeight,
+      faces,
+      body: { fontFamily: body.fontFamily, fontWeight: body.fontWeight },
       greeting: styleOf(greeting), expenseAmount: styleOf(amount),
       check900: document.fonts.check('900 16px "Plus Jakarta Sans"')
     };
@@ -142,6 +157,8 @@ async function capture(browser, target, mode) {
   if (errors.length) throw new Error("Page errors " + target + "/" + mode + ": " + errors.join(" | "));
   const diagnostics = {
     target, mode, pageURL: url, googleFontsHTTPResponses: fontResponses,
+    headerOffsetHeight: fonts.headerOffsetHeight,
+    documentScrollHeight: fonts.documentScrollHeight,
     documentFonts: fonts.faces,
     computedStyles: { body: fonts.body, greeting: fonts.greeting, expenseAmount: fonts.expenseAmount },
     documentFontsCheck900: fonts.check900

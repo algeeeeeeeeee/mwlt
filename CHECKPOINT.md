@@ -602,3 +602,25 @@ All requested paths exist under `reference/pwa/`:
 - Ambang >1% tetap merupakan peringatan log saja dan tidak menggagalkan job.
 - Tidak mengubah workflow, `ios-native.yml`, versi Playwright, package, fixture, aplikasi/PWA, maupun konfigurasi artifact. Step upload tetap `if: always()`.
 - Verifikasi eksekusi perbaikan, capture Light/Dark, pixel percentages, dan artifact run setelah commit ini: **BELUM TERVERIFIKASI** sampai workflow berikutnya berjalan. Tidak menunggu CI.
+
+
+## R1a — layout/font metrics sebelum screenshot (23 November 2026)
+
+### Pembacaan checkpoint dan audit
+- Membaca `CHECKPOINT.md` terbaru di branch `native-swift-parity`; R1a masih mencakup capture Beranda build/live Light+Dark, dan hasil pembandingan setelah perbaikan dimensi pada commit sebelumnya belum tercatat pada saat checkpoint ini.
+- Membaca `AUDIT.md` (Audit Fase 0, addendum sampai P0 diagnostics). Audit membahas parity SwiftUI/PWA, status P0 yang belum selesai, serta K1–K9; pekerjaan pada giliran ini dibatasi ke harness referensi, tanpa mengubah aplikasi native.
+ 
+### Verifikasi trigger commit 1aa1ae1
+- `.github/workflows/ref-shots.yml` mempunyai trigger `push` khusus branch `native-swift-parity` dengan filter path `reference/**`.
+- Commit `1aa1ae199e74ec59742b0a79a8fbfdc389df499c` mengubah `reference/harness/capture-home.mjs`, sehingga cocok dengan filter path. Workflow benar-benar terpicu: ref-shots **run #4**, ID `45121186257`, event `push`, **completed / success** — https://github.com/algeeeeeeeeee/mwlt/actions/runs/45121186257.
+- Run lain yang tampak pada commit yang sama adalah IPA RC run #6 dengan kesimpulan `skipped`; bukan ref-shots.
+
+### Perubahan tugas tunggal ini
+- Pada fungsi `typography(page)`, untuk masing-masing target build dan live, setelah `await document.fonts.ready` harness menunggu 1500 ms sebelum mengambil ukuran/layout dan daftar font.
+- Data ditambahkan ke report per target/mode: `headerOffsetHeight` (offsetHeight ancestor header fixed yang berisi sapaan; null bila tidak ditemukan), `documentScrollHeight`, dan semua `document.fonts` entries (family, weight, status).
+- Pengukuran dilakukan sebelum screenshot sehingga report dan screenshot memakai tahap tunggu yang sama untuk kedua target. Pengaturan waktu Playwright tetap hanya `page.clock.setFixedTime(...)`; tidak menambah `clock.install()` atau `pauseAt()`.
+- Tidak mengubah workflow, versi Playwright, aplikasi/PWA, fixture, atau file native. Commit ini hanya mengubah harness dan checkpoint.
+
+### Status verifikasi
+- Trigger untuk commit `1aa1ae1`: **VERIFIED**, ref-shots run #4 completed/success.
+- Eksekusi pengukuran baru dan nilai layout/font dari run commit ini: **BELUM TERVERIFIKASI** sampai workflow berikutnya dijalankan. Tidak menunggu CI.
