@@ -23,7 +23,9 @@ const required = [
 
 function namedImport(source, specifier) {
   const escaped = specifier.replaceAll('.', '\\.');
-  const match = source.match(new RegExp('import\\s*\\{([\\s\\S]*?)\\}\\s*from\\s*([\\'\\"])' + escaped + '\\2'));
+  const match = source.match(new RegExp(
+    'import\\s*\\{([\\s\\S]*?)\\}\\s*from\\s*["\\x27]' + escaped + '["\\x27]'
+  ));
   return match ? { block: match[1], full: match[0] } : null;
 }
 
