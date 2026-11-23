@@ -1141,6 +1141,27 @@ export default function App() {
   const [notifEnabled, setNotifEnabled] = useState(() => {
     try { return localStorage.getItem("gm_notif") === "1"; } catch { return false; }
   });
+  const [notificationPermission, setNotificationPermission] = useState(() => {
+    try { return "Notification" in window ? Notification.permission : "unsupported"; } catch { return "unsupported"; }
+  });
+  useEffect(() => {
+    const refreshPermission = () => {
+      let permission = "unsupported";
+      try { permission = "Notification" in window ? Notification.permission : "unsupported"; } catch {}
+      setNotificationPermission(permission);
+      if (permission !== "granted") {
+        setNotifEnabled(false);
+        try { localStorage.setItem("gm_notif", "0"); } catch {}
+      }
+    };
+    window.addEventListener("focus", refreshPermission);
+    document.addEventListener("visibilitychange", refreshPermission);
+    refreshPermission();
+    return () => {
+      window.removeEventListener("focus", refreshPermission);
+      document.removeEventListener("visibilitychange", refreshPermission);
+    };
+  }, []);
   // Cicilan
   const [cicilan, setCicilan] = useState(() => {
     try { return JSON.parse(localStorage.getItem("gm_cicilan") || "[]"); } catch { return []; }
@@ -1947,36 +1968,52 @@ export default function App() {
   const expensePct = income > 0 ? Math.min(100, Math.round((totalExpense / income) * 100)) : 0;
 
   const handleNotification = async () => {
-    if (notifEnabled) {
-      setNotifEnabled(false);
-      try { localStorage.setItem("gm_notif", "0"); } catch {}
-      showToast(L.toastReminderOff);
-      return;
-    }
-
-    // Check if running as installed PWA on iOS
     const isStandalone = window.navigator.standalone === true ||
       window.matchMedia("(display-mode: standalone)").matches;
-
     if (!isStandalone && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
       showToast(L.toastAddHome);
       return;
     }
 
-    if (!("Notification" in window)) {
+    let currentPermission = "unsupported";
+    try { currentPermission = "Notification" in window ? Notification.permission : "unsupported"; } catch {}
+    setNotificationPermission(currentPermission);
+
+    if (currentPermission === "unsupported") {
       showToast("err:Browser tidak support notifikasi");
       return;
     }
+    if (notifEnabled && currentPermission === "granted") {
+      setNotifEnabled(false);
+      try { localStorage.setItem("gm_notif", "0"); } catch {}
+      showToast(L.toastReminderOff);
+      return;
+    }
+    if (currentPermission === "denied") {
+      setNotifEnabled(false);
+      try { localStorage.setItem("gm_notif", "0"); } catch {}
+      showToast(lang === "en"
+        ? "err:Notifications are blocked. Open iPhone Settings > Notifications > Meowlett, allow notifications, then add it under Focus > Apps."
+        : "err:Izin notifikasi diblokir. Buka Pengaturan iPhone > Notifikasi > Meowlett, izinkan, lalu tambahkan di Fokus > App.");
+      return;
+    }
 
-    const perm = await requestNotificationPermission();
-    if (perm === "granted") {
+    const permission = currentPermission === "granted"
+      ? "granted"
+      : await requestNotificationPermission();
+    setNotificationPermission(permission);
+    if (permission === "granted") {
       setNotifEnabled(true);
       try { localStorage.setItem("gm_notif", "1"); } catch {}
       scheduleSmartReminder({ hour: reminderHour, minute: 0, days: reminderDays, smart: reminderSmart, lang, getTransactions: () => transactions });
       await sendLocalNotification("Meowlett", lang === "en" ? "Reminder on! You'll be notified every day at 9 PM." : "Pengingat aktif! Kamu akan diingatkan setiap hari jam 9 malam.");
       showToast(L.toastReminderOn);
-    } else if (perm === "denied") {
-      showToast("err:Izin notifikasi ditolak");
+    } else if (permission === "denied") {
+      setNotifEnabled(false);
+      try { localStorage.setItem("gm_notif", "0"); } catch {}
+      showToast(lang === "en"
+        ? "err:Notification permission denied. Enable Meowlett in iPhone Settings > Notifications."
+        : "err:Izin notifikasi ditolak. Aktifkan Meowlett lewat Pengaturan iPhone > Notifikasi.");
     } else {
       showToast("err:Notifikasi tidak didukung");
     }
@@ -5167,7 +5204,7 @@ export default function App() {
         {showReminderModal && <ReminderModal
           show={showReminderModal} onClose={()=>setShowReminderModal(false)}
           lang={lang} L={L} T={T} themeAccent={themeAccent} themePrimary={themePrimary}
-          notifEnabled={notifEnabled} handleNotification={handleNotification}
+          notifEnabled={notifEnabled} notificationPermission={notificationPermission} handleNotification={handleNotification}
           reminderHour={reminderHour} setReminderHour={setReminderHour}
           reminderDays={reminderDays} setReminderDays={setReminderDays}
           reminderSmart={reminderSmart} setReminderSmart={setReminderSmart}

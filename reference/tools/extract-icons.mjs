@@ -1,0 +1,394 @@
+#!/usr/bin/env node
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const referenceRoot = path.resolve(scriptDir, '..');
+const pwaRoot = path.join(referenceRoot, 'pwa');
+const appPath = path.join(pwaRoot, 'src', 'App.jsx');
+const shimPath = path.join(pwaRoot, 'src', 'icons.jsx');
+const constantsPath = path.join(pwaRoot, 'src', 'constants', 'index.js');
+const packagePath = path.join(pwaRoot, 'node_modules', 'lucide-react', 'package.json');
+const iconsDir = path.join(pwaRoot, 'node_modules', 'lucide-react', 'dist', 'esm', 'icons');
+const outputPath = path.join(referenceRoot, 'out', 'icons.json');
+
+const required = [
+  { key: 'wallet', name: 'Wallet' },
+  { key: 'rocket', name: 'Rocket' },
+  { key: 'hand.coins', name: 'HandCoins' },
+  { key: 'coins', name: 'Coins' },
+  { key: 'flower', name: 'Flower2' },
+];
+
+function namedImport(source, specifier) {
+  const escaped = specifier.replaceAll('.', '\\.');
+  const match = source.match(new RegExp(
+    'import\\s*\\{([\\s\\S]*?)\\}\\s*from\\s*["\\x27]' + escaped + '["\\x27]'
+  ));
+  return match ? { block: match[1], full: match[0] } : null;
+}
+
+function parseJavaScriptLiteral(moduleSource, literalStart) {
+  let index = literalStart;
+
+  function skipTrivia(source, position) {
+    let i = position;
+    while (i < source.length) {
+      if (/\s/.test(source[i])) { i += 1; continue; }
+      if (source.startsWith('//', i)) {
+        const newline = source.indexOf('\n', i + 2);
+        i = newline < 0 ? source.length : newline + 1;
+        continue;
+      }
+      if (source.startsWith('/*', i)) {
+        const close = source.indexOf('*/', i + 2);
+        if (close < 0) throw new Error('unterminated comment in icon module');
+        i = close + 2;
+        continue;
+      }
+      break;
+    }
+    return i;
+  }
+
+  function parseString() {
+    const quote = moduleSource[index];
+    index += 1;
+    let value = '';
+    while (index < moduleSource.length) {
+      const ch = moduleSource[index];
+      index += 1;
+      if (ch === quote) return value;
+      if (ch !== '\\') { value += ch; continue; }
+      if (index >= moduleSource.length) throw new Error('unterminated string escape');
+      const escaped = moduleSource[index];
+      index += 1;
+      if (escaped === 'n') value += '\n';
+      else if (escaped === 'r') value += '\r';
+      else if (escaped === 't') value += '\t';
+      else if (escaped === 'b') value += '\b';
+      else if (escaped === 'f') value += '\f';
+      else if (escaped === 'v') value += '\v';
+      else if (escaped === '0') value += '\0';
+      else if (escaped === '\n') continue;
+      else if (escaped === '\r') { if (moduleSource[index] === '\n') index += 1; }
+      else if (escaped === 'x') {
+        const hex = moduleSource.slice(index, index + 2);
+        if (!/^[\da-f]{2}$/i.test(hex)) throw new Error('invalid hexadecimal string escape');
+        value += String.fromCharCode(parseInt(hex, 16));
+        index += 2;
+      } else if (escaped === 'u') {
+        const hex = moduleSource.slice(index, index + 4);
+        if (!/^[\da-f]{4}$/i.test(hex)) throw new Error('invalid unicode string escape');
+        value += String.fromCharCode(parseInt(hex, 16));
+        index += 4;
+      } else value += escaped;
+    }
+    throw new Error('unterminated string literal in icon module');
+  }
+
+  function parseValue() {
+    index = skipTrivia(moduleSource, index);
+    const ch = moduleSource[index];
+
+    if (ch === '"' || ch === "'") return parseString();
+
+    if (ch === '[') {
+      index += 1;
+      const values = [];
+      index = skipTrivia(moduleSource, index);
+      while (moduleSource[index] !== ']') {
+        values.push(parseValue());
+        index = skipTrivia(moduleSource, index);
+        if (moduleSource[index] === ',') {
+          index += 1;
+          index = skipTrivia(moduleSource, index);
+          if (moduleSource[index] === ']') break;
+        } else if (moduleSource[index] !== ']') {
+          throw new Error('expected comma or closing bracket in icon node');
+        }
+      }
+      if (moduleSource[index] !== ']') throw new Error('unterminated array in icon module');
+      index += 1;
+      return values;
+    }
+
+    if (ch === '{') {
+      index += 1;
+      const object = {};
+      index = skipTrivia(moduleSource, index);
+      while (moduleSource[index] !== '}') {
+        const keyStart = moduleSource[index];
+        let key;
+        if (keyStart === '"' || keyStart === "'") {
+          key = parseString();
+        } else {
+          const identifier = /^[A-Za-z_$][\w$]*|^-?\d+(?:\.\d+)?/.exec(moduleSource.slice(index));
+          if (!identifier) throw new Error('invalid object key in icon node');
+          key = identifier[0];
+          index += key.length;
+        }
+
+        index = skipTrivia(moduleSource, index);
+        if (moduleSource[index] !== ':') throw new Error('expected colon after icon node property');
+        index += 1;
+        object[key] = parseValue();
+        index = skipTrivia(moduleSource, index);
+        if (moduleSource[index] === ',') {
+          index += 1;
+          index = skipTrivia(moduleSource, index);
+          if (moduleSource[index] === '}') break;
+        } else if (moduleSource[index] !== '}') {
+          throw new Error('expected comma or closing brace in icon node');
+        }
+      }
+      if (moduleSource[index] !== '}') throw new Error('unterminated object in icon module');
+      index += 1;
+      return object;
+    }
+
+    const number = /^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(moduleSource.slice(index));
+    if (number) {
+      index += number[0].length;
+      return Number(number[0]);
+    }
+
+    const keyword = /^(true|false|null)\b/.exec(moduleSource.slice(index));
+    if (keyword) {
+      index += keyword[0].length;
+      if (keyword[0] === 'true') return true;
+      if (keyword[0] === 'false') return false;
+      return null;
+    }
+
+    throw new Error('unsupported JavaScript value in icon node at offset ' + index);
+  }
+
+  const value = parseValue();
+  return { value, end: index };
+}
+
+function extractIconNode(moduleSource) {
+  const call = /createLucideIcon\s*\(\s*(['"])([^'"]+)\1\s*,/g.exec(moduleSource);
+  if (!call) {
+    const alias = /export\s*\{\s*(?:default(?:\s+as\s+[\w$]+)?|[A-Za-z_$][\w$]*\s+as\s+default)\s*\}\s*from\s*['"]\.\/([a-z0-9-]+)(?:\.js)?['"]/i.exec(moduleSource);
+    if (alias) return { aliasTarget: alias[1] + '.js' };
+    throw new Error('neither createLucideIcon call nor default re-export found in module');
+  }
+
+  let literalStart = call.index + call[0].length;
+  while (/\s/.test(moduleSource[literalStart] || '')) literalStart += 1;
+
+  if (moduleSource[literalStart] !== '[') {
+    const argument = /^[A-Za-z_$][\w$]*/.exec(moduleSource.slice(literalStart));
+    if (!argument) throw new Error('unsupported createLucideIcon iconNode argument');
+    if (argument[0] !== '__iconNode') {
+      throw new Error('unexpected iconNode reference: ' + argument[0]);
+    }
+    const declaration = /(?:export\s+)?(?:const|let|var)\s+__iconNode(?:\s*:\s*[^=\n]+)?\s*=/g.exec(moduleSource);
+    if (!declaration) throw new Error('__iconNode declaration not found in module');
+    literalStart = declaration.index + declaration[0].length;
+    while (/\s/.test(moduleSource[literalStart] || '')) literalStart += 1;
+  }
+
+  const parsed = parseJavaScriptLiteral(moduleSource, literalStart);
+  if (!Array.isArray(parsed.value)) throw new Error('parsed iconNode is not an array');
+  return { node: parsed.value, componentName: call[2] };
+}
+
+async function loadIconNode(file, seen = new Set()) {
+  if (seen.has(file)) throw new Error('icon module re-export cycle: ' + [...seen, file].join(' -> '));
+  seen.add(file);
+  const fullPath = path.join(iconsDir, file);
+  const moduleSource = await readFile(fullPath, 'utf8');
+  const extracted = extractIconNode(moduleSource);
+
+  if (extracted.aliasTarget) {
+    const nested = await loadIconNode(extracted.aliasTarget, seen);
+    return { ...nested, aliasChain: [file, ...(nested.aliasChain || [])] };
+  }
+
+  return {
+    node: extracted.node,
+    componentName: extracted.componentName,
+    resolvedFile: file,
+    aliasChain: [file],
+  };
+}
+
+function specifiers(block) {
+  return block.replace(/\/\/[^\n]*/g, '').split(',').map((part) => part.trim()).filter(Boolean).map((part) => {
+    const split = part.split(/\s+as\s+/);
+    return { imported: split[0].trim(), local: (split[1] || split[0]).trim() };
+  });
+}
+
+function blockAfter(source, declaration, open, close) {
+  const declarationAt = source.indexOf(declaration);
+  if (declarationAt < 0) return null;
+  const openAt = source.indexOf(open, declarationAt + declaration.length);
+  if (openAt < 0) return null;
+  let depth = 0;
+  let quote = null;
+  for (let i = openAt; i < source.length; i += 1) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (quote) {
+      if (ch === '\\') i += 1;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (ch === '/' && next === '/') { const end = source.indexOf('\n', i + 2); i = end < 0 ? source.length : end; continue; }
+    if (ch === '/' && next === '*') { const end = source.indexOf('*/', i + 2); i = end < 0 ? source.length : end + 1; continue; }
+    if (ch === open) depth += 1;
+    if (ch === close && --depth === 0) return source.slice(openAt + 1, i);
+  }
+  return null;
+}
+
+function pairs(source, pattern) {
+  return source ? [...source.matchAll(pattern)].map((m) => ({ key: m[1], component: m[2] })) : [];
+}
+
+function iconFile(name) {
+  const slug = name.replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Za-z])([0-9])/g, '$1-$2').toLowerCase();
+  return slug + '.js';
+}
+
+const [app, shim, constants, packageText] = await Promise.all([
+  readFile(appPath, 'utf8'), readFile(shimPath, 'utf8'), readFile(constantsPath, 'utf8'), readFile(packagePath, 'utf8'),
+]);
+const pkg = JSON.parse(packageText);
+const appIconsImport = namedImport(app, './icons.jsx');
+const lucideImport = namedImport(shim, 'lucide-react');
+if (!appIconsImport || !lucideImport) throw new Error('Required named icon imports were not found.');
+
+const appNames = specifiers(appIconsImport.block).map((item) => item.local);
+const moduleNames = specifiers(lucideImport.block);
+const localToLucide = new Map(moduleNames.map((item) => [item.local, item.imported]));
+const customNames = new Set([...shim.matchAll(/export\s+const\s+([\w$]+)\s*=\s*\(/g)].map((m) => m[1]));
+const aliases = new Map([...shim.matchAll(/export\s+const\s+([\w$]+)\s*=\s*([\w$]+)\s*;/g)].map((m) => [m[1], m[2]]));
+const fallbacks = new Map([...shim.matchAll(/const\s+([\w$]+)\s*=\s*_[\w$]+\s*\|\|\s*([\w$]+)\s*;/g)].map((m) => [m[1], [m[1], m[2]]]));
+
+const lucideMap = pairs(blockAfter(app, 'const LUCIDE_MAP', '{', '}'), /([\w$]+)\s*:\s*([\w$]+)/g);
+const goalIcons = pairs(blockAfter(constants, 'export const GOAL_ICONS', '{', '}'), /([\w$]+)\s*:\s*\{\s*Icon\s*:\s*([\w$]+)/g);
+const presetBlock = blockAfter(constants, 'export const PRESET_ICONS', '{', '}') || '';
+const presetIcons = [...presetBlock.matchAll(/([A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+const optionBlock = blockAfter(constants, 'export const ICON_OPTIONS', '[', ']') || '';
+const iconOptions = [...optionBlock.matchAll(/['"]([^'"]+)['"]/g)].map((m) => m[1]);
+
+const uses = new Map();
+function addUse(name, source) {
+  if (!uses.has(name)) uses.set(name, new Set());
+  uses.get(name).add(source);
+}
+const appBody = app.replace(appIconsImport.full, '');
+for (const name of appNames) if (new RegExp('\\b' + name + '\\b').test(appBody)) addUse(name, 'App.jsx direct reference');
+for (const entry of lucideMap) addUse(entry.component, 'LUCIDE_MAP.' + entry.key);
+for (const entry of goalIcons) addUse(entry.component, 'GOAL_ICONS.' + entry.key);
+for (const name of new Set(presetIcons)) addUse(name, 'PRESET_ICONS.' + name);
+for (const key of iconOptions) addUse((lucideMap.find((entry) => entry.key === key) || {}).component || 'Package', 'ICON_OPTIONS.' + key);
+for (const entry of required) addUse(entry.name, 'required alias ' + entry.key);
+
+function resolve(name, seen = new Set()) {
+  if (seen.has(name)) return { kind: 'unresolved', names: [], reason: 'alias cycle' };
+  seen.add(name);
+  if (customNames.has(name)) return { kind: 'custom-svg', names: [] };
+  if (fallbacks.has(name)) return { kind: 'fallback', names: fallbacks.get(name) };
+  if (aliases.has(name)) {
+    const target = aliases.get(name);
+    return { ...resolve(target, seen), aliasOf: target };
+  }
+  if (localToLucide.has(name)) return { kind: 'lucide', names: [localToLucide.get(name)] };
+  return { kind: 'unresolved', names: [], reason: 'not mapped by icons.jsx' };
+}
+
+const iconUses = new Map();
+const customSvg = [];
+const unresolved = [];
+const aliasReport = [];
+for (const [local, sourceSet] of uses) {
+  const resolution = resolve(local);
+  const sources = [...sourceSet].sort();
+  if (resolution.kind === 'custom-svg') { customSvg.push({ name: local, sources }); continue; }
+  if (resolution.kind === 'unresolved') { unresolved.push({ name: local, sources, reason: resolution.reason }); continue; }
+  for (const actualName of resolution.names) {
+    if (!iconUses.has(actualName)) iconUses.set(actualName, new Set());
+    iconUses.get(actualName).add(sources.join('; ') + ' (' + local + ')');
+    if (resolution.aliasOf || resolution.names.length > 1) aliasReport.push({ localName: local, sources, resolvesTo: actualName, via: resolution.aliasOf || 'compatibility fallback candidates' });
+  }
+}
+
+const iconData = [];
+const missing = [];
+for (const name of [...iconUses.keys()].sort()) {
+  const file = iconFile(name);
+  const fullPath = path.join(iconsDir, file);
+  try {
+    const loaded = await loadIconNode(file);
+    iconData.push({
+      name,
+      file: 'node_modules/lucide-react/dist/esm/icons/' + file,
+      resolvedFile: 'node_modules/lucide-react/dist/esm/icons/' + loaded.resolvedFile,
+      aliasChain: loaded.aliasChain,
+      componentName: loaded.componentName,
+      found: true,
+      node: loaded.node,
+      usedAs: [...iconUses.get(name)].sort(),
+    });
+  } catch (error) {
+    const item = { name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: false, reason: error.message || String(error), usedAs: [...iconUses.get(name)].sort() };
+    missing.push(item);
+    iconData.push(item);
+  }
+}
+
+const requiredReport = required.map(({ key, name }) => {
+  const found = iconData.find((item) => item.name === name && item.found);
+  return { key, requestedName: name, status: found ? 'found' : 'not-found', file: found ? found.file : null };
+});
+const report = {
+  schemaVersion: 1,
+  generatedAt: new Date().toISOString(),
+  sourceFiles: ['reference/pwa/src/App.jsx', 'reference/pwa/src/icons.jsx', 'reference/pwa/src/constants/index.js'],
+  package: { name: pkg.name, version: pkg.version, packageJson: 'reference/pwa/node_modules/lucide-react/package.json', iconDirectory: 'reference/pwa/node_modules/lucide-react/dist/esm/icons/' },
+  inventories: {
+    appDirectImports: [...uses.keys()].filter((name) => appNames.includes(name)).sort(),
+    lucideMap: lucideMap.map(({ key, component }) => ({ key, component })),
+    goalIcons: goalIcons.map(({ key, component }) => ({ key, component })),
+    presetIcons: [...new Set(presetIcons)].sort(),
+    iconOptions: iconOptions.map((key) => ({ key, component: (lucideMap.find((entry) => entry.key === key) || {}).component || 'Package' })),
+  },
+  aliases: aliasReport,
+  requiredIcons: requiredReport,
+  icons: iconData,
+  customSvgIcons: customSvg,
+  unresolvedNames: unresolved,
+  missingNames: missing.map(({ name, file, reason }) => ({ name, file, reason })),
+  summary: {
+    found: iconData.filter((item) => item.found).length,
+    missing: missing.length,
+    customSvg: customSvg.length,
+    unresolved: unresolved.length,
+    requiredFound: requiredReport.filter((item) => item.status === 'found').length,
+    requiredTotal: requiredReport.length,
+  },
+};
+
+await mkdir(path.dirname(outputPath), { recursive: true });
+await writeFile(outputPath, JSON.stringify(report, null, 2) + '\n', 'utf8');
+console.log('lucide-react installed version: ' + pkg.version);
+console.log('Lucide icons found: ' + report.summary.found + '; missing: ' + report.summary.missing);
+console.log('Custom SVG icons: ' + report.summary.customSvg + '; unresolved names: ' + report.summary.unresolved);
+console.log('Required icons found: ' + report.summary.requiredFound + '/' + report.summary.requiredTotal);
+for (const item of requiredReport) console.log('Required ' + item.key + ' (' + item.requestedName + '): ' + item.status);
+if (missing.length || unresolved.length) {
+  console.log('Missing/unresolved names (also recorded in reference/out/icons.json):');
+  for (const item of missing) console.log('- ' + item.name + ' | ' + item.file + ' | ' + item.reason);
+  for (const item of unresolved) console.log('- ' + item.name + ' | unresolved | ' + item.reason);
+}
+console.log('Wrote ' + outputPath);

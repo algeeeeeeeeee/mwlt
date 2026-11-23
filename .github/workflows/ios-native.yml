@@ -1,0 +1,475 @@
+name: Meowlett Native iOS Build
+
+on:
+  push:
+    branches:
+      - main
+      - native-swift-parity
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'reference/**'
+      - '.github/workflows/ref-shots.yml'
+
+permissions:
+  contents: read
+
+# Keep only the newest native build for a branch; intermediate commits are superseded.
+concurrency:
+  # Version the group so a runner cleanup from an older workflow cannot hold
+  # a newer native build in the pending state.
+  group: meowlett-native-ios-v10-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Meowlett for iOS
+    runs-on: macos-15
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate app icon
+        run: bash ios/Scripts/GenerateAppIcon.sh
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate --spec project.yml
+
+      - name: Show schemes
+        run: xcodebuild -list -project ios/Meowlett.xcodeproj
+
+      - name: Build simulator
+        run: |
+          xcodebuild \
+            -project ios/Meowlett.xcodeproj \
+            -scheme Meowlett \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/MeowlettSimulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Run native UI smoke tests
+        run: |
+          xcodebuild test \
+            -project ios/Meowlett.xcodeproj \
+            -scheme Meowlett \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -derivedDataPath "$RUNNER_TEMP/MeowlettUITests" \
+            -resultBundlePath "$RUNNER_TEMP/MeowlettUITests.xcresult" \
+            -parallel-testing-enabled NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload native UI test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowlett-UI-Test-Diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/MeowlettUITests.xcresult
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Build iPhone device
+        run: |
+          xcodebuild \
+            -project ios/Meowlett.xcodeproj \
+            -scheme Meowlett \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/MeowlettDevice" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Verify compiled Home Screen label is visually blank
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/MeowlettDevice/Build/Products/Release-iphoneos/Meowlett.app"
+          test -d "$APP_PATH"
+          DISPLAY_NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$APP_PATH/Info.plist")
+          DISPLAY_NAME_HEX=$(printf '%s' "$DISPLAY_NAME" | /usr/bin/xxd -p | tr -d '\n')
+          if [ "$DISPLAY_NAME_HEX" != "e2808b" ]; then
+            echo "::error::Expected a zero-width Home Screen label (e2808b), got $DISPLAY_NAME_HEX"
+            exit 1
+          fi
+          echo "Verified compiled iOS app has a visually blank Home Screen label (U+200B)."
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH="$RUNNER_TEMP/MeowlettDevice/Build/Products/Release-iphoneos/Meowlett.app"
+          test -d "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/MeowlettIPA/Payload"
+          ditto "$APP_PATH" "$RUNNER_TEMP/MeowlettIPA/Payload/Meowlett.app"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/MeowlettIPA/Payload" \
+            "$GITHUB_WORKSPACE/Meowlett-Swift-unsigned.ipa"
+          unzip -l "$GITHUB_WORKSPACE/Meowlett-Swift-unsigned.ipa" | grep 'Payload/Meowlett.app/Info.plist'
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowlett-Swift-unsigned-IPA
+          path: Meowlett-Swift-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Capture native app previews (Light + Dark)
+        run: |
+          set -euo pipefail
+
+          DEVICE_ID=""
+          simctl_with_timeout() {
+            local timeout_seconds="$1"
+            shift
+            perl -e 'alarm shift; exec @ARGV' "$timeout_seconds" xcrun simctl "$@"
+          }
+          cleanup_simulator() {
+            if [ -n "$DEVICE_ID" ]; then
+              simctl_with_timeout 15 shutdown "$DEVICE_ID" >/dev/null 2>&1 || true
+              simctl_with_timeout 15 delete "$DEVICE_ID" >/dev/null 2>&1 || true
+            fi
+          }
+          (
+            sleep 1080
+            echo "::error::Native preview capture exceeded 18 minutes."
+            kill -TERM "$PPID"
+          ) &
+          WATCHDOG_PID=$!
+          trap 'kill "$WATCHDOG_PID" >/dev/null 2>&1 || true; cleanup_simulator' EXIT
+
+          SIM_SELECTION="$(python3 -c '
+          import json, subprocess, sys, re
+
+          def simctl_json(*args):
+              result = subprocess.run(
+                  ["xcrun", "simctl", "list", *args, "-j"],
+                  check=True, text=True, capture_output=True, timeout=45
+              )
+              return json.loads(result.stdout)
+
+          types = simctl_json("devicetypes").get("devicetypes", [])
+          runtimes = simctl_json("runtimes").get("runtimes", [])
+          ios_runtimes = [
+              runtime for runtime in runtimes
+              if runtime.get("isAvailable") and runtime.get("platform") == "iOS"
+          ]
+          if not ios_runtimes:
+              raise SystemExit("No available iOS Simulator runtime.")
+
+          def version(value):
+              return tuple(int(part) for part in re.findall(r"[0-9]+", str(value or "0")))
+
+          runtime = max(ios_runtimes, key=lambda item: version(item.get("version")))
+          available = [
+              item for item in types
+              if item.get("identifier", "").startswith("com.apple.CoreSimulator.SimDeviceType.iPhone")
+          ]
+          priorities = [
+              "iPhone XR", "iPhone 11", "iPhone 11 Pro", "iPhone 12",
+              "iPhone 13", "iPhone 14", "iPhone SE (3rd generation)",
+              "iPhone 15", "iPhone 16e", "iPhone 16", "iPhone 16 Pro"
+          ]
+          ordered = []
+          for name in priorities:
+              candidate = next((item for item in available if item.get("name") == name), None)
+              if candidate and candidate not in ordered:
+                  ordered.append(candidate)
+          ordered.extend(item for item in available if item not in ordered)
+          if not ordered:
+              names = ", ".join(item.get("name", "?") for item in available)
+              raise SystemExit("No usable iPhone simulator device type. Available: " + names)
+          candidate = ordered[0]
+          print("Selected Simulator: " + candidate["name"] + " / " + candidate["identifier"], file=sys.stderr)
+          print("|".join([candidate["name"], candidate["identifier"], runtime["identifier"]]))
+          ')"
+          DEVICE_NAME="${SIM_SELECTION%%|*}"
+          SIM_REST="${SIM_SELECTION#*|}"
+          DEVICE_TYPE_ID="${SIM_REST%%|*}"
+          RUNTIME_ID="${SIM_REST#*|}"
+          if [ -z "$DEVICE_TYPE_ID" ] || [ -z "$RUNTIME_ID" ]; then
+            echo "Could not find a standard iPhone simulator device type and iOS runtime."
+            xcrun simctl list devicetypes available
+            xcrun simctl list runtimes available
+            exit 1
+          fi
+
+          DEVICE_ID="$(simctl_with_timeout 90 create "MeowlettPreview-$GITHUB_RUN_ID" "$DEVICE_TYPE_ID" "$RUNTIME_ID")"
+          echo "Fresh simulator: $DEVICE_ID ($DEVICE_NAME / $DEVICE_TYPE_ID / $RUNTIME_ID)"
+          simctl_with_timeout 90 boot "$DEVICE_ID"
+          echo "Waiting for fresh Simulator boot (maximum 4 minutes)..."
+          if ! simctl_with_timeout 240 bootstatus "$DEVICE_ID" -b; then
+            echo "::error::Simulator boot did not finish within 4 minutes."
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Simulator booted."
+
+          APP_PATH="$RUNNER_TEMP/MeowlettSimulator/Build/Products/Debug-iphonesimulator/Meowlett.app"
+          test -d "$APP_PATH"
+          echo "Installing Meowlett app..."
+          simctl_with_timeout 240 install "$DEVICE_ID" "$APP_PATH"
+          mkdir -p "$RUNNER_TEMP/MeowlettPreviews"
+
+          CAPTURED_COUNT=0
+          capture_preview() {
+            local filename="$1"
+            shift
+            local output="$RUNNER_TEMP/MeowlettPreviews/$filename"
+            local attempt
+            local launch_timeout=75
+            local settle_seconds=3.25
+            if [[ "$filename" == *"01-splash.png" ]]; then
+              # Capture the native opening while the progress animation is visible.
+              settle_seconds=0.85
+            elif [[ "$filename" == *"02-dashboard.png" ]]; then
+              launch_timeout=150
+              settle_seconds=3.8
+            elif [[ "$filename" == *"03-date.png" ]]; then
+              launch_timeout=120
+              settle_seconds=3.8
+            fi
+            for attempt in 1 2; do
+              echo "Launching preview $filename (attempt $attempt)..."
+              if simctl_with_timeout "$launch_timeout" launch "$DEVICE_ID" com.mwlt.meowlett "$@"; then
+                sleep "$settle_seconds"
+                if simctl_with_timeout 45 io "$DEVICE_ID" screenshot "$output"; then
+                  echo "Captured $filename"
+                  CAPTURED_COUNT=$((CAPTURED_COUNT + 1))
+                  simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett >/dev/null 2>&1 || true
+                  return 0
+                fi
+              fi
+              echo "::warning::Could not capture $filename on attempt $attempt; retrying."
+              simctl_with_timeout 15 terminate "$DEVICE_ID" com.mwlt.meowlett >/dev/null 2>&1 || true
+              sleep 2
+            done
+            echo "::error::Could not capture required preview $filename after two attempts."
+            return 1
+          }
+
+          # This launch-only flag bypasses onboarding and leaves the user's
+          # persisted onboarding preference untouched.
+          simctl_with_timeout 15 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett mwlt.native.onboarded -bool YES
+
+          for MODE in light dark; do
+            if [ "$MODE" = "dark" ]; then
+              DARK_OVERRIDE="true"
+            else
+              DARK_OVERRIDE="false"
+            fi
+
+            echo "Preparing native $MODE appearance..."
+            simctl_with_timeout 20 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett gm_follow_system -string 0
+            simctl_with_timeout 20 spawn "$DEVICE_ID" defaults write com.mwlt.meowlett gm_dark_override -string "$DARK_OVERRIDE"
+            simctl_with_timeout 20 ui "$DEVICE_ID" appearance "$MODE"
+            sleep 2
+
+            # This dedicated flag keeps the real splash visible until simctl captures it.
+            capture_preview "$MODE-01-splash.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-splash
+            capture_preview "$MODE-02-dashboard.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=dashboard
+            capture_preview "$MODE-03-transactions.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=transactions
+            capture_preview "$MODE-03-report.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=report
+            capture_preview "$MODE-03-date.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=date
+            capture_preview "$MODE-03-settings.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-tab=settings
+            capture_preview "$MODE-08-quick-add.png" --mwlt-preview-mode --mwlt-preview-seed-data --mwlt-preview-quick-add
+          done
+
+          echo "Captured $CAPTURED_COUNT native previews across Light and Dark Mode."
+          ls -lh "$RUNNER_TEMP/MeowlettPreviews"
+
+          REQUIRED_PREVIEWS=(
+            "light-01-splash.png" "dark-01-splash.png"
+            "light-02-dashboard.png" "dark-02-dashboard.png"
+            "light-03-transactions.png" "dark-03-transactions.png"
+            "light-03-report.png" "dark-03-report.png"
+            "light-03-date.png" "dark-03-date.png"
+            "light-03-settings.png" "dark-03-settings.png"
+            "light-08-quick-add.png" "dark-08-quick-add.png"
+          )
+          for PREVIEW in "${REQUIRED_PREVIEWS[@]}"; do
+            if [ ! -s "$RUNNER_TEMP/MeowlettPreviews/$PREVIEW" ]; then
+              echo "::error::Required native preview is missing: $PREVIEW"
+              exit 1
+            fi
+          done
+
+      - name: Validate native previews (OCR + actual appearance)
+        run: |
+          cat > "$RUNNER_TEMP/ValidateMeowlettPreviews.swift" <<'SWIFT'
+          import AppKit
+          import Foundation
+          import Vision
+
+          let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
+          let screens: [(String, [String])] = [
+              ("01-splash", ["meowlett"]),
+              ("02-dashboard", ["streak"]),
+              ("03-transactions", ["transaksi", "transactions"]),
+              ("03-report", ["laporan", "reports"]),
+              ("03-date", ["date"]),
+              ("03-settings", ["pengaturan", "settings"]),
+              ("08-quick-add", ["transaksi baru", "new transaction"])
+          ]
+
+          func luminance(of filename: String) throws -> Double {
+              let url = URL(fileURLWithPath: directory).appendingPathComponent(filename)
+              let data = try Data(contentsOf: url)
+              guard let bitmap = NSBitmapImageRep(data: data) else {
+                  throw NSError(domain: "MeowlettPreview", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not decode \(filename)"])
+              }
+              var total = 0.0
+              var samples = 0
+              for y in stride(from: 0, to: bitmap.pixelsHigh, by: 6) {
+                  for x in stride(from: 0, to: bitmap.pixelsWide, by: 6) {
+                      guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+                      total += 0.2126 * color.redComponent + 0.7152 * color.greenComponent + 0.0722 * color.blueComponent
+                      samples += 1
+                  }
+              }
+              guard samples > 0 else {
+                  throw NSError(domain: "MeowlettPreview", code: 2, userInfo: [NSLocalizedDescriptionKey: "No pixels sampled in \(filename)"])
+              }
+              return total / Double(samples)
+          }
+
+          for (base, expectedTerms) in screens {
+              for mode in ["light", "dark"] {
+                  let filename = "\(mode)-\(base).png"
+                  let url = URL(fileURLWithPath: directory).appendingPathComponent(filename)
+                  let request = VNRecognizeTextRequest()
+                  request.recognitionLevel = .accurate
+                  request.usesLanguageCorrection = true
+                  try VNImageRequestHandler(url: url, options: [:]).perform([request])
+                  let recognized = (request.results ?? [])
+                      .compactMap { $0.topCandidates(1).first?.string }
+                      .joined(separator: " ")
+                      .lowercased()
+
+                  if recognized.contains("selamat datang") || recognized.contains("welcome to meowlett") {
+                      fputs("::error::\(filename) still shows onboarding instead of its requested screen.\n", stderr)
+                      exit(1)
+                  }
+                  if !expectedTerms.contains(where: { recognized.contains($0) }) {
+                      fputs("::error::\(filename) does not contain its expected screen title/content. OCR: \(recognized)\n", stderr)
+                      exit(1)
+                  }
+                  print("Validated \(filename): \(recognized.prefix(150))")
+              }
+
+              let light = try luminance(of: "light-\(base).png")
+              let dark = try luminance(of: "dark-\(base).png")
+              let difference = light - dark
+              print("Appearance check \(base): light=\(String(format: "%.3f", light)), dark=\(String(format: "%.3f", dark))")
+              if difference < 0.12 {
+                  fputs("::error::Light/Dark appearance is not visibly distinct for \(base) (difference \(difference)).\n", stderr)
+                  exit(1)
+              }
+          }
+          SWIFT
+          swift "$RUNNER_TEMP/ValidateMeowlettPreviews.swift"
+
+      - name: Assemble one Light + Dark comparison preview
+        run: |
+          cat > "$RUNNER_TEMP/MakeMeowlettPreview.swift" <<'SWIFT'
+          import AppKit
+          import Foundation
+
+          let directory = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/MeowlettPreviews"
+          let output = "\(ProcessInfo.processInfo.environment["RUNNER_TEMP"] ?? "")/Meowlett-Native-Preview.jpg"
+          let screens: [(String, String)] = [
+              ("01-splash", "Opening"),
+              ("02-dashboard", "Dashboard"),
+              ("03-transactions", "Transactions"),
+              ("03-report", "Reports"),
+              ("03-date", "Date"),
+              ("03-settings", "Settings"),
+              ("08-quick-add", "Quick Add")
+          ]
+          let modes = ["light", "dark"]
+          let columns = 4
+          let tileWidth = 390
+          let tileHeight = 844
+          let titleHeight = 46
+          let gap = 14
+          let rows = (screens.count + 1) / 2
+          let canvasWidth = gap + columns * (tileWidth + gap)
+          let canvasHeight = gap + rows * (titleHeight + tileHeight + gap)
+
+          guard let bitmap = NSBitmapImageRep(
+              bitmapDataPlanes: nil,
+              pixelsWide: canvasWidth,
+              pixelsHigh: canvasHeight,
+              bitsPerSample: 8,
+              samplesPerPixel: 4,
+              hasAlpha: true,
+              isPlanar: false,
+              colorSpaceName: .deviceRGB,
+              bytesPerRow: 0,
+              bitsPerPixel: 0
+          ), let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
+              fatalError("Could not allocate Light/Dark comparison preview.")
+          }
+
+          NSGraphicsContext.saveGraphicsState()
+          NSGraphicsContext.current = context
+          NSColor(calibratedWhite: 0.94, alpha: 1).setFill()
+          NSRect(x: 0, y: 0, width: canvasWidth, height: canvasHeight).fill()
+
+          for (index, screen) in screens.enumerated() {
+              let row = index / 2
+              let pairColumn = (index % 2) * 2
+              for (modeIndex, mode) in modes.enumerated() {
+                  let filename = "\(mode)-\(screen.0).png"
+                  let path = URL(fileURLWithPath: directory).appendingPathComponent(filename).path
+                  guard let image = NSImage(contentsOfFile: path) else {
+                      fatalError("Missing required preview screenshot: \(filename)")
+                  }
+
+                  let column = pairColumn + modeIndex
+                  let x = gap + column * (tileWidth + gap)
+                  let top = gap + row * (titleHeight + tileHeight + gap)
+                  let titleY = canvasHeight - top - titleHeight
+                  let imageY = canvasHeight - top - titleHeight - tileHeight
+
+                  NSColor.white.setFill()
+                  NSRect(x: x, y: titleY, width: tileWidth, height: titleHeight).fill()
+                  let attributes: [NSAttributedString.Key: Any] = [
+                      .font: NSFont.boldSystemFont(ofSize: 15),
+                      .foregroundColor: NSColor(calibratedWhite: 0.15, alpha: 1)
+                  ]
+                  NSString(string: "\(screen.1) / \(mode.capitalized)").draw(
+                      in: NSRect(x: x + 12, y: titleY + 14, width: tileWidth - 24, height: 20),
+                      withAttributes: attributes
+                  )
+
+                  let imageRect = NSRect(x: x, y: imageY, width: tileWidth, height: tileHeight)
+                  NSColor.white.setFill()
+                  imageRect.fill()
+                  image.draw(in: imageRect)
+              }
+          }
+
+          NSGraphicsContext.restoreGraphicsState()
+          guard let data = bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.90]) else {
+              fatalError("Could not encode Light/Dark comparison preview.")
+          }
+          try data.write(to: URL(fileURLWithPath: output))
+          print("Single Light + Dark comparison preview created at \(output)")
+          SWIFT
+          swift "$RUNNER_TEMP/MakeMeowlettPreview.swift"
+
+      - name: Upload one Light + Dark native preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meowlett-Native-Preview-Light-Dark
+          path: ${{ runner.temp }}/Meowlett-Native-Preview.jpg
+          if-no-files-found: error
+          retention-days: 7
