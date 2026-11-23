@@ -155,36 +155,78 @@ async function capture(browser, target, mode) {
 async function compare(buildPath, livePath, diffPath) {
   const [a, b] = await Promise.all([readFile(buildPath), readFile(livePath)]);
   const build = PNG.sync.read(a), live = PNG.sync.read(b);
-  if (build.width !== live.width || build.height !== live.height) {
-    throw new Error("Screenshot dimensions differ: build " + build.width + "x" + build.height +
-      ", live " + live.width + "x" + live.height);
-  }
-  const diff = new PNG({ width: build.width, height: build.height });
-  const rowChanged = new Array(build.height).fill(false);
+  const width = Math.max(build.width, live.width);
+  const height = Math.max(build.height, live.height);
+  const diff = new PNG({ width, height });
+  const rowChanged = new Array(height).fill(false);
   let changed = 0;
-  for (let i = 0; i < build.data.length; i += 4) {
-    const different = build.data[i] !== live.data[i] || build.data[i + 1] !== live.data[i + 1] ||
-      build.data[i + 2] !== live.data[i + 2] || build.data[i + 3] !== live.data[i + 3];
-    if (different) {
-      changed++; rowChanged[Math.floor(i / 4 / build.width)] = true;
-      diff.data[i] = 255; diff.data[i + 1] = 0; diff.data[i + 2] = 255; diff.data[i + 3] = 255;
-    } else {
-      const gray = Math.round((build.data[i] + build.data[i + 1] + build.data[i + 2]) / 3 * 0.35);
-      diff.data[i] = gray; diff.data[i + 1] = gray; diff.data[i + 2] = gray; diff.data[i + 3] = 255;
+  let total = 0;
+
+  // Compare the complete union of both screenshots. Pixels present in only one
+  // image are real differences and remain visible as magenta at the diff edge.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const inBuild = x < build.width && y < build.height;
+      const inLive = x < live.width && y < live.height;
+      const outIndex = (y * width + x) * 4;
+      if (!inBuild && !inLive) {
+        diff.data[outIndex] = 24;
+        diff.data[outIndex + 1] = 24;
+        diff.data[outIndex + 2] = 24;
+        diff.data[outIndex + 3] = 255;
+        continue;
+      }
+
+      total++;
+      const buildIndex = inBuild ? (y * build.width + x) * 4 : -1;
+      const liveIndex = inLive ? (y * live.width + x) * 4 : -1;
+      const different = !inBuild || !inLive ||
+        build.data[buildIndex] !== live.data[liveIndex] ||
+        build.data[buildIndex + 1] !== live.data[liveIndex + 1] ||
+        build.data[buildIndex + 2] !== live.data[liveIndex + 2] ||
+        build.data[buildIndex + 3] !== live.data[liveIndex + 3];
+
+      if (different) {
+        changed++;
+        rowChanged[y] = true;
+        diff.data[outIndex] = 255;
+        diff.data[outIndex + 1] = 0;
+        diff.data[outIndex + 2] = 255;
+        diff.data[outIndex + 3] = 255;
+      } else {
+        const gray = Math.round((build.data[buildIndex] + build.data[buildIndex + 1] +
+          build.data[buildIndex + 2]) / 3 * 0.35);
+        diff.data[outIndex] = gray;
+        diff.data[outIndex + 1] = gray;
+        diff.data[outIndex + 2] = gray;
+        diff.data[outIndex + 3] = 255;
+      }
     }
   }
+
   const bands = [];
   let start = -1;
   for (let y = 0; y <= rowChanged.length; y++) {
     if (y < rowChanged.length && rowChanged[y] && start < 0) start = y;
     if ((y === rowChanged.length || !rowChanged[y]) && start >= 0) {
-      bands.push({ yStart: start, yEnd: y - 1, height: y - start }); start = -1;
+      bands.push({ yStart: start, yEnd: y - 1, height: y - start });
+      start = -1;
     }
   }
   await writeFile(diffPath, PNG.sync.write(diff));
-  const total = build.width * build.height, pct = changed / total * 100;
-  return { width: build.width, height: build.height, changedPixels: changed, totalPixels: total,
-    percentDifferent: Number(pct.toFixed(4)), changedRowBands: bands, thresholdExceeded: pct > 1 };
+  const pct = total ? changed / total * 100 : 0;
+  return {
+    width,
+    height,
+    buildDimensions: { width: build.width, height: build.height },
+    liveDimensions: { width: live.width, height: live.height },
+    dimensionsMatch: build.width === live.width && build.height === live.height,
+    changedPixels: changed,
+    totalPixels: total,
+    percentDifferent: Number(pct.toFixed(4)),
+    changedRowBands: bands,
+    thresholdExceeded: pct > 1
+  };
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -197,6 +239,14 @@ try {
     const comparison = await compare(build.screenshot, live.screenshot, diff);
     results.push({ mode, build: build.diagnostics, live: live.diagnostics, comparison, diff });
     console.log("Pixel comparison " + mode + ": " + JSON.stringify(comparison));
+    if (!comparison.dimensionsMatch) {
+      console.log("SCREENSHOT DIMENSIONS DIFFER: build " +
+        comparison.buildDimensions.width + "x" + comparison.buildDimensions.height +
+        ", live " + comparison.liveDimensions.width + "x" + comparison.liveDimensions.height +
+        ". Unmatched edge pixels are included in the diff and percentage; continuing capture.");
+      console.log("Dimension-related difference rows (inspect magenta edge in diff): " +
+        JSON.stringify(comparison.changedRowBands));
+    }
     if (comparison.thresholdExceeded) {
       console.log("SNAPSHOT MUNGKIN TIDAK SAMA DENGAN LIVE");
       console.log("Visible difference regions (pixel-row bands; inspect diff image): " + JSON.stringify(comparison.changedRowBands));

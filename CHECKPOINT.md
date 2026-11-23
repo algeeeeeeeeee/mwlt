@@ -574,3 +574,31 @@ All requested paths exist under `reference/pwa/`:
 - Artifact mengunggah seluruh direktori `ref/`, `ref-live/`, dan `ref-diff/`. Workflow native mengabaikan tambahan path `.github/workflows/ref-shots.yml`; bagian lain `ios-native.yml` dipertahankan.
 - **Bobot 900: BELUM TERBUKTI** sampai diagnostics run selesai. Tidak menarik kesimpulan font sebelum hasil run.
 - Scope giliran ini hanya capture Beranda Light/Dark untuk build dan live; R1b–R1d tetap antre. Tidak mengubah aplikasi live, source native, test, atau PR #2; PR #2 tetap Draft.
+
+
+## Run ref-shots #3 — diagnosis and comparison fix (23 November 2026)
+
+### Bukti run #3
+- Run ID `45120348084`, commit `03316a6586bc0d23b1ade1119e349a17047e5e06`, **completed / failure**. Job: `Build PWA and capture Home (Light + Dark)`.
+- Step yang gagal: `Capture Beranda in Light and Dark`. Step Setup Node, harness dependencies, npm install PWA, Vite build, build patch, Playwright Chromium install, dan Vite preview semuanya **SUCCESS**.
+- Build screenshot Beranda Light berhasil disimpan: `ref/beranda-light.png`; live screenshot Light berhasil disimpan: `ref-live/beranda-light.png`. Proses berhenti saat perbandingan Light, sebelum mode Dark dijalankan.
+- Log persis: `Error: Screenshot dimensions differ: build 1170x5946, live 1170x5949`. Ini dilempar oleh pemeriksaan dimensi pada fungsi `compare()`, bukan oleh pemeriksaan persentase piksel.
+- Klasifikasi: build PWA berhasil; screenshot target build berhasil (Light); screenshot target live berhasil (Light); perbandingan piksel **belum tuntas**; Dark **belum dijalankan**.
+
+### Isi artifact run #3
+- Artifact `pwa-reference-build-live-home`, 1,518,784 bytes (1.45 MB), ID `14793890184`.
+- `ref/beranda-light.png`: 794,820 bytes.
+- `ref-live/beranda-light.png`: 793,706 bytes.
+- Tidak ada file diff atau report dalam artifact tersebut karena eksekusi berhenti sebelum fungsi perbandingan menulis output diff.
+
+### Diagnosis yang dibuktikan
+- Penyebab kegagalan: fungsi `compare()` menganggap perbedaan dimensi 3 piksel sebagai exception fatal. Target build berukuran 1170×5946; target live 1170×5949.
+- Jalur `comparison.thresholdExceeded` (>1%) hanya memanggil `console.log` untuk peringatan; tidak memanggil `process.exit(1)` atau melempar exception. Jadi bukan penyebab exit code 1.
+- Step upload artifact pada `.github/workflows/ref-shots.yml` sudah menggunakan `if: always()`; konfigurasi itu dipertahankan tanpa perubahan.
+
+### Perbaikan terbatas dalam commit ini
+- Hanya `reference/harness/capture-home.mjs` diubah pada fungsi perbandingan: perbandingan kini memakai kanvas gabungan berdimensi maksimum, tanpa mengubah screenshot sumber atau menskalakannya.
+- Piksel yang hanya ada di salah satu screenshot dihitung sebagai perbedaan dan ditampilkan magenta pada tepi gambar diff; area kosong di luar kedua screenshot tidak ikut denominator. Report menyimpan dimensi masing-masing target dan `dimensionsMatch`, serta log mencatat perbedaan dimensi namun melanjutkan capture.
+- Ambang >1% tetap merupakan peringatan log saja dan tidak menggagalkan job.
+- Tidak mengubah workflow, `ios-native.yml`, versi Playwright, package, fixture, aplikasi/PWA, maupun konfigurasi artifact. Step upload tetap `if: always()`.
+- Verifikasi eksekusi perbaikan, capture Light/Dark, pixel percentages, dan artifact run setelah commit ini: **BELUM TERVERIFIKASI** sampai workflow berikutnya berjalan. Tidak menunggu CI.
