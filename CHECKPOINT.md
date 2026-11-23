@@ -1076,3 +1076,20 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - Current working branch head before this checkpoint update: `25c5045a81a49bce5232977539ff2f4d6594abfa`.
 - PR #2 remains OPEN, Draft, base `main`; do not merge or close it. No direct main edits, branch deletions, or file/workflow deletions.
 - Next: allow Run #315 to finish; inspect UI-test result and diagnostics. The required catalog test must pass with the resource loaded from the test bundle. Then inspect native device build, IPA, and Light/Dark preview artifact. R2 remains **NOT COMPLETE** until those validations pass; do not advance to R3.
+
+## R2 — Run #315 UI-test execution checkpoint (24 November 2026, 00:56 WIB)
+
+- Current branch: `native-swift-parity`.
+- Current branch head before this checkpoint: `54c66031e7b2250ba17f93bd666b497abd021ed2`.
+- PR #2 remains OPEN and Draft, base `main`. Do not merge or close it.
+- Run #315: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45229972731
+  - Run head SHA: `25c5045a81a49bce5232977539ff2f4d6594abfa`. The later branch-head commit `54c6603` only updates this Markdown checkpoint; the workflow ignores Markdown paths, so it does not trigger/cancel the run.
+  - Job ID: `137886784107`.
+  - Simulator build: SUCCESS.
+  - `Run native UI smoke tests`: IN PROGRESS at last check (about 16 minutes after the step started). Suite source currently contains 19 UI test methods, running with `-parallel-testing-enabled NO`.
+  - Following steps are still pending: upload xcresult diagnostics, iPhone device build, Home Screen label validation, unsigned IPA packaging/upload, Light/Dark preview capture and validation, and preview assembly/upload.
+  - Live job-log retrieval returned GitHub `BlobNotFound` while the job is active. This is not evidence of a test failure; wait for completion before retrieving job logs and the xcresult artifact.
+- No test conclusion or runtime icon-resource validation is available yet. Do not infer that XCTest is hung or passing based only on the unchanged step status.
+- No source or workflow changes were made while the run was active. No changes directly to `main`, no merge, and no deletion.
+- Next: recheck Run #315; once it completes, inspect the logs and xcresult, then confirm device build, IPA, and all 14 Light/Dark screenshots. Visually inspect the preview artifact before marking R2 complete.
+- R2 remains **NOT COMPLETE**. Do not begin R3 or claim full icon visual parity until the required validations pass.
