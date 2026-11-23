@@ -164,7 +164,7 @@ private struct MeowIconNode {
     }
 }
 
-private final class MeowIconBundleToken {}
+private final class MeowIconBundleToken: NSObject {}
 
 enum MeowIconCatalog {
     private static let aliases: [String: String] = [
@@ -284,13 +284,19 @@ enum MeowIconCatalog {
         ]
     ]
 
+    private static let loadedIconCatalog = loadInstalledIconPaths()
+
     private static let iconPaths: [String: Path] = {
-        var result = loadInstalledIconPaths()
+        var result = loadedIconCatalog.paths
         for (name, nodes) in specialNodes {
             result[name] = makePath(nodes)
         }
         return result
     }()
+
+    static var loadDiagnostics: String {
+        loadedIconCatalog.diagnostic
+    }
 
     static var missingKeys: [String] {
         let missingDeclared = MeowIconKey.allCases.map(\.rawValue).filter { path(for: $0) == nil }
@@ -306,18 +312,31 @@ enum MeowIconCatalog {
         return iconPaths[canonical]
     }
 
-    private static func loadInstalledIconPaths() -> [String: Path] {
-        guard
-            let url = Bundle(for: MeowIconBundleToken.self).url(forResource: "lucide-icons", withExtension: "json.z"),
-            let compressed = try? Data(contentsOf: url)
-        else {
-            #if DEBUG
-            NSLog("[MeowIcon] Lucide icon resource is missing from the app bundle")
-            #endif
-            return [:]
+    private static func loadInstalledIconPaths() -> (paths: [String: Path], diagnostic: String) {
+        let tokenBundle = Bundle(for: MeowIconBundleToken.self)
+        let candidateBundles = [tokenBundle, Bundle.main] + Bundle.allBundles + Bundle.allFrameworks
+        var seenBundleURLs = Set<URL>()
+        var selectedResource: (bundle: Bundle, url: URL)?
+
+        for bundle in candidateBundles where seenBundleURLs.insert(bundle.bundleURL).inserted {
+            if let url = bundle.url(forResource: "lucide-icons", withExtension: "json.z") {
+                selectedResource = (bundle, url)
+                break
+            }
         }
 
-        var decoded = Data(count: 512 * 1024)
+        guard let selectedResource else {
+            return (
+                [:],
+                "resource=missing; tokenBundle=\(tokenBundle.bundleURL.path); mainBundle=\(Bundle.main.bundleURL.path); searchedBundles=\(seenBundleURLs.count)"
+            )
+        }
+        let resourceURL = selectedResource.url
+        guard let compressed = try? Data(contentsOf: resourceURL) else {
+            return ([:], "resource=unreadable; path=\(resourceURL.path)")
+        }
+
+        var decoded = Data(count: 2 * 1024 * 1024)
         let decodedCount = decoded.withUnsafeMutableBytes { destination in
             compressed.withUnsafeBytes { source in
                 guard
@@ -335,17 +354,32 @@ enum MeowIconCatalog {
             }
         }
         guard decodedCount > 0 else {
-            #if DEBUG
-            NSLog("[MeowIcon] Failed to decompress Lucide icon resource")
-            #endif
-            return [:]
+            return (
+                [:],
+                "resource=found; path=\(resourceURL.path); compressedBytes=\(compressed.count); decompression=failed"
+            )
         }
         decoded.count = decodedCount
 
+        let object: Any
+        do {
+            object = try JSONSerialization.jsonObject(with: decoded)
+        } catch {
+            return (
+                [:],
+                "resource=found; path=\(resourceURL.path); decodedBytes=\(decodedCount); json=invalid; error=\(error.localizedDescription)"
+            )
+        }
         guard
-            let root = try? JSONSerialization.jsonObject(with: decoded) as? [String: Any],
+            let root = object as? [String: Any],
             let icons = root["icons"] as? [[String: Any]]
-        else { return [:] }
+        else {
+            let keys = (object as? [String: Any]).map { $0.keys.sorted().joined(separator: ",") } ?? "not-a-dictionary"
+            return (
+                [:],
+                "resource=found; path=\(resourceURL.path); decodedBytes=\(decodedCount); json=unexpected-shape; rootKeys=\(keys)"
+            )
+        }
 
         var paths: [String: Path] = [:]
         for icon in icons {
@@ -367,7 +401,11 @@ enum MeowIconCatalog {
                 paths[name] = makePath(nodes)
             }
         }
-        return paths
+
+        return (
+            paths,
+            "resource=loaded; bundle=\(selectedResource.bundle.bundleURL.lastPathComponent); path=\(resourceURL.path); compressedBytes=\(compressed.count); decodedBytes=\(decodedCount); icons=\(icons.count); paths=\(paths.count)"
+        )
     }
 
     private static func makePath(_ nodes: [MeowIconNode]) -> Path {
