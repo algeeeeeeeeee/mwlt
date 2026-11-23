@@ -180,7 +180,7 @@ struct SettingsView: View {
                         }
                         .overlay(Circle().strokeBorder(AppAppearance.border(dark: isDark), lineWidth: 2.5))
                     Circle().fill(primary).frame(width: 18, height: 18)
-                        .overlay(Image(systemName: "camera").font(.system(size: 8, weight: .medium)).foregroundStyle(.white))
+                        .overlay(MeowIcon(key: "camera", size: 8).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(AppAppearance.background(dark: isDark), lineWidth: 2))
                 }
             }
@@ -220,8 +220,7 @@ struct SettingsView: View {
                             Text(userName.isEmpty ? (isEnglish ? "Tap to set name" : "Tap untuk isi nama") : userName)
                                 .font(MeowlettTypography.font(size: 17, weight: .black))
                                 .foregroundStyle(.primary)
-                            Image(systemName: "pencil")
-                                .font(.system(size: 11, weight: .semibold))
+                            MeowIcon(key: "pencil", size: 11)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -270,8 +269,7 @@ struct SettingsView: View {
                     Text(subtitle).font(MeowlettTypography.font(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 6)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .medium))
+                MeowIcon(key: "chevron.right", size: 16)
                     .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 16)
@@ -286,7 +284,7 @@ struct SettingsView: View {
         return Button { language = code } label: {
             HStack(spacing: 5) {
                 Text(title).font(MeowlettTypography.font(size: 12, weight: .bold))
-                if selected { Image(systemName: "checkmark.circle.fill").font(.system(size: 11)) }
+                if selected { MeowIcon(key: "checkmark.circle.fill", size: 11) }
             }
             .foregroundStyle(selected ? accent : Color.secondary)
             .frame(maxWidth: .infinity).frame(height: 38)
@@ -321,8 +319,7 @@ private struct SettingsAppearanceSheet: View {
                 .padding(.top, 12)
 
             HStack(spacing: 10) {
-                Image(systemName: isDark ? "moon.fill" : "sun.max.fill")
-                    .font(.system(size: 18, weight: .regular))
+                MeowIcon(key: isDark ? "moon.fill" : "sun.max.fill", size: 18)
                     .foregroundStyle(AppAppearance.accent)
                     .frame(width: 36, height: 36)
                     .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
@@ -332,8 +329,7 @@ private struct SettingsAppearanceSheet: View {
                     .accessibilityIdentifier("mwlt.settings.sheet.appearance.title")
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
+                    MeowIcon(key: "xmark", size: 13)
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                         .background(categoryBackground, in: Circle())
@@ -383,8 +379,7 @@ private struct SettingsAppearanceSheet: View {
                     Divider().overlay(AppAppearance.border(dark: isDark))
 
                     HStack(spacing: 12) {
-                        Image(systemName: "globe")
-                            .font(.system(size: 18, weight: .regular))
+                        MeowIcon(key: "globe", size: 18)
                             .foregroundStyle(AppAppearance.primary)
                             .frame(width: 36, height: 36)
                             .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
@@ -408,8 +403,7 @@ private struct SettingsAppearanceSheet: View {
 
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 12) {
-                            Image(systemName: "paintpalette")
-                                .font(.system(size: 18, weight: .regular))
+                            MeowIcon(key: "paintpalette", size: 18)
                                 .foregroundStyle(AppAppearance.primary)
                                 .frame(width: 36, height: 36)
                                 .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
@@ -432,8 +426,7 @@ private struct SettingsAppearanceSheet: View {
                                                 .frame(width: 14, height: 14)
                                         }
                                         HStack(spacing: 4) {
-                                            Image(systemName: presetIcon(preset.id))
-                                                .font(.system(size: 11, weight: .semibold))
+                                            MeowIcon(key: presetIcon(preset.id), size: 11)
                                             Text(isEnglish ? preset.nameEN : preset.nameID)
                                                 .font(MeowlettTypography.font(size: 11, weight: .bold))
                                         }
@@ -457,8 +450,7 @@ private struct SettingsAppearanceSheet: View {
 
                         VStack(spacing: 10) {
                             HStack(spacing: 5) {
-                                Image(systemName: "paintbrush.pointed")
-                                    .font(.system(size: 12, weight: .semibold))
+                                MeowIcon(key: "paintbrush.pointed", size: 12)
                                     .foregroundStyle(AppAppearance.primary)
                                 Text(isEnglish ? "Custom" : "Kustom")
                                     .font(MeowlettTypography.font(size: 12, weight: .heavy))
@@ -467,7 +459,7 @@ private struct SettingsAppearanceSheet: View {
                                 Button { themePreset = "custom" } label: {
                                     Group {
                                         if themePreset == "custom" {
-                                            Label(isEnglish ? "Active" : "Aktif", systemImage: "checkmark.circle.fill")
+                                            Label { Text(isEnglish ? "Active" : "Aktif") } icon: { MeowIcon(key: "checkmark.circle.fill", size: 14) }
                                         } else {
                                             Text(isEnglish ? "Use" : "Gunakan")
                                         }
@@ -525,8 +517,7 @@ private struct SettingsAppearanceSheet: View {
         iconColor: Color
     ) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.system(size: 18, weight: .regular))
+            MeowIcon(key: symbol, size: 18)
                 .foregroundStyle(iconColor)
                 .frame(width: 36, height: 36)
                 .background(categoryBackground, in: RoundedRectangle(cornerRadius: 12))
@@ -712,16 +703,14 @@ private struct SettingsNotificationsSheet: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(categoryBackground)
                     .frame(width: 36, height: 36)
-                    .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
-                        .font(.system(size: 18, weight: .regular))
+                    .overlay(MeowIcon(key: enabled ? "bell.fill" : "bell.slash.fill", size: 18)
                         .foregroundStyle(enabled ? accent : Color.secondary))
                 Text(isEnglish ? "Notifications" : "Notifikasi")
                     .font(MeowlettTypography.font(size: 17, weight: .black))
                     .accessibilityIdentifier("mwlt.settings.sheet.notifications.title")
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
+                    MeowIcon(key: "xmark", size: 13)
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                         .background(AppAppearance.card2(dark: isDark), in: Circle())
@@ -739,8 +728,7 @@ private struct SettingsNotificationsSheet: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(AppAppearance.card2(dark: isDark))
                             .frame(width: 36, height: 36)
-                            .overlay(Image(systemName: enabled ? "bell.fill" : "bell.slash.fill")
-                                .font(.system(size: 18, weight: .regular))
+                            .overlay(MeowIcon(key: enabled ? "bell.fill" : "bell.slash.fill", size: 18)
                                 .foregroundStyle(enabled ? accent : Color.secondary))
                         VStack(alignment: .leading, spacing: 2) {
                             Text(isEnglish ? "Daily Reminder" : "Pengingat Harian")
@@ -771,8 +759,7 @@ private struct SettingsNotificationsSheet: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(AppAppearance.card2(dark: isDark))
                                 .frame(width: 36, height: 36)
-                                .overlay(Image(systemName: "info.circle")
-                                    .font(.system(size: 16, weight: .semibold))
+                                .overlay(MeowIcon(key: "info.circle", size: 16)
                                     .foregroundStyle(weekly ? accent : Color.secondary))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(isEnglish ? "Weekly Summary" : "Ringkasan Mingguan")
@@ -820,8 +807,7 @@ private struct SettingsNotificationsSheet: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(AppAppearance.card2(dark: isDark))
                                 .frame(width: 36, height: 36)
-                                .overlay(Image(systemName: "bell.badge")
-                                    .font(.system(size: 17, weight: .regular))
+                                .overlay(MeowIcon(key: "bell.badge", size: 17)
                                     .foregroundStyle(accent))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(isEnglish ? "Transaction Reminder" : "Pengingat Transaksi")
@@ -834,8 +820,7 @@ private struct SettingsNotificationsSheet: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer(minLength: 4)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 16, weight: .medium))
+                            MeowIcon(key: "chevron.right", size: 16)
                                 .foregroundStyle(.tertiary)
                         }
                         .padding(.vertical, 14)
@@ -1028,8 +1013,7 @@ private struct SettingsCategoryMenuSheet: View {
                     .accessibilityIdentifier("mwlt.settings.sheet.category.title")
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
+                    MeowIcon(key: "xmark", size: 13)
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                         .background(categoryBackground, in: Circle())
@@ -1079,8 +1063,7 @@ private struct SettingsCategoryMenuSheet: View {
     private func menuRow(symbol: String, title: String, subtitle: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18, weight: .regular))
+                MeowIcon(key: symbol, size: 18)
                     .foregroundStyle(color)
                     .frame(width: 36, height: 36)
                     .background(color.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
@@ -1093,8 +1076,7 @@ private struct SettingsCategoryMenuSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 4)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .regular))
+                MeowIcon(key: "chevron.right", size: 16)
                     .foregroundStyle(.tertiary)
             }
             .padding(.vertical, 14)
@@ -1113,7 +1095,7 @@ private struct SettingsPlaceholderSheet: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 28)).foregroundStyle(AppAppearance.accent)
+            MeowIcon(key: symbol, size: 28).foregroundStyle(AppAppearance.accent)
                 .frame(width: 72, height: 72).background(AppAppearance.accent.opacity(0.12), in: Circle())
             Text(title).font(MeowlettTypography.font(size: 17, weight: .black))
             Text(subtitle).font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary).multilineTextAlignment(.center)
@@ -1425,7 +1407,7 @@ private struct SettingsDataSheet: View {
         let borderColor = isAccent ? color.opacity(0.25) : (isDanger ? color.opacity(0.21) : cardBorder)
 
         return HStack(spacing: 12) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .regular)).foregroundStyle(foreground)
+            MeowIcon(key: symbol, size: 18).foregroundStyle(foreground)
                 .frame(width: 38, height: 38).background(iconSurface, in: RoundedRectangle(cornerRadius: 12))
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(MeowlettTypography.font(size: 14, weight: .heavy)).foregroundStyle(foreground)

@@ -140,7 +140,7 @@ struct DateTabView: View {
                     activeSheet = .wishlist
                 } label: {
                     HStack(spacing: 3) {
-                        Image(systemName: "plus").font(.system(size: 13, weight: .bold))
+                        MeowIcon(key: "plus", size: 13)
                         Text(isEnglish ? "Add" : "Tambah").font(MeowlettTypography.font(size: 12, weight: .bold))
                     }
                     .foregroundStyle(datePink)
@@ -151,8 +151,7 @@ struct DateTabView: View {
 
             if wishlist.isEmpty {
                 VStack(spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 28, weight: .light))
+                    MeowIcon(key: "sparkles", size: 28)
                         .foregroundStyle(datePink.opacity(0.42))
                     Text(isEnglish ? "No date wishlist yet" : "Belum ada wishlist date")
                         .font(MeowlettTypography.font(size: 13, weight: .medium))
@@ -175,8 +174,7 @@ struct DateTabView: View {
                                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(item.done ? datePink : Color.primary.opacity(isDark ? 0.2 : 0.15), lineWidth: 2).allowsHitTesting(false))
                                     .overlay {
                                         if item.done {
-                                            Image(systemName: "checkmark.circle")
-                                                .font(.system(size: 10, weight: .black))
+                                            MeowIcon(key: "checkmark.circle", size: 10)
                                                 .foregroundStyle(.white)
                                         }
                                     }
@@ -188,8 +186,7 @@ struct DateTabView: View {
                                 .strikethrough(item.done)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             Button { removeWishlist(item) } label: {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 13, weight: .regular))
+                                MeowIcon(key: "xmark", size: 13)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 17, height: 17)
                             }
@@ -223,7 +220,7 @@ struct DateTabView: View {
                     activeSheet = .transaction
                 } label: {
                     HStack(spacing: 4) {
-                        Image(systemName: "plus").font(.system(size: 12, weight: .black))
+                        MeowIcon(key: "plus", size: 12)
                         Text(isEnglish ? "Record" : "Catat").font(MeowlettTypography.font(size: 12, weight: .heavy))
                     }
                     .foregroundStyle(.white)
@@ -236,8 +233,7 @@ struct DateTabView: View {
 
             if allDateTransactions.isEmpty {
                 VStack(spacing: 10) {
-                    Image(systemName: "heart")
-                        .font(.system(size: 36, weight: .light))
+                    MeowIcon(key: "heart", size: 36)
                         .foregroundStyle(Color(hex: "#f9a8d4"))
                     Text(isEnglish ? "No date expenses yet" : "Belum ada pengeluaran date")
                         .font(MeowlettTypography.font(size: 13, weight: .medium))
@@ -272,7 +268,7 @@ struct DateTabView: View {
                     RoundedRectangle(cornerRadius: 11)
                         .fill(datePink.opacity(0.15))
                         .frame(width: 36, height: 36)
-                        .overlay(Image(systemName: "heart").font(.system(size: 16, weight: .medium)).foregroundStyle(datePink))
+                        .overlay(MeowIcon(key: "heart", size: 16).foregroundStyle(datePink))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(transaction.description)
                             .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -290,8 +286,7 @@ struct DateTabView: View {
                         .foregroundStyle(isDark ? datePink : datePrimary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .regular))
+                    MeowIcon(key: "chevron.down", size: 14)
                         .foregroundStyle(datePink.opacity(0.65))
                         .rotationEffect(.degrees(active ? 180 : 0))
                 }
@@ -309,7 +304,7 @@ struct DateTabView: View {
                         activeSheet = .transaction
                         activeDateID = nil
                     } label: {
-                        Label(isEnglish ? "Edit" : "Edit", systemImage: "pencil")
+                        Label { Text(isEnglish ? "Edit" : "Edit") } icon: { MeowIcon(key: "pencil", size: 14) }
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(datePink)
                             .frame(maxWidth: .infinity)
@@ -322,7 +317,7 @@ struct DateTabView: View {
                         deleteDateTransactionWithUndo(transaction)
                         activeDateID = nil
                     } label: {
-                        Label(isEnglish ? "Delete" : "Hapus", systemImage: "trash")
+                        Label { Text(isEnglish ? "Delete" : "Hapus") } icon: { MeowIcon(key: "trash", size: 14) }
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(Color.red.opacity(0.85))
                             .frame(maxWidth: .infinity)
@@ -344,8 +339,7 @@ struct DateTabView: View {
 
     private func dateUndoToast(for transaction: MeowlettTransaction) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "trash")
-                .font(.system(size: 15, weight: .semibold))
+            MeowIcon(key: "trash", size: 15)
                 .foregroundStyle(Color(hex: "#ef4444"))
             Text(isEnglish ? "Transaction deleted" : "Transaksi dihapus")
                 .font(MeowlettTypography.font(size: 13, weight: .semibold))
@@ -408,7 +402,7 @@ struct DateTabView: View {
                     .accessibilityIdentifier("mwlt.date.wishlist.title")
                 Spacer()
                 Button { activeSheet = nil } label: {
-                    Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(.secondary)
+                    MeowIcon(key: "xmark", size: 15).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.date.wishlist.close")
@@ -451,8 +445,7 @@ struct DateTabView: View {
             .fill(datePink.opacity(0.15))
             .frame(width: 28, height: 28)
             .overlay(
-                Image(systemName: symbol)
-                    .font(.system(size: 14, weight: .bold))
+                MeowIcon(key: symbol, size: 14)
                     .foregroundStyle(datePink)
             )
     }

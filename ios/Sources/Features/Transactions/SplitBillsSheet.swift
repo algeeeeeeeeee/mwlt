@@ -40,14 +40,14 @@ struct NativeSplitBillsSheet: View {
         VStack(spacing: 0) {
             Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
             HStack {
-                Label(isEnglish ? "Split bills" : "Patungan", systemImage: "person.2")
+                Label { Text(isEnglish ? "Split bills" : "Patungan") } icon: { MeowIcon(key: "person.2", size: 14) }
                     .font(MeowlettTypography.font(size: 16, weight: .black))
                     .accessibilityIdentifier("mwlt.transactions.splitBills.title")
                 Spacer()
                 Button {
                     editorItem = NativeSplitBill(id: Int64(Date().timeIntervalSince1970 * 1000), title: "", total: 0, members: [], paidBy: "", date: String(ISO8601DateFormatter().string(from: Date.now).prefix(10)), settled: false)
                 } label: {
-                    Label(isEnglish ? "Add" : "Tambah", systemImage: "plus")
+                    Label { Text(isEnglish ? "Add" : "Tambah") } icon: { MeowIcon(key: "plus", size: 14) }
                         .font(MeowlettTypography.font(size: 12, weight: .heavy))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 12)
@@ -57,8 +57,7 @@ struct NativeSplitBillsSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.transactions.splitBills.add")
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .bold))
+                    MeowIcon(key: "xmark", size: 12)
                         .foregroundStyle(.secondary)
                         .frame(width: 30, height: 30)
                         .background(AppAppearance.card2(dark: isDark), in: Circle())
@@ -74,8 +73,7 @@ struct NativeSplitBillsSheet: View {
                     summaryCard
                     if bills.isEmpty {
                         VStack(spacing: 8) {
-                            Image(systemName: "person.2")
-                                .font(.system(size: 30, weight: .light))
+                            MeowIcon(key: "person.2", size: 30)
                                 .foregroundStyle(AppAppearance.accent)
                             Text(isEnglish ? "No shared bills yet" : "Belum ada patungan")
                                 .font(MeowlettTypography.font(size: 14, weight: .bold))
@@ -144,7 +142,7 @@ struct NativeSplitBillsSheet: View {
                     RoundedRectangle(cornerRadius: 11)
                         .fill(Color(hex: "#60a5fa").opacity(0.14))
                         .frame(width: 40, height: 40)
-                        .overlay(Image(systemName: "receipt").foregroundStyle(Color(hex: "#60a5fa")))
+                        .overlay(MeowIcon(key: "receipt", size: 18).foregroundStyle(Color(hex: "#60a5fa")))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(bill.title)
                             .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -163,8 +161,7 @@ struct NativeSplitBillsSheet: View {
                             .font(MeowlettTypography.font(size: 9, weight: .bold))
                             .foregroundStyle(bill.settled ? Color(hex: "#4ade80") : Color(hex: "#fbbf24"))
                     }
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
+                    MeowIcon(key: "chevron.down", size: 10)
                         .foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
@@ -180,8 +177,7 @@ struct NativeSplitBillsSheet: View {
                             Button {
                                 togglePaid(billID: bill.id, memberName: member.name)
                             } label: {
-                                Image(systemName: member.paid || member.name == bill.paidBy ? "checkmark.circle.fill" : "circle")
-                                    .font(.system(size: 19, weight: .medium))
+                                MeowIcon(key: member.paid || member.name == bill.paidBy ? "checkmark.circle.fill" : "circle", size: 19)
                                     .foregroundStyle(member.paid || member.name == bill.paidBy ? Color(hex: "#4ade80") : Color.secondary.opacity(0.6))
                             }
                             .buttonStyle(.plain)
@@ -206,7 +202,7 @@ struct NativeSplitBillsSheet: View {
                     }
                     HStack(spacing: 8) {
                         Button { editorItem = bill } label: {
-                            Label(isEnglish ? "Edit" : "Ubah", systemImage: "pencil")
+                            Label { Text(isEnglish ? "Edit" : "Ubah") } icon: { MeowIcon(key: "pencil", size: 14) }
                                 .font(MeowlettTypography.font(size: 11, weight: .bold))
                                 .foregroundStyle(.primary)
                                 .frame(maxWidth: .infinity)
@@ -215,7 +211,7 @@ struct NativeSplitBillsSheet: View {
                         }
                         .buttonStyle(.plain)
                         Button { deleteBill(bill.id); expandedID = nil } label: {
-                            Label(isEnglish ? "Delete" : "Hapus", systemImage: "trash")
+                            Label { Text(isEnglish ? "Delete" : "Hapus") } icon: { MeowIcon(key: "trash", size: 14) }
                                 .font(MeowlettTypography.font(size: 11, weight: .bold))
                                 .foregroundStyle(Color(hex: "#f87171"))
                                 .frame(maxWidth: .infinity)

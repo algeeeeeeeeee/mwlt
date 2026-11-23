@@ -17,6 +17,8 @@ targets:
         buildPhase: resources
       - path: Resources/Images
         buildPhase: resources
+      - path: Resources/Icons
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mwlt.meowlett

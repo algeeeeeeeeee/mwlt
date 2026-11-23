@@ -87,8 +87,7 @@ struct SettingsBudgetSheet: View {
                     .fill(Color(hex: category.color).opacity(0.13))
                     .frame(width: 36, height: 36)
                     .overlay {
-                        Image(systemName: category.icon)
-                            .font(.system(size: 17, weight: .semibold))
+                        MeowIcon(key: category.icon, size: 17)
                             .foregroundStyle(Color(hex: category.color))
                     }
 

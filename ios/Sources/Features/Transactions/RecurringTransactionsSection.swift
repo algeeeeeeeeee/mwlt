@@ -124,8 +124,7 @@ struct RecurringTransactionsSection: View {
                 onShowInstallments()
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "creditcard")
-                        .font(.system(size: 11, weight: .semibold))
+                    MeowIcon(key: "creditcard", size: 11)
                     Text(isEnglish ? "INSTALLMENTS" : "CICILAN")
                         .font(MeowlettTypography.font(size: 10, weight: .black))
                         .tracking(1)
@@ -153,8 +152,7 @@ struct RecurringTransactionsSection: View {
                 onShowSplitBills()
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "person.2")
-                        .font(.system(size: 11, weight: .semibold))
+                    MeowIcon(key: "person.2", size: 11)
                     Text(isEnglish ? "SPLIT BILLS" : "PATUNGAN")
                         .font(MeowlettTypography.font(size: 10, weight: .black))
                         .tracking(1)
@@ -177,8 +175,7 @@ struct RecurringTransactionsSection: View {
                 HStack(spacing: 9) {
                     Rectangle().fill(AppAppearance.border(dark: isDark)).frame(height: 1)
                     HStack(spacing: 6) {
-                        Image(systemName: "repeat")
-                            .font(.system(size: 11, weight: .semibold))
+                        MeowIcon(key: "repeat", size: 11)
                         Text(isEnglish ? "RECURRING TRANSACTIONS" : "TRANSAKSI RUTIN")
                             .font(MeowlettTypography.font(size: 10, weight: .black))
                             .tracking(1)
@@ -191,8 +188,7 @@ struct RecurringTransactionsSection: View {
                                 .padding(.vertical, 2)
                                 .background(Color(hex: "#ef4444"), in: Capsule())
                         }
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .bold))
+                        MeowIcon(key: "chevron.down", size: 10)
                             .rotationEffect(.degrees(showRecurring ? 180 : 0))
                     }
                     .foregroundStyle(.secondary)
@@ -205,7 +201,7 @@ struct RecurringTransactionsSection: View {
             if showRecurring {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 7) {
-                        Image(systemName: "repeat").foregroundStyle(accent)
+                        MeowIcon(key: "repeat", size: 18).foregroundStyle(accent)
                         Text(isEnglish ? "Add recurring transaction" : "Tambah Transaksi Rutin")
                             .font(MeowlettTypography.font(size: 13, weight: .heavy))
                         Spacer()
@@ -244,14 +240,12 @@ struct RecurringTransactionsSection: View {
                 HStack(spacing: 9) {
                     Rectangle().fill(Color(hex: "#4ade80").opacity(0.25)).frame(height: 1)
                     HStack(spacing: 6) {
-                        Image(systemName: "banknote")
-                            .font(.system(size: 11, weight: .semibold))
+                        MeowIcon(key: "banknote", size: 11)
                         Text(isEnglish ? "RECURRING INCOME" : "PEMASUKAN RUTIN")
                             .font(MeowlettTypography.font(size: 10, weight: .black))
                             .tracking(1)
                             .fixedSize()
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .bold))
+                        MeowIcon(key: "chevron.down", size: 10)
                             .rotationEffect(.degrees(showRecurringIncome ? 180 : 0))
                     }
                     .foregroundStyle(Color(hex: "#4ade80"))
@@ -264,7 +258,7 @@ struct RecurringTransactionsSection: View {
             if showRecurringIncome {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 7) {
-                        Image(systemName: "banknote").foregroundStyle(Color(hex: "#4ade80"))
+                        MeowIcon(key: "banknote", size: 18).foregroundStyle(Color(hex: "#4ade80"))
                         Text(isEnglish ? "Add recurring income" : "Tambah Pemasukan Rutin")
                             .font(MeowlettTypography.font(size: 13, weight: .heavy))
                         Spacer()
@@ -342,7 +336,7 @@ struct RecurringTransactionsSection: View {
                 Button {
                     saveRecurringExpense()
                 } label: {
-                    Label(editingRecurringID == nil ? (isEnglish ? "Add recurring" : "Tambah Rutin") : (isEnglish ? "Save changes" : "Simpan"), systemImage: editingRecurringID == nil ? "plus" : "checkmark")
+                    Label { Text(editingRecurringID == nil ? (isEnglish ? "Add recurring" : "Tambah Rutin") : (isEnglish ? "Save changes" : "Simpan")) } icon: { MeowIcon(key: editingRecurringID == nil ? "plus" : "checkmark", size: 14) }
                         .font(MeowlettTypography.font(size: 12, weight: .heavy))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
@@ -395,7 +389,7 @@ struct RecurringTransactionsSection: View {
             Button {
                 saveRecurringIncome()
             } label: {
-                Label(editingIncomeID == nil ? (isEnglish ? "Add income" : "Tambah Pemasukan") : (isEnglish ? "Save changes" : "Simpan"), systemImage: editingIncomeID == nil ? "plus" : "checkmark")
+                Label { Text(editingIncomeID == nil ? (isEnglish ? "Add income" : "Tambah Pemasukan") : (isEnglish ? "Save changes" : "Simpan")) } icon: { MeowIcon(key: editingIncomeID == nil ? "plus" : "checkmark", size: 14) }
                     .font(MeowlettTypography.font(size: 12, weight: .heavy))
                     .foregroundStyle(Color(hex: "#052e16"))
                     .frame(maxWidth: .infinity)
@@ -413,8 +407,7 @@ struct RecurringTransactionsSection: View {
                 .fill(MeowlettCategory.color(for: item.category).opacity(0.16))
                 .frame(width: 38, height: 38)
                 .overlay {
-                    Image(systemName: MeowlettCategory.all.first(where: { $0.id == item.category })?.icon ?? "repeat")
-                        .font(.system(size: 17, weight: .semibold))
+                    MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == item.category })?.icon ?? "repeat", size: 17)
                         .foregroundStyle(MeowlettCategory.color(for: item.category))
                 }
             VStack(alignment: .leading, spacing: 3) {
@@ -448,7 +441,7 @@ struct RecurringTransactionsSection: View {
             RoundedRectangle(cornerRadius: 11)
                 .fill(Color(hex: "#4ade80").opacity(0.15))
                 .frame(width: 38, height: 38)
-                .overlay(Image(systemName: "banknote").font(.system(size: 17, weight: .semibold)).foregroundStyle(Color(hex: "#4ade80")))
+                .overlay(MeowIcon(key: "banknote", size: 17).foregroundStyle(Color(hex: "#4ade80")))
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.description)
                     .font(MeowlettTypography.font(size: 12, weight: .bold))
@@ -490,8 +483,7 @@ struct RecurringTransactionsSection: View {
 
     private func emptyMessage(symbol: String, title: String, tint: Color? = nil) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: symbol)
-                .font(.system(size: 26, weight: .light))
+            MeowIcon(key: symbol, size: 26)
                 .foregroundStyle(tint ?? accent)
             Text(title)
                 .font(MeowlettTypography.font(size: 12, weight: .medium))
@@ -516,8 +508,7 @@ struct RecurringTransactionsSection: View {
 
     private func smallIconAction(_ symbol: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 10, weight: .bold))
+            MeowIcon(key: symbol, size: 10)
                 .foregroundStyle(tint)
                 .frame(width: 26, height: 25)
                 .background(Color.primary.opacity(isDark ? 0.07 : 0.05), in: RoundedRectangle(cornerRadius: 7))

@@ -228,8 +228,7 @@ struct TransactionsView: View {
 
     private var searchField: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .semibold))
+            MeowIcon(key: "magnifyingglass", size: 15)
                 .foregroundStyle(.secondary)
             TextField(isEnglish ? "Search transactions..." : "Cari transaksi...", text: $searchQuery)
                 .font(MeowlettTypography.font(size: 16, weight: .regular))
@@ -237,8 +236,7 @@ struct TransactionsView: View {
                 .autocorrectionDisabled()
             if !searchQuery.isEmpty {
                 Button { searchQuery = "" } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .regular))
+                    MeowIcon(key: "xmark", size: 14)
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -261,8 +259,7 @@ struct TransactionsView: View {
                 HStack(spacing: 7) {
                     Text(periodTitle)
                         .font(MeowlettTypography.font(size: 12, weight: .bold))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9, weight: .black))
+                    MeowIcon(key: "chevron.down", size: 9)
                         .foregroundStyle(.white.opacity(0.75))
                 }
                 .foregroundStyle(.white)
@@ -331,8 +328,7 @@ struct TransactionsView: View {
             filterPayment = value
         } label: {
             HStack(spacing: 4) {
-                Image(systemName: symbol)
-                    .font(.system(size: 11, weight: .semibold))
+                MeowIcon(key: symbol, size: 11)
                 Text(title)
                     .font(MeowlettTypography.font(size: 11, weight: .bold))
                     .lineLimit(1)
@@ -355,8 +351,7 @@ struct TransactionsView: View {
                     .frame(width: 88, height: 88)
                     .overlay(RoundedRectangle(cornerRadius: 26).stroke(accent.opacity(0.18), lineWidth: 1.5))
                     .overlay(
-                        Image(systemName: "plus.circle")
-                            .font(.system(size: 38, weight: .light))
+                        MeowIcon(key: "plus.circle", size: 38)
                             .foregroundStyle(accent)
                     )
                     .padding(.bottom, 16)
@@ -378,7 +373,7 @@ struct TransactionsView: View {
                 Button {
                     activeSheet = .editor(nil)
                 } label: {
-                    Label(isEnglish ? "Add first transaction" : "Catat transaksi pertama", systemImage: "plus")
+                    Label { Text(isEnglish ? "Add first transaction" : "Catat transaksi pertama") } icon: { MeowIcon(key: "plus", size: 14) }
                         .font(MeowlettTypography.font(size: 14, weight: .heavy))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 28)
@@ -395,8 +390,7 @@ struct TransactionsView: View {
                     .frame(width: 80, height: 80)
                     .overlay(Circle().stroke(accent.opacity(0.16), lineWidth: 1.5))
                     .overlay(
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 34, weight: .light))
+                        MeowIcon(key: "magnifyingglass", size: 34)
                             .foregroundStyle(isDark ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.45)) : AppAppearance.accent)
                     )
                     .padding(.bottom, 16)
@@ -487,8 +481,7 @@ struct TransactionsView: View {
                         .fill(categoryColor.opacity(0.145))
                         .frame(width: 40, height: 40)
                         .overlay(
-                            Image(systemName: category?.icon ?? "shippingbox")
-                                .font(.system(size: 22, weight: .regular))
+                            MeowIcon(key: category?.icon ?? "shippingbox", size: 22)
                                 .foregroundStyle(categoryColor)
                         )
 
@@ -505,8 +498,7 @@ struct TransactionsView: View {
                                 .lineLimit(1)
                                 .layoutPriority(0)
                             HStack(spacing: 2) {
-                                Image(systemName: methodIcon)
-                                    .font(.system(size: 8, weight: .regular))
+                                MeowIcon(key: methodIcon, size: 8)
                                 Text(methodName)
                                     .font(MeowlettTypography.font(size: 9, weight: .heavy))
                                     .lineLimit(1)
@@ -520,7 +512,7 @@ struct TransactionsView: View {
                         }
 
                         if hasReceipt(transaction) {
-                            Label(isEnglish ? "Receipt photo" : "Foto struk", systemImage: "photo")
+                            Label { Text(isEnglish ? "Receipt photo" : "Foto struk") } icon: { MeowIcon(key: "photo", size: 14) }
                                 .font(MeowlettTypography.font(size: 9, weight: .bold))
                                 .foregroundStyle(.secondary)
                                 .padding(.horizontal, 7)
@@ -534,8 +526,7 @@ struct TransactionsView: View {
                         Text("-\(rupiah(transaction.amount))")
                             .font(MeowlettTypography.font(size: 13, weight: .heavy))
                             .foregroundStyle(Color(hex: "#f87171"))
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 14, weight: .regular))
+                        MeowIcon(key: "chevron.down", size: 14)
                             .foregroundStyle(Color.secondary.opacity(0.55))
                             .rotationEffect(.degrees(active ? 180 : 0))
                     }
@@ -551,7 +542,7 @@ struct TransactionsView: View {
                         activeSheet = .editor(transaction)
                         activeTransactionID = nil
                     } label: {
-                        Label("Edit", systemImage: "pencil")
+                        Label { Text("Edit") } icon: { MeowIcon(key: "pencil", size: 14) }
                             .font(MeowlettTypography.font(size: 13, weight: .bold))
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
@@ -565,7 +556,7 @@ struct TransactionsView: View {
                         deleteTransactionWithUndo(transaction)
                         activeTransactionID = nil
                     } label: {
-                        Label(isEnglish ? "Delete" : "Hapus", systemImage: "trash")
+                        Label { Text(isEnglish ? "Delete" : "Hapus") } icon: { MeowIcon(key: "trash", size: 14) }
                             .font(MeowlettTypography.font(size: 13, weight: .bold))
                             .foregroundStyle(Color(hex: "#f87171"))
                             .frame(maxWidth: .infinity)
@@ -595,8 +586,7 @@ struct TransactionsView: View {
 
     private func undoToast(for transaction: MeowlettTransaction) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: "trash")
-                .font(.system(size: 15, weight: .semibold))
+            MeowIcon(key: "trash", size: 15)
                 .foregroundStyle(Color(hex: "#ef4444"))
             Text(isEnglish ? "Transaction deleted" : "Transaksi dihapus")
                 .font(MeowlettTypography.font(size: 13, weight: .semibold))

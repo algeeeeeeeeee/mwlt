@@ -37,8 +37,7 @@ struct SettingsReminderSheet: View {
                 .padding(.top, 12)
 
             HStack(spacing: 9) {
-                Image(systemName: "bell")
-                    .font(.system(size: 18, weight: .regular))
+                MeowIcon(key: "bell", size: 18)
                     .foregroundStyle(accent)
                 Text(isEnglish ? "Transaction Reminder" : "Pengingat Transaksi")
                     .font(MeowlettTypography.font(size: 16, weight: .black))
@@ -46,8 +45,7 @@ struct SettingsReminderSheet: View {
                     .accessibilityIdentifier("mwlt.settings.reminder.title")
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .regular))
+                    MeowIcon(key: "xmark", size: 12)
                         .foregroundStyle(AppAppearance.textSub(dark: isDark))
                         .frame(width: 30, height: 30)
                         .background(categoryBackground, in: Circle())
@@ -140,8 +138,7 @@ struct SettingsReminderSheet: View {
 
     private var heroCard: some View {
         HStack(spacing: 14) {
-            Image(systemName: "bell")
-                .font(.system(size: 22, weight: .regular))
+            MeowIcon(key: "bell", size: 22)
                 .foregroundStyle(.white)
                 .frame(width: 50, height: 50)
                 .background(
@@ -180,8 +177,7 @@ struct SettingsReminderSheet: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(categoryBackground)
                     .frame(width: 38, height: 38)
-                    .overlay(Image(systemName: "bell")
-                        .font(.system(size: 18, weight: .regular))
+                    .overlay(MeowIcon(key: "bell", size: 18)
                         .foregroundStyle(notificationEnabled == "1" ? accent : AppAppearance.textSub(dark: isDark)))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(isEnglish ? "Push Notifications" : "Notifikasi")
@@ -226,8 +222,7 @@ struct SettingsReminderSheet: View {
                     Text(timeLabel)
                         .font(MeowlettTypography.font(size: 16, weight: .black))
                         .foregroundStyle(accent)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
+                    MeowIcon(key: "chevron.down", size: 10)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 12)
@@ -284,8 +279,7 @@ struct SettingsReminderSheet: View {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(categoryBackground)
                     .frame(width: 38, height: 38)
-                    .overlay(Image(systemName: "bell")
-                        .font(.system(size: 18, weight: .regular))
+                    .overlay(MeowIcon(key: "bell", size: 18)
                         .foregroundStyle(AppAppearance.textSub(dark: isDark)))
                 VStack(alignment: .leading, spacing: 1) {
                     Text(isEnglish ? "Smart Reminder" : "Pengingat Cerdas")
@@ -499,14 +493,14 @@ struct SettingsCicilanSheet: View {
         VStack(spacing: 0) {
             Capsule().fill(Color.secondary.opacity(0.25)).frame(width: 36, height: 4).padding(.top, 12)
             HStack {
-                Label(isEnglish ? "Installments" : "Cicilan", systemImage: "creditcard")
+                Label { Text(isEnglish ? "Installments" : "Cicilan") } icon: { MeowIcon(key: "creditcard", size: 14) }
                     .font(.system(size: 16, weight: .black)).foregroundStyle(.primary)
                     .accessibilityIdentifier("mwlt.transactions.installments.title")
                 Spacer()
                 Button {
                     editorItem = NativeInstallment(id: Int64(Date().timeIntervalSince1970 * 1000), name: "", total: 0, monthly: 0, dueDay: "5", startMonth: currentMonth, duration: 12, paidMonths: [])
                 } label: {
-                    Label(isEnglish ? "Add" : "Tambah", systemImage: "plus")
+                    Label { Text(isEnglish ? "Add" : "Tambah") } icon: { MeowIcon(key: "plus", size: 14) }
                         .font(.system(size: 12, weight: .heavy)).foregroundStyle(.white)
                         .padding(.horizontal, 12).padding(.vertical, 7)
                         .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 10))
@@ -514,7 +508,7 @@ struct SettingsCicilanSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.transactions.installments.add")
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
+                    MeowIcon(key: "xmark", size: 13)
                         .foregroundStyle(.secondary).frame(width: 30, height: 30)
                         .background(Color(uiColor: .secondarySystemBackground), in: Circle())
                 }
@@ -538,7 +532,7 @@ struct SettingsCicilanSheet: View {
 
                     if items.isEmpty {
                         VStack(spacing: 8) {
-                            Image(systemName: "creditcard").font(.system(size: 30, weight: .light)).foregroundStyle(AppAppearance.accent)
+                            MeowIcon(key: "creditcard", size: 30).foregroundStyle(AppAppearance.accent)
                             Text(isEnglish ? "No installments yet" : "Belum ada cicilan")
                                 .font(MeowlettTypography.font(size: 14, weight: .bold))
                             Text(isEnglish ? "Add a monthly payment to track its progress." : "Tambahkan pembayaran bulanan untuk melacak progresnya.")
@@ -580,7 +574,7 @@ struct SettingsCicilanSheet: View {
             } label: {
                 HStack(spacing: 10) {
                     RoundedRectangle(cornerRadius: 11).fill(AppAppearance.accent.opacity(0.14)).frame(width: 40, height: 40)
-                        .overlay(Image(systemName: "creditcard.fill").foregroundStyle(AppAppearance.accent))
+                        .overlay(MeowIcon(key: "creditcard.fill", size: 18).foregroundStyle(AppAppearance.accent))
                     VStack(alignment: .leading, spacing: 3) {
                         Text(item.name).font(MeowlettTypography.font(size: 13, weight: .bold))
                         Text((isEnglish ? "Due day " : "Jatuh tempo tgl ") + item.dueDay)
@@ -592,7 +586,7 @@ struct SettingsCicilanSheet: View {
                         Text(paid ? (isEnglish ? "Paid this month" : "Lunas bulan ini") : (isEnglish ? "Not paid yet" : "Belum dibayar"))
                             .font(MeowlettTypography.font(size: 9, weight: .semibold)).foregroundStyle(paid ? Color(hex: "#16a34a") : Color.secondary)
                     }
-                    Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)).foregroundStyle(.tertiary)
+                    MeowIcon(key: "chevron.down", size: 11).foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
                 .padding(13)
@@ -623,11 +617,11 @@ struct SettingsCicilanSheet: View {
                                 .background(paid ? Color.secondary : AppAppearance.primary, in: RoundedRectangle(cornerRadius: 10))
                         }.disabled(paid).buttonStyle(.plain)
                         Button { editorItem = item } label: {
-                            Image(systemName: "pencil").foregroundStyle(.primary).frame(width: 38, height: 37)
+                            MeowIcon(key: "pencil", size: 18).foregroundStyle(.primary).frame(width: 38, height: 37)
                                 .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
                         }.buttonStyle(.plain)
                         Button { items.removeAll { $0.id == item.id }; detailID = nil } label: {
-                            Image(systemName: "trash").foregroundStyle(Color(hex: "#ef4444")).frame(width: 38, height: 37)
+                            MeowIcon(key: "trash", size: 18).foregroundStyle(Color(hex: "#ef4444")).frame(width: 38, height: 37)
                                 .background(Color(hex: "#ef4444").opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                         }.buttonStyle(.plain)
                     }

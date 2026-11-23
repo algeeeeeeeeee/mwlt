@@ -286,8 +286,7 @@ struct DashboardView: View {
                                 .font(MeowlettTypography.font(size: 7, weight: .bold))
                                 .tracking(1)
                                 .foregroundStyle(.white.opacity(0.42))
-                            Image(systemName: "pencil")
-                                .font(.system(size: 7, weight: .bold))
+                            MeowIcon(key: "pencil", size: 7)
                                 .foregroundStyle(.white.opacity(0.42))
                         }
                         Text(rupiah(income))
@@ -360,8 +359,7 @@ struct DashboardView: View {
             .font(MeowlettTypography.font(size: 10, weight: .regular))
             if remaining < 0 {
                 HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.system(size: 14, weight: .semibold))
+                    MeowIcon(key: "exclamationmark.circle", size: 14)
                         .foregroundStyle(Color(hex: "#fca5a5"))
                     Text(isEnglish
                          ? "Spending exceeds income by \(rupiah(abs(remaining)))"
@@ -493,8 +491,7 @@ struct DashboardView: View {
                     .fill(Color(hex: AppAppearance.accentHex).opacity(0.13))
                     .frame(width: 26, height: 26)
                     .overlay(
-                        Image(systemName: "flame")
-                            .font(.system(size: 13, weight: .semibold))
+                        MeowIcon(key: "flame", size: 13)
                             .foregroundStyle(Color(hex: AppAppearance.accentHex))
                     )
                 Text("STREAK")
@@ -516,8 +513,7 @@ struct DashboardView: View {
             }
 
             HStack(spacing: 4) {
-                Image(systemName: currentStreak >= 7 ? "flame" : currentStreak >= 3 ? "diamond" : "calendar")
-                    .font(.system(size: 11, weight: .semibold))
+                MeowIcon(key: currentStreak >= 7 ? "flame" : currentStreak >= 3 ? "diamond" : "calendar", size: 11)
                     .foregroundStyle(currentStreak >= 7 ? Color(hex: AppAppearance.accentHex) : Color(hex: "#4ade80"))
                 Text(currentStreak >= 7 ? (isEnglish ? "On fire!" : "Konsisten!") : currentStreak >= 3 ? (isEnglish ? "Keep going!" : "Teruskan!") : (isEnglish ? "Open daily" : "Buka tiap hari"))
                     .font(MeowlettTypography.font(size: 10, weight: .regular))
@@ -547,8 +543,7 @@ struct DashboardView: View {
                     .fill(Color(hex: AppAppearance.accentHex).opacity(0.13))
                     .frame(width: 26, height: 26)
                     .overlay(
-                        Image(systemName: "bolt")
-                            .font(.system(size: 13, weight: .semibold))
+                        MeowIcon(key: "bolt", size: 13)
                             .foregroundStyle(Color(hex: AppAppearance.accentHex))
                     )
                 Text(isEnglish ? "THIS WEEK" : "MINGGU INI")
@@ -616,8 +611,7 @@ struct DashboardView: View {
             let isOver = predicted > income
             let stateColor = isOver ? Color(hex: "#f87171") : Color(hex: AppAppearance.accentHex)
             HStack(spacing: 12) {
-                Image(systemName: "chart.line.uptrend.xyaxis")
-                    .font(.system(size: 16, weight: .semibold))
+                MeowIcon(key: "chart.line.uptrend.xyaxis", size: 16)
                     .foregroundStyle(stateColor)
                     .frame(width: 36, height: 36)
                     .background(stateColor.opacity(0.13), in: RoundedRectangle(cornerRadius: 12))
@@ -636,8 +630,7 @@ struct DashboardView: View {
                     .font(MeowlettTypography.font(size: 13, weight: .bold))
                     .lineSpacing(1)
                     HStack(spacing: 4) {
-                        Image(systemName: isOver ? "exclamationmark.triangle" : "checkmark.circle")
-                            .font(.system(size: 11, weight: .semibold))
+                        MeowIcon(key: isOver ? "exclamationmark.triangle" : "checkmark.circle", size: 11)
                         Text(isOver
                              ? (isEnglish ? "Over budget this month" : "Kemungkinan over budget bulan ini")
                              : (isEnglish ? "On track · est. saving " + rupiah(income - predicted) : "Aman · estimasi sisa " + rupiah(income - predicted)))
@@ -660,8 +653,7 @@ struct DashboardView: View {
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 HStack(spacing: 8) {
-                    Image(systemName: "heart.text.square")
-                        .font(.system(size: 14, weight: .semibold))
+                    MeowIcon(key: "heart.text.square", size: 14)
                         .foregroundStyle(score.color)
                         .frame(width: 28, height: 28)
                         .background(score.color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
@@ -736,8 +728,7 @@ struct DashboardView: View {
                         .fill(readablePrimary.opacity(0.10))
                         .frame(width: 44, height: 44)
                         .overlay(
-                            Image(systemName: "wallet")
-                                .font(.system(size: 20, weight: .regular))
+                            MeowIcon(key: "wallet", size: 20)
                                 .foregroundStyle(readablePrimary)
                         )
                     VStack(alignment: .leading, spacing: 2) {
@@ -775,8 +766,7 @@ struct DashboardView: View {
                             .fill(readablePrimary.opacity(0.10))
                             .frame(width: 28, height: 28)
                             .overlay(
-                                Image(systemName: "slider.horizontal.3")
-                                    .font(.system(size: 13, weight: .semibold))
+                                MeowIcon(key: "slider.horizontal.3", size: 13)
                                     .foregroundStyle(readablePrimary)
                             )
                         Text(isEnglish ? "Monthly budget" : "Budget Bulanan")
@@ -784,8 +774,7 @@ struct DashboardView: View {
                             .foregroundStyle(.primary)
                         Spacer()
                         Button { activeSheet = .overallBudget } label: {
-                            Image(systemName: "pencil")
-                                .font(.system(size: 13, weight: .regular))
+                            MeowIcon(key: "pencil", size: 13)
                                 .foregroundStyle(.secondary)
                                 .frame(width: 24, height: 24)
                         }
@@ -834,8 +823,7 @@ struct DashboardView: View {
 
         return VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 5) {
-                Image(systemName: category?.icon ?? "tag")
-                    .font(.system(size: 13, weight: .regular))
+                MeowIcon(key: category?.icon ?? "tag", size: 13)
                     .foregroundStyle(color)
                 Text(MeowlettCategory.name(for: key, language: language))
                     .font(MeowlettTypography.font(size: 12, weight: .bold))
@@ -858,8 +846,7 @@ struct DashboardView: View {
                         Text("\(percentage)%")
                             .font(MeowlettTypography.font(size: 12, weight: .heavy))
                         if over {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .font(.system(size: 11, weight: .semibold))
+                            MeowIcon(key: "exclamationmark.circle.fill", size: 11)
                         }
                     }
                     .foregroundStyle(stateColor)
@@ -907,8 +894,7 @@ struct DashboardView: View {
                     Text("\(percentage)%")
                         .font(MeowlettTypography.font(size: 12, weight: .heavy))
                     if over {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .font(.system(size: 11, weight: .semibold))
+                        MeowIcon(key: "exclamationmark.circle.fill", size: 11)
                     }
                 }
                 .foregroundStyle(stateColor)
@@ -941,8 +927,7 @@ struct DashboardView: View {
                     .fill(primaryText.opacity(0.10))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "banknote")
-                            .font(.system(size: 13, weight: .semibold))
+                        MeowIcon(key: "banknote", size: 13)
                             .foregroundStyle(primaryText)
                     )
                 Text(isEnglish ? "Savings goals" : "Target Tabungan")
@@ -955,8 +940,7 @@ struct DashboardView: View {
                         activeSheet = .goalEditor
                     } label: {
                         HStack(spacing: 3) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 13, weight: .semibold))
+                            MeowIcon(key: "plus", size: 13)
                             Text(isEnglish ? "Add" : "Tambah")
                                 .font(MeowlettTypography.font(size: 12, weight: .bold))
                         }
@@ -980,8 +964,7 @@ struct DashboardView: View {
                         .frame(width: 72, height: 72)
                         .overlay(Circle().stroke(accent.opacity(0.22), lineWidth: 1.5))
                         .overlay(
-                            Image(systemName: "rocket")
-                                .font(.system(size: 36, weight: .light))
+                            MeowIcon(key: "rocket", size: 36)
                                 .foregroundStyle(primaryText)
                         )
                         .padding(.bottom, 10)
@@ -1001,8 +984,7 @@ struct DashboardView: View {
                         activeSheet = .goalEditor
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .semibold))
+                            MeowIcon(key: "plus", size: 14)
                             Text(isEnglish ? "Add goal" : "Tambah target")
                                 .font(MeowlettTypography.font(size: 13, weight: .heavy))
                         }
@@ -1038,8 +1020,7 @@ struct DashboardView: View {
         let color = Color(hex: goal.color)
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 7) {
-                Image(systemName: goal.symbol)
-                    .font(.system(size: 13, weight: .semibold))
+                MeowIcon(key: goal.symbol, size: 13)
                     .foregroundStyle(color)
                     .frame(width: 28, height: 28)
                     .background(color.opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
@@ -1057,13 +1038,13 @@ struct DashboardView: View {
                     editingGoal = goal
                     activeSheet = .goalEditor
                 } label: {
-                    Image(systemName: "pencil").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                    MeowIcon(key: "pencil", size: 11).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 Button {
                     savingsGoals.removeAll { $0.id == goal.id }
                 } label: {
-                    Image(systemName: "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(.secondary)
+                    MeowIcon(key: "xmark", size: 11).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -1103,7 +1084,7 @@ struct DashboardView: View {
                     }
                 }
             } else {
-                Label(isEnglish ? "Goal reached" : "Target tercapai", systemImage: "checkmark.circle.fill")
+                Label { Text(isEnglish ? "Goal reached" : "Target tercapai") } icon: { MeowIcon(key: "checkmark.circle.fill", size: 14) }
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(Color(hex: AppAppearance.accentHex))
             }
@@ -1167,8 +1148,7 @@ struct DashboardView: View {
                             quickAddAmount = ""
                             quickAddAmountDisplay = ""
                         } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .regular))
+                            MeowIcon(key: "xmark", size: 12)
                                 .foregroundStyle(AppAppearance.textSub(dark: isDark))
                                 .frame(width: 34, height: 38)
                                 .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 10))
@@ -1183,8 +1163,7 @@ struct DashboardView: View {
                         quickAddAmountDisplay = ""
                     } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 11, weight: .semibold))
+                            MeowIcon(key: "plus", size: 11)
                             Text(isEnglish ? "Add savings" : "Tambah tabungan")
                                 .font(MeowlettTypography.font(size: 11, weight: .bold))
                         }
@@ -1269,8 +1248,7 @@ struct DashboardView: View {
                     .fill(primaryText.opacity(0.10))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "wallet.bifold")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "wallet.bifold", size: 13)
                             .foregroundStyle(primaryText)
                     )
                 Text(isEnglish ? "Payment Method" : "Metode Bayar")
@@ -1298,8 +1276,7 @@ struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         HStack {
                             HStack(spacing: 6) {
-                                Image(systemName: symbol)
-                                    .font(.system(size: 14, weight: .regular))
+                                MeowIcon(key: symbol, size: 14)
                                     .foregroundStyle(color)
                                 Text(title)
                                     .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -1349,8 +1326,7 @@ struct DashboardView: View {
                     .fill(primaryText.opacity(0.10))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "chart.pie")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "chart.pie", size: 13)
                             .foregroundStyle(primaryText)
                     )
                 Text(isEnglish ? "Category Breakdown" : "Rincian Kategori")
@@ -1375,8 +1351,7 @@ struct DashboardView: View {
                         .frame(width: 72, height: 72)
                         .overlay(Circle().stroke(Color(hex: AppAppearance.accentHex).opacity(0.22), lineWidth: 1.5))
                         .overlay(
-                            Image(systemName: "xmark")
-                                .font(.system(size: 32, weight: .light))
+                            MeowIcon(key: "xmark", size: 32)
                                 .foregroundStyle(primaryText)
                         )
                         .padding(.bottom, 14)
@@ -1464,8 +1439,7 @@ struct DashboardView: View {
                     .fill(primaryText.opacity(0.10))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "receipt")
-                            .font(.system(size: 13, weight: .semibold))
+                        MeowIcon(key: "receipt", size: 13)
                             .foregroundStyle(primaryText)
                     )
                 Text(isEnglish ? "Recent Transactions" : "Transaksi Terbaru")
@@ -1476,8 +1450,7 @@ struct DashboardView: View {
                     HStack(spacing: 3) {
                         Text(isEnglish ? "See All" : "Lihat Semua")
                             .font(MeowlettTypography.font(size: 12, weight: .bold))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .semibold))
+                        MeowIcon(key: "arrow.right", size: 13)
                     }
                     .foregroundStyle(primaryText)
                 }
@@ -1501,8 +1474,7 @@ struct DashboardView: View {
                         .frame(width: 72, height: 72)
                         .overlay(Circle().stroke(Color(hex: AppAppearance.accentHex).opacity(0.22), lineWidth: 1.5))
                         .overlay(
-                            Image(systemName: "hand.coins")
-                                .font(.system(size: 32, weight: .light))
+                            MeowIcon(key: "hand.coins", size: 32)
                                 .foregroundStyle(primaryText)
                         )
                         .padding(.bottom, 14)
@@ -1523,8 +1495,7 @@ struct DashboardView: View {
 
                     Button(action: onAddTransaction) {
                         HStack(spacing: 6) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .semibold))
+                            MeowIcon(key: "plus", size: 14)
                             Text(isEnglish ? "Record Now" : "Catat Sekarang")
                                 .font(MeowlettTypography.font(size: 13, weight: .heavy))
                         }
@@ -1591,8 +1562,7 @@ struct DashboardView: View {
                 .frame(width: 40, height: 40)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(categoryColor.opacity(0.15), lineWidth: 1))
                 .overlay(
-                    Image(systemName: category?.icon ?? "shippingbox")
-                        .font(.system(size: 21, weight: .regular))
+                    MeowIcon(key: category?.icon ?? "shippingbox", size: 21)
                         .foregroundStyle(categoryColor)
                 )
 
@@ -1617,8 +1587,7 @@ struct DashboardView: View {
 
     private func sectionHeading(_ title: String, icon: String) -> some View {
         HStack(spacing: 7) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .bold))
+            MeowIcon(key: icon, size: 12)
                 .foregroundStyle(Color(hex: AppAppearance.accentHex))
                 .frame(width: 28, height: 28)
                 .background(Color(hex: AppAppearance.accentHex).opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
@@ -1900,7 +1869,7 @@ private struct DashboardGoalEditorSheet: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
                         ForEach(icons, id: \.0) { item in
                             Button { icon = item.0 } label: {
-                                Image(systemName: item.1).font(.system(size: 17, weight: .semibold))
+                                MeowIcon(key: item.1, size: 17)
                                     .foregroundStyle(Color(hex: color))
                                     .frame(maxWidth: .infinity).frame(height: 42)
                                     .background(icon == item.0 ? Color(hex: color).opacity(0.16) : AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 10))

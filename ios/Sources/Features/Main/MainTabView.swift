@@ -292,8 +292,7 @@ struct MainTabView: View {
                             .font(MeowlettTypography.font(size: 20, weight: .black))
                             .accessibilityIdentifier("mwlt.screen.\(selected.rawValue)")
                         if selected == .date {
-                            Image(systemName: "heart")
-                                .font(.system(size: 18, weight: .regular))
+                            MeowIcon(key: "heart", size: 18)
                                 .foregroundStyle(Color(hex: "#f9a8d4"))
                         }
                     }
@@ -304,8 +303,7 @@ struct MainTabView: View {
                 followSystem = "0"
                 darkOverride = colorSchemeIsDark ? "false" : "true"
             } label: {
-                Image(systemName: colorSchemeIsDark ? "moon" : "sun.max")
-                    .font(.system(size: 15, weight: .semibold))
+                MeowIcon(key: colorSchemeIsDark ? "moon" : "sun.max", size: 15)
                     .foregroundStyle(tint)
                     .frame(width: 34, height: 34)
                     .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
@@ -320,8 +318,7 @@ struct MainTabView: View {
                 }
             } label: {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 15, weight: .semibold))
+                    MeowIcon(key: "gearshape", size: 15)
                         .foregroundStyle(settingsHeaderIconColor)
                         .frame(width: 34, height: 34)
                         .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
@@ -357,7 +354,7 @@ struct MainTabView: View {
                         }
                         .overlay(Circle().strokeBorder(tint, lineWidth: 2.5))
                     Circle().fill(tint).frame(width: 12, height: 12)
-                        .overlay(Image(systemName: "camera").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
+                        .overlay(MeowIcon(key: "camera", size: 5).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(AppAppearance.background(dark: colorSchemeIsDark), lineWidth: 2))
                         .offset(x: 1, y: 1)
                         .allowsHitTesting(false)
@@ -422,8 +419,7 @@ struct MainTabView: View {
                 recordQuickAddLifecycle("FAB-tap-request", presented: true)
                 showQuickAdd = true
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .bold))
+                MeowIcon(key: "plus", size: 22)
                     .foregroundStyle(.white)
                     .frame(width: 54, height: 54)
                     .background(LinearGradient(colors: [tint, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())

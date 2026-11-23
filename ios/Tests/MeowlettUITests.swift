@@ -1,7 +1,17 @@
 import XCTest
 import UIKit
+@testable import Meowlett
 
 final class MeowlettUITests: XCTestCase {
+
+
+    func testMeowIconCatalogContainsEveryDeclaredKey() {
+        let missing = MeowIconCatalog.missingKeys
+        XCTAssertTrue(
+            missing.isEmpty,
+            "MeowIcon keys without vector geometry: \(missing.joined(separator: ", "))"
+        )
+    }
 
     private struct SFSymbolProbe {
         let name: String

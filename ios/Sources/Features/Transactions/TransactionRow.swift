@@ -10,8 +10,7 @@ struct TransactionRow: View {
                 .fill(MeowlettCategory.color(for: transaction.category).opacity(0.15))
                 .frame(width: 40, height: 40)
                 .overlay {
-                    Image(systemName: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "shippingbox")
-                        .font(.system(size: 18, weight: .medium))
+                    MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "shippingbox", size: 18)
                         .foregroundStyle(MeowlettCategory.color(for: transaction.category))
                 }
             VStack(alignment: .leading, spacing: 3) {

@@ -267,8 +267,7 @@ struct OnboardingView: View {
                             .frame(width: 44, height: 44)
                             .overlay {
                                 if themePreset == preset.id {
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 14, weight: .black))
+                                    MeowIcon(key: "checkmark", size: 14)
                                         .foregroundStyle(Color(hex: preset.accent))
                                 }
                             }
@@ -296,8 +295,7 @@ struct OnboardingView: View {
                         .fill(themePreset == "custom" ? Color(hex: customPrimary) : Color.gray)
                         .frame(width: 44, height: 44)
                         .overlay {
-                            Image(systemName: themePreset == "custom" ? "checkmark" : "paintpalette.fill")
-                                .font(.system(size: 14, weight: .black))
+                            MeowIcon(key: themePreset == "custom" ? "checkmark" : "paintpalette.fill", size: 14)
                                 .foregroundStyle(.white)
                         }
                         .overlay(
@@ -345,8 +343,7 @@ struct OnboardingView: View {
                 finish()
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 16, weight: .bold))
+                    MeowIcon(key: "checkmark", size: 16)
                     Text(isEnglish ? "Done, Let's Go!" : "Selesai, Mulai!")
                         .font(MeowlettTypography.font(size: 14, weight: .heavy))
                 }
@@ -418,7 +415,7 @@ struct OnboardingView: View {
             HStack(spacing: 6) {
                 Text(title)
                 if selected {
-                    Image(systemName: "checkmark")
+                    MeowIcon(key: "checkmark", size: 18)
                 }
             }
             .font(MeowlettTypography.font(size: 13, weight: .bold))
@@ -439,9 +436,9 @@ struct OnboardingView: View {
             followSystem = "0"
         } label: {
             HStack(spacing: 7) {
-                Image(systemName: dark ? "moon.fill" : "sun.max.fill")
+                MeowIcon(key: dark ? "moon.fill" : "sun.max.fill", size: 18)
                 Text(title)
-                if selected { Image(systemName: "checkmark") }
+                if selected { MeowIcon(key: "checkmark", size: 18) }
             }
             .font(MeowlettTypography.font(size: 13, weight: .bold))
             .foregroundStyle(selected ? accent : AppAppearance.textSub(dark: isDark))

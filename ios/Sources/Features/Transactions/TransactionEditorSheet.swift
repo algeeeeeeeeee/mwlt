@@ -137,8 +137,7 @@ struct TransactionEditorSheet: View {
                 .foregroundStyle(.white)
             Spacer()
             Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 11, weight: .black))
+                MeowIcon(key: "xmark", size: 11)
                     .foregroundStyle(.white)
                     .frame(width: 27, height: 27)
                     .background(Color.black.opacity(0.2), in: Circle())
@@ -172,8 +171,7 @@ struct TransactionEditorSheet: View {
             .background(inputBackground, in: RoundedRectangle(cornerRadius: 12))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(inputBorder, lineWidth: 1.5))
             Button { activeAuxiliarySheet = .calculator } label: {
-                Image(systemName: "function")
-                    .font(.system(size: 16, weight: .semibold))
+                MeowIcon(key: "function", size: 16)
                     .foregroundStyle(.secondary)
                     .frame(width: 42, height: 42)
                     .background(AppAppearance.card2(dark: dark), in: RoundedRectangle(cornerRadius: 12))
@@ -187,8 +185,7 @@ struct TransactionEditorSheet: View {
 
     private var dateRow: some View {
         HStack(spacing: 9) {
-            Image(systemName: "calendar")
-                .font(.system(size: 14, weight: .semibold))
+            MeowIcon(key: "calendar", size: 14)
                 .foregroundStyle(accent)
             DatePicker(isEnglish ? "Date" : "Tanggal", selection: $date, displayedComponents: .date)
                 .datePickerStyle(.compact)
@@ -209,8 +206,7 @@ struct TransactionEditorSheet: View {
                     let color = Color(hex: item.color)
                     Button { category = item.id } label: {
                         HStack(spacing: 5) {
-                            Image(systemName: item.icon)
-                                .font(.system(size: 11, weight: .semibold))
+                            MeowIcon(key: item.icon, size: 11)
                             Text(language == "en" ? item.enName : item.idName)
                                 .font(MeowlettTypography.font(size: 11, weight: selected ? .bold : .medium))
                                 .fixedSize()
@@ -239,7 +235,7 @@ struct TransactionEditorSheet: View {
         let selected = paymentMethod == value
         return Button { paymentMethod = value } label: {
             VStack(spacing: 3) {
-                Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
+                MeowIcon(key: symbol, size: 16)
                 Text(title).font(MeowlettTypography.font(size: 10, weight: selected ? .heavy : .semibold))
             }
             .foregroundStyle(selected ? accent : Color.secondary)
@@ -278,8 +274,7 @@ struct TransactionEditorSheet: View {
                         .clipped()
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                     Button(action: clearReceipt) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 12, weight: .bold))
+                        MeowIcon(key: "trash", size: 12)
                             .foregroundStyle(.white)
                             .frame(width: 30, height: 30)
                             .background(Color(hex: "#ef4444").opacity(0.88), in: Circle())
@@ -290,7 +285,7 @@ struct TransactionEditorSheet: View {
             } else {
                 HStack(spacing: 8) {
                     PhotosPicker(selection: $selectedReceipt, matching: .images) {
-                        Label(isEnglish ? "Upload" : "Unggah", systemImage: "photo")
+                        Label { Text(isEnglish ? "Upload" : "Unggah") } icon: { MeowIcon(key: "photo", size: 14) }
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
@@ -303,7 +298,7 @@ struct TransactionEditorSheet: View {
                     Button {
                         activeAuxiliarySheet = .camera
                     } label: {
-                        Label(isEnglish ? "Camera" : "Kamera", systemImage: "camera")
+                        Label { Text(isEnglish ? "Camera" : "Kamera") } icon: { MeowIcon(key: "camera", size: 14) }
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)

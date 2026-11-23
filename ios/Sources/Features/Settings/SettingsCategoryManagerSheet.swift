@@ -139,13 +139,12 @@ struct SettingsCategoryManagerSheet: View {
                     .fill(catColor.opacity(0.20))
                     .frame(width: 34, height: 34)
                     .overlay(
-                        Image(systemName: MeowlettCategoryDefinition(
+                        MeowIcon(key: MeowlettCategoryDefinition(
                             label: item.label,
                             labelId: item.labelId,
                             icon: item.icon,
                             color: item.color
-                        ).displayIcon)
-                        .font(.system(size: 16, weight: .regular))
+                        ).displayIcon, size: 16)
                         .foregroundStyle(catColor)
                     )
 
@@ -167,8 +166,7 @@ struct SettingsCategoryManagerSheet: View {
                         icon = item.icon
                         color = item.color
                     } label: {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "pencil", size: 13)
                             .foregroundStyle(isDark ? Color(hex: "#e5e7eb") : Color(hex: "#374151"))
                             .padding(.horizontal, 9)
                             .padding(.vertical, 6)
@@ -189,8 +187,7 @@ struct SettingsCategoryManagerSheet: View {
                         }
                         persist()
                     } label: {
-                        Image(systemName: "trash")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "trash", size: 13)
                             .foregroundStyle(isDark ? Color(hex: "#f87171") : Color(hex: "#e11d48"))
                             .padding(.horizontal, 9)
                             .padding(.vertical, 6)
@@ -233,8 +230,7 @@ struct SettingsCategoryManagerSheet: View {
                 ForEach(Array(icons.enumerated()), id: \.offset) { _, item in
                     let selected = icon == item.0
                     Button { icon = item.0 } label: {
-                        Image(systemName: item.1)
-                            .font(.system(size: 16, weight: .regular))
+                        MeowIcon(key: item.1, size: 16)
                             .foregroundStyle(selected ? Color(hex: color) : AppAppearance.textSub(dark: isDark))
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
@@ -281,8 +277,7 @@ struct SettingsCategoryManagerSheet: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 8) {
-                    Image(systemName: icons.first(where: { $0.0 == icon })?.1 ?? "shippingbox.fill")
-                        .font(.system(size: 16, weight: .regular))
+                    MeowIcon(key: icons.first(where: { $0.0 == icon })?.1 ?? "shippingbox.fill", size: 16)
                     Text(label.isEmpty ? "Preview" : label)
                         .font(MeowlettTypography.font(size: 12, weight: .bold))
                         .lineLimit(1)

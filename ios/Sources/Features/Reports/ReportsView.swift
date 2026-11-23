@@ -212,8 +212,7 @@ struct ReportsView: View {
                 let background = over ? Color(hex: "#fef2f2") : Color(hex: "#fffbeb")
                 let border = over ? Color(hex: "#fca5a5") : Color(hex: "#fde68a")
                 HStack(spacing: 10) {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.system(size: 18, weight: .regular))
+                    MeowIcon(key: "exclamationmark.circle", size: 18)
                         .foregroundStyle(over ? Color(hex: "#ef4444") : Color(hex: "#f59e0b"))
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(over ? (isEnglish ? "Exceeded" : "Terlampaui") : (isEnglish ? "Near limit" : "Mendekati batas")): \(MeowlettCategory.name(for: warning.0, language: language))")
@@ -242,8 +241,7 @@ struct ReportsView: View {
                     .fill(primary.opacity(0.10))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "list.bullet")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "list.bullet", size: 13)
                             .foregroundStyle(primary)
                     )
                 Text(isEnglish ? "Per Category — This vs Last Month" : "Per Kategori — Bulan Ini vs Lalu")
@@ -284,8 +282,7 @@ struct ReportsView: View {
                                     .fill(catColor.opacity(0.14))
                                     .frame(width: 20, height: 20)
                                     .overlay(
-                                        Image(systemName: MeowlettCategory.all.first(where: { $0.id == item.0 })?.icon ?? "tag")
-                                            .font(.system(size: 11, weight: .regular))
+                                        MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == item.0 })?.icon ?? "tag", size: 11)
                                             .foregroundStyle(catColor)
                                     )
                                 Text(MeowlettCategory.name(for: item.0, language: language))
@@ -344,8 +341,7 @@ struct ReportsView: View {
                     .fill(Color(hex: isDark ? "#1a3a1a" : "#bbf7d0").opacity(isDark ? 1 : 0.45))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "bolt")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "bolt", size: 13)
                             .foregroundStyle(isDark ? Color(hex: "#4ade80") : Color(hex: "#166534"))
                     )
                 Text(isEnglish ? "Monthly Insights" : "Insight Bulanan")
@@ -368,8 +364,7 @@ struct ReportsView: View {
                             .fill(iconColor.opacity(0.15))
                             .frame(width: 22, height: 22)
                             .overlay(
-                                Image(systemName: "arrow.up.right")
-                                    .font(.system(size: 11, weight: .black))
+                                MeowIcon(key: "arrow.up.right", size: 11)
                                     .foregroundStyle(iconColor)
                                     .rotationEffect(.degrees(up ? 0 : 180))
                             )
@@ -483,8 +478,7 @@ struct ReportsView: View {
                             .fill(primary.opacity(isDark ? 0.25 : 0.10))
                             .frame(width: 28, height: 28)
                             .overlay(
-                                Image(systemName: "bolt")
-                                    .font(.system(size: 13, weight: .regular))
+                                MeowIcon(key: "bolt", size: 13)
                                     .foregroundStyle(textTint)
                             )
                         Text(isEnglish ? "Weekly Insight" : "Insight Mingguan")
@@ -496,8 +490,7 @@ struct ReportsView: View {
                             .fill(primary.opacity(0.15))
                             .frame(width: 22, height: 22)
                             .overlay(
-                                Image(systemName: "chart.line.uptrend.xyaxis")
-                                    .font(.system(size: 11, weight: .semibold))
+                                MeowIcon(key: "chart.line.uptrend.xyaxis", size: 11)
                                     .foregroundStyle(textTint)
                             )
                         (
@@ -517,8 +510,7 @@ struct ReportsView: View {
                                 .fill(changeColor.opacity(0.15))
                                 .frame(width: 22, height: 22)
                                 .overlay(
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.system(size: 11, weight: .black))
+                                    MeowIcon(key: "arrow.up.right", size: 11)
                                         .foregroundStyle(changeColor)
                                         .rotationEffect(.degrees(difference > 0 ? 0 : 180))
                                 )
@@ -535,8 +527,7 @@ struct ReportsView: View {
                                 .fill(primary.opacity(0.15))
                                 .frame(width: 22, height: 22)
                                 .overlay(
-                                    Image(systemName: MeowlettCategory.all.first(where: { $0.id == top.0 })?.icon ?? "tag")
-                                        .font(.system(size: 11, weight: .regular))
+                                    MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == top.0 })?.icon ?? "tag", size: 11)
                                         .foregroundStyle(textTint)
                                 )
                             (
@@ -567,7 +558,7 @@ struct ReportsView: View {
                     exportFilename = "meowlett-\(MeowlettDateFormat.month(.now))"
                     showExporter = true
                 } label: {
-                    Label(isEnglish ? "Export CSV" : "Ekspor CSV", systemImage: "tablecells")
+                    Label { Text(isEnglish ? "Export CSV" : "Ekspor CSV") } icon: { MeowIcon(key: "tablecells", size: 14) }
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(primary)
                         .frame(maxWidth: .infinity)
@@ -581,7 +572,7 @@ struct ReportsView: View {
                     exportFilename = "laporan-\(MeowlettDateFormat.month(.now))"
                     showExporter = true
                 } label: {
-                    Label(isEnglish ? "Export report" : "Ekspor laporan", systemImage: "doc.text")
+                    Label { Text(isEnglish ? "Export report" : "Ekspor laporan") } icon: { MeowIcon(key: "doc.text", size: 14) }
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(accent)
                         .frame(maxWidth: .infinity)
@@ -591,7 +582,7 @@ struct ReportsView: View {
                 .buttonStyle(.plain)
             }
             ShareLink(item: reportSummary) {
-                Label(isEnglish ? "Share summary" : "Bagikan ringkasan", systemImage: "square.and.arrow.up")
+                Label { Text(isEnglish ? "Share summary" : "Bagikan ringkasan") } icon: { MeowIcon(key: "square.and.arrow.up", size: 14) }
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -606,7 +597,7 @@ struct ReportsView: View {
                 components.queryItems = [URLQueryItem(name: "text", value: reportSummary)]
                 if let url = components.url { openURL(url) }
             } label: {
-                Label(isEnglish ? "Share to WhatsApp" : "Bagikan ke WhatsApp", systemImage: "message.fill")
+                Label { Text(isEnglish ? "Share to WhatsApp" : "Bagikan ke WhatsApp") } icon: { MeowIcon(key: "message.fill", size: 14) }
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(accent)
                     .frame(maxWidth: .infinity)
@@ -618,7 +609,7 @@ struct ReportsView: View {
             Button {
                 showStoryCard = true
             } label: {
-                Label(isEnglish ? "Export as Image" : "Ekspor sebagai Gambar", systemImage: "arrow.down.to.line")
+                Label { Text(isEnglish ? "Export as Image" : "Ekspor sebagai Gambar") } icon: { MeowIcon(key: "arrow.down.to.line", size: 14) }
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity)
@@ -654,8 +645,7 @@ struct ReportsView: View {
                 .fill(primary.opacity(0.10))
                 .frame(width: 28, height: 28)
                 .overlay(
-                    Image(systemName: "calendar")
-                        .font(.system(size: 13, weight: .regular))
+                    MeowIcon(key: "calendar", size: 13)
                         .foregroundStyle(primary)
                 )
             Text(isEnglish ? "Pick Date" : "Pilih Tanggal")
@@ -718,8 +708,7 @@ struct ReportsView: View {
                 .frame(width: 60, height: 60)
                 .overlay(Circle().stroke(accent.opacity(0.30), lineWidth: 1.5))
                 .overlay(
-                    Image(systemName: "nosign")
-                        .font(.system(size: 28, weight: .light))
+                    MeowIcon(key: "nosign", size: 28)
                         .foregroundStyle(isDark ? Color(hex: AppAppearance.lighten(AppAppearance.accentHex, ratio: 0.45)) : primary)
                 )
                 .padding(.bottom, 10)
@@ -752,8 +741,7 @@ struct ReportsView: View {
                             .fill(categoryColor.opacity(0.14))
                             .frame(width: 20, height: 20)
                             .overlay(
-                                Image(systemName: MeowlettCategory.all.first(where: { $0.id == item.0 })?.icon ?? "tag")
-                                    .font(.system(size: 11, weight: .regular))
+                                MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == item.0 })?.icon ?? "tag", size: 11)
                                     .foregroundStyle(categoryColor)
                             )
                         Text(MeowlettCategory.name(for: item.0, language: language))
@@ -798,8 +786,7 @@ struct ReportsView: View {
                         .fill(color.opacity(0.15))
                         .frame(width: 36, height: 36)
                         .overlay(
-                            Image(systemName: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "tag")
-                                .font(.system(size: 14, weight: .regular))
+                            MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == transaction.category })?.icon ?? "tag", size: 14)
                                 .foregroundStyle(color)
                         )
                     VStack(alignment: .leading, spacing: 2) {
@@ -867,8 +854,7 @@ struct ReportsView: View {
                     .fill(primary.opacity(isDark ? 0.25 : 0.10))
                     .frame(width: 28, height: 28)
                     .overlay(
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .font(.system(size: 13, weight: .regular))
+                        MeowIcon(key: "chart.line.uptrend.xyaxis", size: 13)
                             .foregroundStyle(labelColor)
                     )
                 Text(isEnglish ? "Today's Insight" : "Insight Hari Ini")
@@ -881,8 +867,7 @@ struct ReportsView: View {
                         .fill(MeowlettCategory.color(for: top.0).opacity(0.14))
                         .frame(width: 22, height: 22)
                         .overlay(
-                            Image(systemName: MeowlettCategory.all.first(where: { $0.id == top.0 })?.icon ?? "tag")
-                                .font(.system(size: 11, weight: .regular))
+                            MeowIcon(key: MeowlettCategory.all.first(where: { $0.id == top.0 })?.icon ?? "tag", size: 11)
                                 .foregroundStyle(MeowlettCategory.color(for: top.0))
                         )
                     (
@@ -903,8 +888,7 @@ struct ReportsView: View {
                     .fill((aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a")).opacity(0.15))
                     .frame(width: 22, height: 22)
                     .overlay(
-                        Image(systemName: aboveDailyAverage ? "exclamationmark.triangle" : "checkmark.circle")
-                            .font(.system(size: 11, weight: .semibold))
+                        MeowIcon(key: aboveDailyAverage ? "exclamationmark.triangle" : "checkmark.circle", size: 11)
                             .foregroundStyle(aboveDailyAverage ? Color(hex: "#ef4444") : Color(hex: "#16a34a"))
                     )
                 Text("\(aboveDailyAverage ? (isEnglish ? "Above daily average" : "Melebihi rata-rata harian") : (isEnglish ? "Below daily average" : "Di bawah rata-rata harian")) (\(rupiah(averageDailyAllowance)))")
@@ -917,8 +901,7 @@ struct ReportsView: View {
                     .fill(primary.opacity(isDark ? 0.15 : 0.10))
                     .frame(width: 22, height: 22)
                     .overlay(
-                        Image(systemName: "function")
-                            .font(.system(size: 11, weight: .semibold))
+                        MeowIcon(key: "function", size: 11)
                             .foregroundStyle(labelColor)
                     )
                 (
@@ -995,7 +978,7 @@ struct ReportsView: View {
                     Button {
                         exportStoryImage()
                     } label: {
-                        Label(isEnglish ? "Download Image" : "Unduh Gambar", systemImage: "arrow.down.to.line")
+                        Label { Text(isEnglish ? "Download Image" : "Unduh Gambar") } icon: { MeowIcon(key: "arrow.down.to.line", size: 14) }
                             .font(MeowlettTypography.font(size: 13, weight: .heavy))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -1122,8 +1105,7 @@ struct ReportsView: View {
 
     private func sectionHeading(_ title: String, symbol: String) -> some View {
         HStack(spacing: 7) {
-            Image(systemName: symbol)
-                .font(.system(size: 12, weight: .bold))
+            MeowIcon(key: symbol, size: 12)
                 .foregroundStyle(accent)
                 .frame(width: 28, height: 28)
                 .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
