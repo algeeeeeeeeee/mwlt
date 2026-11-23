@@ -1161,3 +1161,11 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - Current latest branch head is `3a4bb488321e9991170ad4c676308767c543687c`; this commit changes only `CHECKPOINT.md` and is ignored by the native workflow path filter.
 - Run #318: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45246083065, source SHA `eb12a46fa34324cad21b5f6514ee88051c903527`, job ID `137944135283`. It is IN PROGRESS at `Build simulator`; checkout, app icon generation, XcodeGen, project generation, and scheme discovery all succeeded.
 - The next meaningful results are the simulator build and then the full UI suite, including catalog geometry validation and the new sticky-card regression test. Do not push source/workflow changes while Run #318 is active unless it reveals a failure that needs fixing.
+
+### Run #318 live validation checkpoint (24 November 2026, approximately 02:17 WIB)
+
+- Run #318 has now passed `Build simulator`.
+- `Run native UI smoke tests` is actively running. Since this step began, Xcode has successfully built the UI-test target and started executing the suite; no final XCTest result is available yet.
+- The UI suite now has the existing 19 tests plus `testDashboardBalanceCardStaysPinnedWhileHomeContentScrolls`.
+- No UI-test diagnostics artifact has been uploaded yet. iPhone device build, IPA packaging, and preview capture/validation remain pending.
+- No source edits after commit `eb12a46fa34324cad21b5f6514ee88051c903527`; later commits only update `CHECKPOINT.md`.
