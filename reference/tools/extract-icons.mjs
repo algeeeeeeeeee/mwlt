@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const referenceRoot = path.resolve(scriptDir, '..');
@@ -27,6 +27,51 @@ function namedImport(source, specifier) {
     'import\\s*\\{([\\s\\S]*?)\\}\\s*from\\s*["\\x27]' + escaped + '["\\x27]'
   ));
   return match ? { block: match[1], full: match[0] } : null;
+}
+
+function extractIconNode(moduleSource, expectedName) {
+  const call = [...moduleSource.matchAll(/createLucideIcon\(\s*'([A-Za-z0-9]+)'\s*,\s*/g)]
+    .find((match) => match[1] === expectedName);
+  if (!call) throw new Error('createLucideIcon call not found in module');
+
+  const start = call.index + call[0].length;
+  if (moduleSource[start] !== '[') {
+    throw new Error('createLucideIcon iconNode argument is not a JSON array');
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < moduleSource.length; i += 1) {
+    const ch = moduleSource[i];
+
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === '[' || ch === '{') {
+      depth += 1;
+      continue;
+    }
+    if (ch === ']' || ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        const iconNode = JSON.parse(moduleSource.slice(start, i + 1));
+        if (!Array.isArray(iconNode)) throw new Error('parsed iconNode is not an array');
+        return iconNode;
+      }
+    }
+  }
+
+  throw new Error('unterminated iconNode array in module');
 }
 
 function specifiers(block) {
@@ -141,10 +186,9 @@ for (const name of [...iconUses.keys()].sort()) {
   const file = iconFile(name);
   const fullPath = path.join(iconsDir, file);
   try {
-    await stat(fullPath);
-    const mod = await import(pathToFileURL(fullPath).href);
-    if (!Array.isArray(mod.__iconNode)) throw new Error('module has no __iconNode array export');
-    iconData.push({ name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: true, node: mod.__iconNode, usedAs: [...iconUses.get(name)].sort() });
+    const moduleSource = await readFile(fullPath, 'utf8');
+    const node = extractIconNode(moduleSource, name);
+    iconData.push({ name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: true, node, usedAs: [...iconUses.get(name)].sort() });
   } catch (error) {
     const item = { name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: false, reason: error.message || String(error), usedAs: [...iconUses.get(name)].sort() };
     missing.push(item);
