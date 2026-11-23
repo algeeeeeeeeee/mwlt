@@ -1165,7 +1165,7 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 ### Run #318 live validation checkpoint (24 November 2026, approximately 02:17 WIB)
 
 - Run #318 has now passed `Build simulator`.
-- `Run native UI smoke tests` is actively running. Since this step began, Xcode has successfully built the UI-test target and started executing the suite; no final XCTest result is available yet.
+- `Run native UI smoke tests` is actively running. The `xcodebuild test` step has started; it compiles the UI-test target before executing test methods. GitHub does not expose its live log while the step is active, so method-level execution is not yet confirmed.
 - The UI suite now has the existing 19 tests plus `testDashboardBalanceCardStaysPinnedWhileHomeContentScrolls`.
 - No UI-test diagnostics artifact has been uploaded yet. iPhone device build, IPA packaging, and preview capture/validation remain pending.
 - No source edits after commit `eb12a46fa34324cad21b5f6514ee88051c903527`; later commits only update `CHECKPOINT.md`.
