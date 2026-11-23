@@ -395,25 +395,29 @@ No app source or workflow changes are implied by this diagnosis. P0 remains open
 - **Not yet verified:** Swift compilation and simulator execution of the revised paired test; both legs passing.
 
 
-## ANTRIAN TUGAS
+## ANTRIAN TUGAS — PRIORITAS PARITAS (menggantikan antrian lama)
 
-T0 (IPA, kerjakan PERTAMA)
- a) Baca ios-native.yml: cara proyek Xcode dihasilkan, versi Xcode yang dinyatakan/dicatat, scheme, target, trigger. Kutip dari file, jangan berasumsi. Pastikan push TAG tidak memicu ios-native.yml; bila memicu, filter agar tag tidak memicu.
- b) Buat/perbarui .github/workflows/ios-ipa-rc.yml dengan trigger push ke branch native-swift-parity, tags ['rc*'], dan workflow_dispatch(input rc_label). Job hanya jalan jika: `github.event_name != 'push' || startsWith(github.ref, 'refs/tags/') || contains(github.event.head_commit.message, '[ipa]')`.
- c) Concurrency group sendiri `ipa-rc-${{ github.ref }}`, cancel-in-progress: false. Build Release iphoneos unsigned (archive, fallback build), tanpa UI test. Kemas Payload/Meowlett.app menjadi Meowlett-<label>-<short-sha>.ipa, artifact retention 14 hari, tulis SHA/versi/build/ukuran di summary.
- d) Gagalkan job bila metadata Info.plist yang diwajibkan tidak ada atau binary menautkan WebKit (otool -L). Hanya laporkan status font Plus Jakarta Sans/UIAppFonts dan argumen -uitest-*.
- e) Perbarui IPA-RC.md: status preview, bukan paritas UI; P0 terbuka; cara trigger utama adalah push commit dengan [ipa]. Dokumentasikan unsigned IPA dan instalasi Sideloadly/AltStore (Apple ID gratis 7 hari).
- f) Commit `ci: build IPA rc1-preview [ipa]`, push branch native-swift-parity SEKALI. Commit itu sendiri harus memicu workflow IPA. Cek SEKALI apakah run IPA terpicu, catat nomor run, lalu berhenti.
+Antrian lama ditunda; catatan hasil kerja lama di bawah tetap menjadi riwayat. Semua keputusan visual dan perilaku native harus mengikuti snapshot PWA di `reference/pwa/` sebagai satu-satunya sumber kebenaran. Deviasi tambahan selain dua yang disetujui memerlukan persetujuan pemilik.
 
-T1 (P0) Baca run untuk commit 4ca24ab. Kutip [MeowlettTapComparison] kedua leg Settings dan daftar elemen yang mencakup titik (310,91). Bila ada view lain (bukan tombol Settings) di titik itu, perbaiki di app (urutan z, allowsHitTesting(false) pada overlay/background blur header, accessibilityElement). Bila tidak ada, tulis BELUM TERBUKTI dan jangan ubah app.
-T2 (P1) Target MeowlettTests (tanpa UI) + job CI terpisah "unit" untuk umpan balik cepat.
-T3 (P1) MeowTheme: port persis theme.js (darken, lighten, luminance, contrast, readable accent), Light dan Dark + preset (custom default rose #881337/#fb7185). Unit test membandingkan hex tiap token dengan spesifikasi.
-T4 (P1) Tanggal lokal: Clock yang bisa diinjeksi; hari ini/minggu (mulai Senin)/bulan dari zona waktu lokal; tanggal "yyyy-MM-dd". Rupiah dipaksa id-ID ("Rp" + NBSP + "1.163.000") walau locale en_US. Unit test untuk 23:30 dan 00:30 di WIB dan UTC.
-T5 (P1) Font Plus Jakarta Sans: bundel, UIAppFonts, helper font; unit test tersedia untuk bobot 400–900. Setelah selesai, tag rc2-preview (bila T0 sukses).
-T6 (P1) API .meowModal: blur 6 + dim 0.55 (Story card 8/0.75), hit-testing dan swipe-tab konten belakang mati, keyboard avoidance. Migrasikan Quick Add dulu, screenshot Light+Dark. (Setelah T1.)
-T7 (P1) Migrasikan modal lain ke .meowModal dalam 3 tugas: (a) Kalkulator, Konfirmasi, Wishlist; (b) Edit Pemasukan, Target Tabungan, Budget Bulanan, Pengingat; (c) Cicilan, Patungan, Tampilan, Notifikasi, Menu Kategori, Batas Pengeluaran, Kelola Kategori, Data, Story card. Setelah (c), tag rc3-preview.
-T8 (P1) PREVIEW.png otomatis (Light+Dark per layar/modal) sebagai artifact CI.
-T9+ (P2–P4) Susun dari tabel selisih di AUDIT.md sesuai urutan prioritas; tiap tugas maksimal satu layar atau komponen. Tambahkan ke antrian, kerjakan satu per satu.
+R0 Cari sumber PWA di repo (package.json bernama "meowlett" dengan vite). Bila ada, salin ke reference/pwa/ (read-only). Bila tidak ada: laporkan dan BERHENTI (pemilik akan mengunggah).
+
+R1 Harness screenshot PWA di runner ubuntu (murah): reference/harness/ + .github/workflows/ref-shots.yml, trigger push paths reference/** atau pesan commit "[ref]". Node + Playwright Chromium, viewport 390x844, deviceScaleFactor 3, isMobile, timezoneId Asia/Pontianak, tanggal beku 2026-11-15 12:00 (page.clock). Di salinan build, ganti env(safe-area-inset-top)->47px dan env(safe-area-inset-bottom)->34px (sed). Fixture tunggal reference/fixtures/meowlett-demo.json (transaksi tersebar bulan ini dan 3 bulan lalu, income 5.000.000, 2 goals, budgets, overall budget, cicilan, splitbills, recurring, recurring income, wishlist, streak 5). Injeksi via addInitScript ke localStorage: gm_transactions_clean, gm_income, gm_budgets, gm_overall_budget, gm_savings_goals, gm_cicilan, gm_splitbills, gm_recurring, gm_recurring_income, gm_date_wishlist, gm_streak, gm_username, gm_lang=id, gm_theme_preset=rose, gm_onboarded=1, gm_follow_system=0, gm_dark_override=true|false. Tunggu >=3,6 dtk (splash). Shot Light dan Dark: splash (tanpa gm_onboarded, ~1 dtk), onboarding 4 langkah, Beranda (fullPage), Transaksi, Laporan, Date, Settings, tiap modal (buka lewat klik nyata). Output ref/<layar>-<light|dark>.png sebagai artifact.
+
+R2 Ikon: ekstrak SVG lucide dari versi yang terpasang di PWA untuk SEMUA ikon yang dipakai (icons.jsx, LUCIDE_MAP, GOAL_ICONS, PRESET_ICONS, ICON_OPTIONS, nav, header) plus 8 SVG inline di icons.jsx. Hasilkan enum Swift + path SVG (lucide hanya path/circle/rect/line/polyline/polygon/ellipse; tulis parser kecil atau dependency SPM yang diaudit), render sebagai Shape dengan stroke/size/warna parametrik (strokeWidth PWA bervariasi 1.5–2.5). Satu helper MeowIcon(key:size:color:strokeWidth:); dilarang Image(systemName:) langsung. Unit test: tiap kunci terpetakan. DEBUG: kunci hilang = kotak merah + log.
+
+R3 Peta menu dan UI test. Dari App.jsx buat tabel "elemen -> aksi -> modal" (header: toggle dark, gear->Settings, avatar->foto; Beranda: tap pemasukan->Edit Pemasukan, pensil/Set Budget->Budget Bulanan, +Tambah/pensil goal->Target, Tambah tabungan inline, Lihat Semua->Transaksi; Transaksi: kartu terbuka->Edit/Hapus, Cicilan/Patungan/Transaksi Rutin/Pemasukan Rutin; Laporan: ekspor/share/WhatsApp/Story card; Date: wishlist+, catat; Settings: Tampilan, Notifikasi->Pengingat Transaksi, Kategori->Batas/Kelola, Data; Quick Add->Kalkulator). Tiap baris satu UI test dengan button.tap() biasa (tanpa coordinate tap, tanpa XCTExpectFailure). Perbaiki penyebab di sumbernya (overlay hit-testing, urutan z, dua sheet di view sama, aksi kosong). Lanjutkan audit statis B1a bila belum selesai.
+
+R4 Pipeline banding: native pada simulator iPhone 14 (390x844) dengan fixture yang SAMA (-uitest-fixture, -uitest-fixed-date 2026-11-15T12:00:00+07:00, -uitest-timezone Asia/Pontianak, -uitest-appearance, skip splash/onboarding kecuali yang diuji). Hasil: out/<layar>-<mode>-{ref,native,diff}.png, montage "ref | native | diff", report.md berisi % piksel beda per layar. Upload artifact "parity-report".
+
+R5 Loop per layar, SATU layar per giliran, Light+Dark, sampai selisih hanya anti-aliasing/rendering font: chrome (header+pill navbar+FAB) -> Beranda -> Transaksi -> Laporan -> Date -> Settings -> tiap modal. Lampirkan montage di CHECKPOINT.md. Font Plus Jakarta Sans wajib terbundel (bukan fallback SF). Latar menembus safe area tanpa strip.
+
+R6 Setelah chrome+Beranda lulus, dan setelah tiap kelompok layar berikutnya: commit berpesan "ci: IPA rcN-preview [ipa]" (workflow IPA terpicu commit, bukan tag).
+
+## Status deviasi yang disetujui
+1. Semua modal memburamkan latar: blur 6 + dim 0.55; Story card blur 8 + dim 0.75.
+2. Perhitungan "hari ini/minggu/bulan" menggunakan zona waktu lokal perangkat.
+
+Tidak ada deviasi lain yang disetujui. Khusus kartu saldo: pemasukan − pengeluaran bulan ini, tanpa cicilan. Ikuti kejanggalan PWA yang disebut pemilik; jangan tambah swipe-to-delete, Tags, atau Catatan Harian.
 
 
 
@@ -474,3 +478,28 @@ T9+ (P2–P4) Susun dari tabel selisih di AUDIT.md sesuai urutan prioritas; tiap
 - **Build IPA, pemeriksaan runtime Info.plist/WebKit, font/flag Release, dan artifact: BELUM TERVERIFIKASI** sampai workflow dijalankan dan selesai.
 - K1: VERIFIED. K2: BELUM TERVERIFIKASI. K3: PARTIAL. K4: PARTIAL. K5: BELUM TERVERIFIKASI. K6: BELUM TERVERIFIKASI. K7: PARTIAL. K8: BELUM TERVERIFIKASI. K9: BELUM TERVERIFIKASI.
 - PR #2 tetap Draft; tidak merge, force-push, atau ubah `main`.
+
+## R0 selesai — snapshot sumber PWA (23 November 2026)
+
+### Hasil pemeriksaan sebelumnya
+- Run IPA #1 untuk commit `4449c4bac5331468a91b100199e7993644a07929`: **completed / success**. Archive, pemeriksaan metadata/WebKit, packaging, dan upload artifact berhasil. Artifact `Meowlett-IPA-RC-1` tersedia; ini catatan hasil sebelumnya, bukan bagian dari verifikasi R0.
+
+### Penemuan sumber
+- HEAD sumber yang disalin: `4449c4bac5331468a91b100199e7993644a07929` pada branch `native-swift-parity`.
+- `package.json`: `"name": "meowlett"`, version `4.0.0`, `vite: 5.1.4`, React/ReactDOM `18.2.0`, `lucide-react: ^0.469.0`.
+- `src/App.jsx` ditemukan (monolit, 388,505 bytes pada blob Git) dan mengimpor helpers/theme/export/notifications, constants/lang, AnimatedNumber, serta DonutChart.
+- `src/utils/theme.js`, `src/constants/index.js`, dan `src/constants/lang.js` ada.
+- Tree snapshot root PWA memuat 99 tracked paths; tidak ada `reference/pwa/` sebelumnya.
+
+### Snapshot yang disimpan
+- Menyalin entrypoint dan runtime dependencies ke `reference/pwa/`: `package.json`, `index.html`, `vite.config.js`, semua file `public/`, `src/App.jsx`, `src/main.jsx`, `src/icons.jsx`, `src/constants/*`, `src/utils/*`, `src/components/AnimatedNumber.jsx`, dan `src/components/DonutChart.jsx`.
+- Salinan memakai blob Git yang sama dengan sumber (SHA dicatat di `reference/pwa/README.md`), sehingga isi sumber tidak ditulis ulang atau diformat.
+- `src/components/Tab*.jsx`, `src/components/Modal*.jsx`, `src/App_test.jsx`, dan `src/components/ui.jsx` sengaja tidak disalin: tidak dipakai oleh runtime entrypoint monolit yang dijadikan referensi.
+- `reference/pwa/README.md` menetapkan snapshot ini read-only dan mencatat commit sumber serta daftar blob.
+
+### Bukti / batasan
+- Bukti R0: identitas package, Vite version, entrypoint dan seluruh file dependency terpilih diverifikasi lewat repository tree dan blob SHA; copy ditambahkan pada commit tugas ini.
+- Tidak ada app source native, test, workflow lama, atau `ios-native.yml` yang diubah.
+- Tidak ada test build yang dijalankan pada giliran R0; build screenshot harness adalah tugas R1. Build PWA dari snapshot: **BELUM TERVERIFIKASI** sampai R1.
+- Antrian R0–R6 di atas menjadi prioritas aktif. R1 adalah tugas berikutnya; berhenti setelah R0.
+
