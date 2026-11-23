@@ -18,7 +18,7 @@ concurrency:
 jobs:
   capture-home:
     name: Build PWA and capture Home (Light + Dark)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -28,6 +28,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Show runner OS and install harness dependencies
+        working-directory: reference/harness
+        run: |
+          cat /etc/os-release
+          npm install --no-audit --no-fund --no-package-lock
+          npx playwright --version
 
       - name: Install PWA dependencies
         working-directory: reference/pwa
@@ -116,6 +128,8 @@ jobs:
         env:
           REF_BASE_URL: http://127.0.0.1:4173
           REF_OUTPUT_DIR: ${{ github.workspace }}/ref
+          REF_LIVE_OUTPUT_DIR: ${{ github.workspace }}/ref-live
+          REF_DIFF_OUTPUT_DIR: ${{ github.workspace }}/ref-diff
         run: node capture-home.mjs
 
       - name: Write build and screenshot summary
@@ -133,16 +147,22 @@ jobs:
             echo "- Viewport: 390×844, deviceScaleFactor 3, isMobile, hasTouch"
             echo "- Time: `2026-11-15T12:00:00+07:00` via `page.clock.setFixedTime` only"
             echo "- Timezone: `Asia/Pontianak`"
-            echo "- Screenshots: `ref/beranda-light.png`, `ref/beranda-dark.png`"
+            echo "- Build screenshots: `ref/beranda-light.png`, `ref/beranda-dark.png`"
+            echo "- Live screenshots: `ref-live/beranda-light.png`, `ref-live/beranda-dark.png`"
+            echo "- Pixel diffs/report: `ref-diff/`"
+            echo "- Font diagnostics: `ref/font-diagnostics.json` and `ref-live/font-diagnostics.json`"
+            echo "- Primary parity reference: https://mwlt.pages.dev"
+            echo "- Live Google Fonts remain unblocked; safe-area JS/CSS rewrites are in-memory only."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Beranda Light + Dark reference screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pwa-reference-home
+          name: pwa-reference-build-live-home
           path: |
-            ${{ github.workspace }}/ref/*.png
-            ${{ github.workspace }}/ref/font-diagnostics.json
+            ${{ github.workspace }}/ref/
+            ${{ github.workspace }}/ref-live/
+            ${{ github.workspace }}/ref-diff/
           if-no-files-found: error
           retention-days: 14

@@ -9,6 +9,7 @@ on:
       - '**.md'
       - 'docs/**'
       - 'reference/**'
+      - '.github/workflows/ref-shots.yml'
 
 permissions:
   contents: read

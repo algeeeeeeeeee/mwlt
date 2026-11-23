@@ -1,241 +1,224 @@
 import { chromium } from "playwright";
+import { PNG } from "pngjs";
 import { readFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = path.resolve(scriptDir, "../..");
-const fixturePath = path.join(repositoryRoot, "reference/fixtures/meowlett-demo.json");
-const outputDir = process.env.REF_OUTPUT_DIR || path.join(repositoryRoot, "ref");
-const baseURL = process.env.REF_BASE_URL || "http://127.0.0.1:4173";
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const fixture = JSON.parse(await readFile(path.join(root, "reference/fixtures/meowlett-demo.json"), "utf8"));
+const buildDir = process.env.REF_OUTPUT_DIR || path.join(root, "ref");
+const liveDir = process.env.REF_LIVE_OUTPUT_DIR || path.join(root, "ref-live");
+const diffDir = process.env.REF_DIFF_OUTPUT_DIR || path.join(root, "ref-diff");
+const buildURL = process.env.REF_BASE_URL || "http://127.0.0.1:4173";
+const liveURL = "https://mwlt.pages.dev";
 const fixedTime = "2026-11-15T12:00:00+07:00";
-
-const fixture = JSON.parse(await readFile(fixturePath, "utf8"));
-if (!Array.isArray(fixture.transactions) || fixture.transactions.length < 10) {
-  throw new Error("The R1a fixture must include at least 10 transactions.");
-}
-if (fixture.income !== 5000000) throw new Error("R1a fixture income must be 5,000,000.");
-if (!Array.isArray(fixture.savingsGoals) || fixture.savingsGoals.length !== 1) {
-  throw new Error("R1a fixture must include exactly one savings goal.");
-}
-if (fixture.streak?.count !== 5 || fixture.streak?.lastDate !== "2026-11-15") {
-  throw new Error("R1a streak fixture is not the requested five-day snapshot.");
-}
-
-const baseStorage = {
-  gm_transactions_clean: fixture.transactions,
-  gm_income: String(fixture.income),
-  gm_savings_goals: fixture.savingsGoals,
-  gm_streak: fixture.streak,
-  gm_username: fixture.username || "Meowlett Demo",
-  gm_lang: "id",
-  gm_theme_preset: "rose",
-  gm_follow_system: "0",
-  gm_onboarded: "1"
+const fontURL = /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i;
+if (!Array.isArray(fixture.transactions) || fixture.transactions.length < 10 ||
+    fixture.income !== 5000000 || !Array.isArray(fixture.savingsGoals) ||
+    fixture.savingsGoals.length !== 1 || fixture.streak?.count !== 5 ||
+    fixture.streak?.lastDate !== "2026-11-15") throw new Error("R1a fixture validation failed.");
+const storageBase = {
+  gm_transactions_clean: fixture.transactions, gm_income: String(fixture.income),
+  gm_savings_goals: fixture.savingsGoals, gm_streak: fixture.streak,
+  gm_username: fixture.username || "Meowlett Demo", gm_lang: "id",
+  gm_theme_preset: "rose", gm_follow_system: "0", gm_onboarded: "1"
 };
+for (const dir of [buildDir, liveDir, diffDir]) await mkdir(dir, { recursive: true });
 
-await mkdir(outputDir, { recursive: true });
-const browser = await chromium.launch({ headless: true });
-const diagnosticsRuns = [];
+async function typography(page) {
+  return page.evaluate(async () => {
+    await document.fonts.ready;
+    const faces = Array.from(document.fonts).map(face => ({
+      family: face.family, weight: face.weight, status: face.status
+    }));
+    const ps = Array.from(document.querySelectorAll("p"));
+    const greetings = new Set(["Selamat pagi", "Selamat siang", "Selamat sore", "Selamat malam"]);
+    const greeting = ps.find(el => greetings.has(el.textContent.trim()));
+    const label = ps.find(el => el.textContent.trim() === "Pengeluaran bulan ini");
+    const amount = label?.nextElementSibling || null;
+    const styleOf = el => {
+      if (!el) return { found: false };
+      const s = getComputedStyle(el);
+      return { found: true, text: el.textContent.trim(), tagName: el.tagName.toLowerCase(),
+        fontFamily: s.fontFamily, fontWeight: s.fontWeight };
+    };
+    const body = getComputedStyle(document.body);
+    return {
+      faces, body: { fontFamily: body.fontFamily, fontWeight: body.fontWeight },
+      greeting: styleOf(greeting), expenseAmount: styleOf(amount),
+      check900: document.fonts.check('900 16px "Plus Jakarta Sans"')
+    };
+  });
+}
 
-try {
-  for (const mode of ["light", "dark"]) {
-    const context = await browser.newContext({
-      viewport: { width: 390, height: 844 },
-      deviceScaleFactor: 3,
-      isMobile: true,
-      hasTouch: true,
-      timezoneId: "Asia/Pontianak",
-      colorScheme: mode,
-      serviceWorkers: "block"
-    });
-
-    const page = await context.newPage();
-    const pageErrors = [];
-    const fontHTTPResponses = [];
-    const fontProbePromises = [];
-    const probedGstaticURLs = new Set();
-    page.on("pageerror", error => pageErrors.push(error.message));
-    page.on("response", response => {
-      const url = response.url();
-      if (/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i.test(url)) {
-        fontHTTPResponses.push({
-          url,
-          status: response.status(),
-          source: "page-response"
-        });
-      }
-    });
-
-    // Preserve the screenshot's local-font behavior: abort external page font requests,
-    // then probe those exact URLs separately and record their HTTP response status.
-    await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//i, async route => {
-      const requestedURL = route.request().url();
-      await route.abort();
-
-      const probe = (async () => {
-        try {
-          const response = await context.request.get(requestedURL, { timeout: 15000 });
-          const statusRecord = {
-            url: response.url(),
-            requestedURL,
-            status: response.status(),
-            source: "diagnostic-probe"
-          };
-          fontHTTPResponses.push(statusRecord);
-
-          if (/^https:\/\/fonts\.googleapis\.com\//i.test(requestedURL) && response.ok()) {
-            const css = await response.text();
-            const gstaticURLs = new Set(
-              [...css.matchAll(/url\((?:["']?)(https:\/\/fonts\.gstatic\.com\/[^)"']+)(?:["']?)\)/gi)]
-                .map(match => match[1])
-            );
-            await Promise.all([...gstaticURLs].map(async fontURL => {
-              if (probedGstaticURLs.has(fontURL)) return;
-              probedGstaticURLs.add(fontURL);
-              try {
-                const fontResponse = await context.request.get(fontURL, { timeout: 15000 });
-                fontHTTPResponses.push({
-                  url: fontResponse.url(),
-                  requestedURL: fontURL,
-                  status: fontResponse.status(),
-                  source: "diagnostic-probe-from-google-css"
-                });
-                await fontResponse.dispose();
-              } catch (error) {
-                fontHTTPResponses.push({
-                  url: fontURL,
-                  requestedURL: fontURL,
-                  status: null,
-                  source: "diagnostic-probe-from-google-css",
-                  error: String(error)
-                });
-              }
-            }));
+async function probeBuildFonts(context, responses, requested) {
+  const cssURLs = [...requested].filter(url => url.startsWith("https://fonts.googleapis.com/"));
+  for (const url of cssURLs) {
+    try {
+      const res = await context.request.get(url, { timeout: 20000 });
+      responses.push({ url: res.url(), requestedURL: url, status: res.status(), source: "post-capture-probe" });
+      if (res.ok()) {
+        const css = await res.text();
+        const fonts = new Set([...css.matchAll(/url\((?:["']?)(https:\/\/fonts\.gstatic\.com\/[^)"']+)(?:["']?)\)/gi)].map(m => m[1]));
+        for (const font of fonts) {
+          if (requested.has(font)) continue;
+          requested.add(font);
+          try {
+            const fr = await context.request.get(font, { timeout: 20000 });
+            responses.push({ url: fr.url(), requestedURL: font, status: fr.status(), source: "post-capture-probe-from-google-css" });
+            await fr.dispose();
+          } catch (e) {
+            responses.push({ url: font, requestedURL: font, status: null, source: "post-capture-probe-from-google-css", error: String(e) });
           }
-          await response.dispose();
-        } catch (error) {
-          fontHTTPResponses.push({
-            url: requestedURL,
-            requestedURL,
-            status: null,
-            source: "diagnostic-probe",
-            error: String(error)
-          });
         }
-      })();
-      fontProbePromises.push(probe);
-    });
-
-    // setFixedTime freezes Date only; application timeout/animation timers keep running.
-    await page.clock.setFixedTime(fixedTime);
-
-    const storage = {
-      ...baseStorage,
-      gm_dark_override: mode === "dark" ? "true" : "false"
-    };
-    await page.addInitScript(({ storageValues }) => {
-      for (const [key, value] of Object.entries(storageValues)) {
-        const serialized = typeof value === "string" ? value : JSON.stringify(value);
-        window.localStorage.setItem(key, serialized);
       }
-    }, { storageValues: storage });
-
-    // Local @font-face is provided by the patched build; block external Google Fonts.
-    await page.route(/^https:\/\/fonts\.(?:googleapis|gstatic)\.com\//, route => route.abort());
-
-    const response = await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 30000 });
-    if (!response?.ok()) throw new Error(`Vite preview returned ${response?.status() ?? "no response"} for ${mode}.`);
-
-    // App.jsx hides its splash after 3s. Wait at least 4s; do not pause the timer queue.
-    await page.waitForTimeout(4100);
-
-    const fontState = await page.evaluate(async () => {
-      await document.fonts.load('400 16px "Plus Jakarta Sans"');
-      await document.fonts.ready;
-
-      const fontFaces = Array.from(document.fonts).map(face => ({
-        family: face.family,
-        weight: face.weight,
-        status: face.status
-      }));
-      const paragraphs = Array.from(document.querySelectorAll("p"));
-      const greetingTexts = new Set([
-        "Selamat pagi", "Selamat siang", "Selamat sore", "Selamat malam"
-      ]);
-      const greeting = paragraphs.find(element => greetingTexts.has(element.textContent.trim()));
-      const expenseLabel = paragraphs.find(element =>
-        element.textContent.trim() === "Pengeluaran bulan ini"
-      );
-      const expenseAmount = expenseLabel?.nextElementSibling ?? null;
-
-      const computedTypography = element => {
-        if (!element) return { found: false };
-        const style = getComputedStyle(element);
-        return {
-          found: true,
-          text: element.textContent.trim(),
-          tagName: element.tagName.toLowerCase(),
-          fontFamily: style.fontFamily,
-          fontWeight: style.fontWeight
-        };
-      };
-      const bodyStyle = getComputedStyle(document.body);
-
-      return {
-        ready: document.fonts.check('400 16px "Plus Jakarta Sans"'),
-        fontFaces,
-        body: {
-          fontFamily: bodyStyle.fontFamily,
-          fontWeight: bodyStyle.fontWeight
-        },
-        greeting: computedTypography(greeting),
-        expenseAmount: computedTypography(expenseAmount)
-      };
-    });
-    if (!fontState.ready || !fontState.fontFaces.some(face =>
-      face.family.replaceAll('"', "") === "Plus Jakarta Sans" && face.status === "loaded"
-    )) {
-      throw new Error(`Local Plus Jakarta Sans did not load for ${mode}: ${JSON.stringify(fontState)}`);
+      await res.dispose();
+    } catch (e) {
+      responses.push({ url, requestedURL: url, status: null, source: "post-capture-probe", error: String(e) });
     }
+  }
+}
 
-    await page.getByText("Beranda", { exact: true }).first().waitFor({
-      state: "visible",
-      timeout: 15000
+async function capture(browser, target, mode) {
+  const live = target === "live";
+  const outDir = live ? liveDir : buildDir;
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 }, deviceScaleFactor: 3,
+    isMobile: true, hasTouch: true, timezoneId: "Asia/Pontianak",
+    colorScheme: mode, serviceWorkers: "block"
+  });
+  const page = await context.newPage();
+  const errors = [], fontResponses = [], requestedFonts = new Set();
+  page.on("pageerror", e => errors.push(e.message));
+  page.on("request", req => { if (fontURL.test(req.url())) requestedFonts.add(req.url()); });
+  page.on("response", res => {
+    if (fontURL.test(res.url())) fontResponses.push({
+      url: res.url(), status: res.status(),
+      source: live ? "actual-live-page-response" : "build-page-response"
     });
+  });
 
-    const outputPath = path.join(outputDir, `beranda-${mode}.png`);
-    await page.screenshot({ path: outputPath, fullPage: true });
-    if (pageErrors.length) {
-      throw new Error(`Page errors in ${mode}: ${pageErrors.join(" | ")}`);
-    }
-
-    // Probe remote font URLs only after the screenshot has been captured so the
-    // diagnostics do not change font selection, layout, animation, or screenshot timing.
-    await Promise.all(fontProbePromises);
-    const modeDiagnostics = {
-      mode,
-      fontHTTPResponses,
-      documentFonts: fontState.fontFaces,
-      computedStyles: {
-        body: fontState.body,
-        greeting: fontState.greeting,
-        expenseAmount: fontState.expenseAmount
+  if (live) {
+    await page.route("**/*", async route => {
+      const req = route.request();
+      if (!["script", "stylesheet"].includes(req.resourceType())) return route.continue();
+      const res = await route.fetch();
+      const type = res.headers()["content-type"] || "";
+      if (!/(javascript|ecmascript|text\/css)/i.test(type)) return route.fulfill({ response: res });
+      const before = await res.text();
+      const after = before
+        .replace(/env\(\s*safe-area-inset-top(?:\s*,\s*[^)]*)?\s*\)/g, "47px")
+        .replace(/env\(\s*safe-area-inset-bottom(?:\s*,\s*[^)]*)?\s*\)/g, "34px");
+      if (after !== before) {
+        console.log("[live/" + mode + "] patched safe-area in intercepted response: " + req.url());
+        const headers = { ...res.headers() };
+        delete headers["content-length"]; delete headers["content-encoding"];
+        return route.fulfill({ response: res, body: after, headers });
       }
-    };
-    diagnosticsRuns.push(modeDiagnostics);
-    console.log(`Font diagnostics ${mode}: ${JSON.stringify(modeDiagnostics)}`);
-    console.log(`Captured ${outputPath}`);
-    await context.close();
+      return route.fulfill({ response: res });
+    });
+    console.log("[live/" + mode + "] safe-area rewrite enabled in-memory only (top=47px, bottom=34px); live app unchanged.");
+  } else {
+    await page.route(fontURL, route => route.abort());
   }
 
-  const diagnosticsPath = path.join(outputDir, "font-diagnostics.json");
-  await writeFile(diagnosticsPath, JSON.stringify({
-    capturedAt: new Date().toISOString(),
-    note: "Google Fonts page requests are aborted to preserve local-font screenshots; HTTP statuses are collected using separate diagnostic probes after each screenshot.",
-    runs: diagnosticsRuns
-  }, null, 2) + "\\n");
-  console.log(`Wrote font diagnostics: ${diagnosticsPath}`);
+  // Freeze Date only; never call clock.install() or pauseAt().
+  await page.clock.setFixedTime(fixedTime);
+  const storage = { ...storageBase, gm_dark_override: mode === "dark" ? "true" : "false" };
+  await page.addInitScript(({ values }) => {
+    for (const [key, value] of Object.entries(values)) {
+      localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+    }
+  }, { values: storage });
+  const url = live ? liveURL : buildURL;
+  const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+  if (!response?.ok()) throw new Error(target + " returned " + (response?.status() ?? "no response") + " for " + mode);
+  await page.waitForTimeout(4100);
+  await page.getByText("Beranda", { exact: true }).first().waitFor({ state: "visible", timeout: 20000 });
+  const fonts = await typography(page);
+  const screenshot = path.join(outDir, "beranda-" + mode + ".png");
+  await page.screenshot({ path: screenshot, fullPage: true });
+  if (!live) await probeBuildFonts(context, fontResponses, requestedFonts);
+  if (errors.length) throw new Error("Page errors " + target + "/" + mode + ": " + errors.join(" | "));
+  const diagnostics = {
+    target, mode, pageURL: url, googleFontsHTTPResponses: fontResponses,
+    documentFonts: fonts.faces,
+    computedStyles: { body: fonts.body, greeting: fonts.greeting, expenseAmount: fonts.expenseAmount },
+    documentFontsCheck900: fonts.check900
+  };
+  console.log("Font diagnostics " + target + "/" + mode + ": " + JSON.stringify(diagnostics));
+  console.log("Captured " + screenshot);
+  await context.close();
+  return { screenshot, diagnostics };
+}
+
+async function compare(buildPath, livePath, diffPath) {
+  const [a, b] = await Promise.all([readFile(buildPath), readFile(livePath)]);
+  const build = PNG.sync.read(a), live = PNG.sync.read(b);
+  if (build.width !== live.width || build.height !== live.height) {
+    throw new Error("Screenshot dimensions differ: build " + build.width + "x" + build.height +
+      ", live " + live.width + "x" + live.height);
+  }
+  const diff = new PNG({ width: build.width, height: build.height });
+  const rowChanged = new Array(build.height).fill(false);
+  let changed = 0;
+  for (let i = 0; i < build.data.length; i += 4) {
+    const different = build.data[i] !== live.data[i] || build.data[i + 1] !== live.data[i + 1] ||
+      build.data[i + 2] !== live.data[i + 2] || build.data[i + 3] !== live.data[i + 3];
+    if (different) {
+      changed++; rowChanged[Math.floor(i / 4 / build.width)] = true;
+      diff.data[i] = 255; diff.data[i + 1] = 0; diff.data[i + 2] = 255; diff.data[i + 3] = 255;
+    } else {
+      const gray = Math.round((build.data[i] + build.data[i + 1] + build.data[i + 2]) / 3 * 0.35);
+      diff.data[i] = gray; diff.data[i + 1] = gray; diff.data[i + 2] = gray; diff.data[i + 3] = 255;
+    }
+  }
+  const bands = [];
+  let start = -1;
+  for (let y = 0; y <= rowChanged.length; y++) {
+    if (y < rowChanged.length && rowChanged[y] && start < 0) start = y;
+    if ((y === rowChanged.length || !rowChanged[y]) && start >= 0) {
+      bands.push({ yStart: start, yEnd: y - 1, height: y - start }); start = -1;
+    }
+  }
+  await writeFile(diffPath, PNG.sync.write(diff));
+  const total = build.width * build.height, pct = changed / total * 100;
+  return { width: build.width, height: build.height, changedPixels: changed, totalPixels: total,
+    percentDifferent: Number(pct.toFixed(4)), changedRowBands: bands, thresholdExceeded: pct > 1 };
+}
+
+const browser = await chromium.launch({ headless: true });
+const results = [];
+try {
+  for (const mode of ["light", "dark"]) {
+    const build = await capture(browser, "build", mode);
+    const live = await capture(browser, "live", mode);
+    const diff = path.join(diffDir, "beranda-" + mode + "-diff.png");
+    const comparison = await compare(build.screenshot, live.screenshot, diff);
+    results.push({ mode, build: build.diagnostics, live: live.diagnostics, comparison, diff });
+    console.log("Pixel comparison " + mode + ": " + JSON.stringify(comparison));
+    if (comparison.thresholdExceeded) {
+      console.log("SNAPSHOT MUNGKIN TIDAK SAMA DENGAN LIVE");
+      console.log("Visible difference regions (pixel-row bands; inspect diff image): " + JSON.stringify(comparison.changedRowBands));
+    }
+  }
+  const capturedAt = new Date().toISOString();
+  const report = {
+    capturedAt, primaryReference: liveURL, fixture: "reference/fixtures/meowlett-demo.json",
+    clock: "page.clock.setFixedTime('2026-11-15T12:00:00+07:00') only; clock.install/pauseAt not used",
+    context: { timezoneId: "Asia/Pontianak", viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 3, isMobile: true, hasTouch: true, serviceWorkers: "block" },
+    liveSafeAreaPatch: "Intercepted JS/CSS responses only; top=47px and bottom=34px; deployed app not modified.",
+    results
+  };
+  await writeFile(path.join(diffDir, "comparison-report.json"), JSON.stringify(report, null, 2) + "\n");
+  await writeFile(path.join(buildDir, "font-diagnostics.json"), JSON.stringify({
+    capturedAt, target: "build", runs: results.map(r => r.build)
+  }, null, 2) + "\n");
+  await writeFile(path.join(liveDir, "font-diagnostics.json"), JSON.stringify({
+    capturedAt, target: "live", runs: results.map(r => r.live)
+  }, null, 2) + "\n");
+  console.log("Wrote build/live font diagnostics and pixel comparison report.");
 } finally {
   await browser.close();
 }

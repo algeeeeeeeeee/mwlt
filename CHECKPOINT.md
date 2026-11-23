@@ -559,3 +559,18 @@ All requested paths exist under `reference/pwa/`:
 - R1b–R1d remain queued; this commit does not start them.
 - PR #2 remains Draft; native app source and UI tests remain unchanged.
 
+
+
+## R1a follow-up — build vs PWA live Beranda (23 November 2026)
+
+- **Acuan utama paritas: https://mwlt.pages.dev.** Snapshot `reference/pwa/` hanya pembanding build; kesetaraannya dengan live tidak diasumsikan.
+- Penyebab ref-shots #1: runner `ubuntu-latest` menggunakan Ubuntu 26.04; Playwright 1.56.1 menolak instalasi Chromium pada `ubuntu26.04-x64`. npm install dan build PWA sebelumnya sukses.
+- Workflow ref-shots dipatok ke `ubuntu-24.04`; Playwright tetap **1.56.1** dan browser dipasang dengan `npx playwright install --with-deps chromium`. Log menampilkan `/etc/os-release` dan versi Playwright.
+- Harness menambah target live `https://mwlt.pages.dev` dengan fixture localStorage yang sama seperti target build, viewport 390×844, DPR 3, mobile/touch, `Asia/Pontianak`, `serviceWorkers: 'block'`, serta hanya `page.clock.setFixedTime('2026-11-15T12:00:00+07:00')`. Tidak memakai `clock.install()` atau `pauseAt()`.
+- Google Fonts pada target live tidak diblokir; URL/status HTTP diambil dari respons halaman aktual. Build tetap memakai font lokal dan Google Fonts diblokir pada screenshot build; URL/status font eksternal build dikumpulkan lewat probe setelah screenshot.
+- Diagnostik kedua target: semua FontFace (family/weight/status), computed font family/weight pada judul sapaan dan nominal pengeluaran, serta `document.fonts.check('900 16px "Plus Jakarta Sans"')`.
+- Target live hanya menerima penggantian safe-area pada respons JS/CSS yang dicegat di runner (top 47px, bottom 34px); deployment live tidak diubah. Log mencatat setiap respons yang benar-benar diubah.
+- Output: `ref/beranda-{light,dark}.png`, `ref-live/beranda-{light,dark}.png`, `ref-diff/beranda-{light,dark}-diff.png`, report JSON, dan dua file diagnostik font. Perbandingan menghitung persentase piksel berbeda; jika >1%, log menulis **SNAPSHOT MUNGKIN TIDAK SAMA DENGAN LIVE** serta pita baris piksel berbeda untuk ditinjau. Tidak ada pemilihan otomatis mana yang benar.
+- Artifact mengunggah seluruh direktori `ref/`, `ref-live/`, dan `ref-diff/`. Workflow native mengabaikan tambahan path `.github/workflows/ref-shots.yml`; bagian lain `ios-native.yml` dipertahankan.
+- **Bobot 900: BELUM TERBUKTI** sampai diagnostics run selesai. Tidak menarik kesimpulan font sebelum hasil run.
+- Scope giliran ini hanya capture Beranda Light/Dark untuk build dan live; R1b–R1d tetap antre. Tidak mengubah aplikasi live, source native, test, atau PR #2; PR #2 tetap Draft.
