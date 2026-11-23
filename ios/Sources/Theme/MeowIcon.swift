@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import Compression
+// Shared with the UI-test target so its bundle can validate the compressed icon catalog independently.
 
 /// Canonical Lucide names extracted from the installed lucide-react package.
 enum MeowIconKey: String, CaseIterable {
