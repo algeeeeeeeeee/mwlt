@@ -1,0 +1,156 @@
+{
+  "income": 5000000,
+  "username": "Meowlett Demo",
+  "streak": {
+    "count": 5,
+    "lastDate": "2026-11-15"
+  },
+  "transactions": [
+    {
+      "id": "nov-01",
+      "date": "2026-11-01",
+      "amount": 85000,
+      "category": "food",
+      "description": "Sarapan bubur",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-02",
+      "date": "2026-11-02",
+      "amount": 22000,
+      "category": "transport",
+      "description": "Ojek ke kampus",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-03",
+      "date": "2026-11-03",
+      "amount": 145000,
+      "category": "shopping",
+      "description": "Belanja kebutuhan",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-04",
+      "date": "2026-11-04",
+      "amount": 42000,
+      "category": "food",
+      "description": "Kopi dan roti",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-05",
+      "date": "2026-11-05",
+      "amount": 175000,
+      "category": "bills",
+      "description": "Tagihan internet",
+      "location": "",
+      "note": ""
+    },
+    {
+      "id": "nov-06",
+      "date": "2026-11-07",
+      "amount": 68000,
+      "category": "food",
+      "description": "Makan siang",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-07",
+      "date": "2026-11-08",
+      "amount": 54000,
+      "category": "entertainment",
+      "description": "Tiket bioskop",
+      "location": "Ayani Mega Mall",
+      "note": ""
+    },
+    {
+      "id": "nov-08",
+      "date": "2026-11-09",
+      "amount": 31000,
+      "category": "transport",
+      "description": "Bensin",
+      "location": "",
+      "note": ""
+    },
+    {
+      "id": "nov-09",
+      "date": "2026-11-10",
+      "amount": 96000,
+      "category": "food",
+      "description": "Makan malam",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-10",
+      "date": "2026-11-12",
+      "amount": 125000,
+      "category": "health",
+      "description": "Vitamin",
+      "location": "Apotek",
+      "note": ""
+    },
+    {
+      "id": "nov-11",
+      "date": "2026-11-14",
+      "amount": 185000,
+      "category": "shopping",
+      "description": "Perlengkapan rumah",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "nov-12",
+      "date": "2026-11-15",
+      "amount": 75000,
+      "category": "food",
+      "description": "Brunch hari Minggu",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "aug-01",
+      "date": "2026-08-03",
+      "amount": 110000,
+      "category": "food",
+      "description": "Makan keluarga",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "aug-02",
+      "date": "2026-08-12",
+      "amount": 260000,
+      "category": "shopping",
+      "description": "Sepatu olahraga",
+      "location": "Pontianak",
+      "note": ""
+    },
+    {
+      "id": "aug-03",
+      "date": "2026-08-24",
+      "amount": 95000,
+      "category": "transport",
+      "description": "Servis motor",
+      "location": "Pontianak",
+      "note": ""
+    }
+  ],
+  "savingsGoals": [
+    {
+      "id": "goal-holiday",
+      "label": "Liburan akhir tahun",
+      "target": 7500000,
+      "saved": 2750000,
+      "color": "#fb7185",
+      "icon": "plane",
+      "deadline": "2026-12-31"
+    }
+  ]
+}

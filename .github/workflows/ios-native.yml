@@ -8,12 +8,18 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+      - 'reference/**'
+      - '.github/workflows/ios-native.yml'
+      - '.github/workflows/ref-shots.yml'
   pull_request:
     branches:
       - main
+    # Keep the narrow allow-list. GitHub Actions does not allow paths and
+    # paths-ignore together for one event; reference/** is explicitly excluded.
     paths:
       - 'ios/**'
       - 'public/meow.png'
+      - '!reference/**'
 
 permissions:
   contents: read

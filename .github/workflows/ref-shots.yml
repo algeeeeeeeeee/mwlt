@@ -1,0 +1,146 @@
+name: Meowlett PWA Reference Screenshots
+
+on:
+  push:
+    branches:
+      - native-swift-parity
+    paths:
+      - 'reference/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ref-shots-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  capture-home:
+    name: Build PWA and capture Home (Light + Dark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PWA dependencies
+        working-directory: reference/pwa
+        run: npm install --no-audit --no-fund --no-package-lock
+
+      - name: Build PWA with Vite
+        working-directory: reference/pwa
+        run: npm run build
+
+      - name: Patch copied build for iPhone viewport and local font
+        env:
+          RUNNER_TEMP: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          SOURCE_DIST="reference/pwa/dist"
+          BUILD_COPY="$RUNNER_TEMP/meowlett-pwa-dist"
+          test -d "$SOURCE_DIST"
+          rm -rf "$BUILD_COPY"
+          cp -a "$SOURCE_DIST" "$BUILD_COPY"
+
+          mkdir -p "$BUILD_COPY/fonts"
+          cp "reference/fonts/PlusJakartaSans[wght].ttf" "$BUILD_COPY/fonts/PlusJakartaSans[wght].ttf"
+          test -s "$BUILD_COPY/fonts/PlusJakartaSans[wght].ttf"
+
+          # Change safe-area constants only in the copied build.
+          find "$BUILD_COPY" -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \) -print0 |
+            xargs -0 -r sed -i -E \
+              's/env\(safe-area-inset-top[^)]*\)/47px/g; s/env\(safe-area-inset-bottom[^)]*\)/34px/g'
+
+          python3 - "$BUILD_COPY/index.html" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          html = path.read_text(encoding="utf-8")
+          html = re.sub(r'<link[^>]*https://fonts\.(?:googleapis|gstatic)\.com/[^>]*>', "", html, flags=re.I)
+          style = """
+          <style id="ref-local-plus-jakarta-sans">
+          @font-face {
+            font-family: "Plus Jakarta Sans";
+            src: url("/fonts/PlusJakartaSans[wght].ttf") format("truetype");
+            font-style: normal;
+            font-weight: 200 800;
+            font-display: swap;
+          }
+          </style>
+          """
+          if "</head>" not in html:
+            raise SystemExit("index.html has no </head> insertion point")
+          html = html.replace("</head>", style + "\n</head>", 1)
+          path.write_text(html, encoding="utf-8")
+          PY
+
+          # Vite preview serves dist/. Swap in the patched copy for this runner only.
+          rm -rf "$SOURCE_DIST"
+          cp -a "$BUILD_COPY" "$SOURCE_DIST"
+          echo "Copied and patched Vite build at $SOURCE_DIST"
+          echo "Local font size: $(stat -c '%s bytes' "$SOURCE_DIST/fonts/PlusJakartaSans[wght].ttf")"
+
+      - name: Install Playwright Chromium
+        working-directory: reference/harness
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Serve patched PWA using vite preview
+        working-directory: reference/pwa
+        run: |
+          set -euo pipefail
+          npm run preview -- --host 127.0.0.1 --port 4173 --strictPort > "$RUNNER_TEMP/ref-vite-preview.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/ref-vite-preview.pid"
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:4173/ >/dev/null; then
+              echo "Vite preview is ready at http://127.0.0.1:4173/"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/ref-vite-preview.log"
+          echo "::error::Vite preview did not become ready."
+          exit 1
+
+      - name: Capture Beranda in Light and Dark
+        working-directory: reference/harness
+        env:
+          REF_BASE_URL: http://127.0.0.1:4173
+          REF_OUTPUT_DIR: ${{ github.workspace }}/ref
+        run: node capture-home.mjs
+
+      - name: Write build and screenshot summary
+        if: success()
+        run: |
+          {
+            echo "## PWA reference — R1a"
+            echo
+            echo "- Package: `meowlett` 4.0.0"
+            echo "- Vite: 5.1.4"
+            echo "- `npm install`: **success**"
+            echo "- `npm run build`: **success**"
+            echo "- Preview server: `vite preview`"
+            echo "- Browser: Playwright Chromium"
+            echo "- Viewport: 390×844, deviceScaleFactor 3, isMobile, hasTouch"
+            echo "- Time: `2026-11-15T12:00:00+07:00` via `page.clock.setFixedTime` only"
+            echo "- Timezone: `Asia/Pontianak`"
+            echo "- Screenshots: `ref/beranda-light.png`, `ref/beranda-dark.png`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Beranda Light + Dark reference screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-reference-home
+          path: ${{ github.workspace }}/ref/*.png
+          if-no-files-found: error
+          retention-days: 14
