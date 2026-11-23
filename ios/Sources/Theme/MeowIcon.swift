@@ -215,7 +215,7 @@ enum MeowIconCatalog {
         "gamepad": "Gamepad2", "gamecontroller.fill": "Gamepad2",
         "smartphone": "Smartphone", "iphone": "Smartphone", "shopping": "ShoppingBag",
         "searchicon": "Search", "dollar": "CircleDollarSign", "star": "Sparkles",
-        "paintbrush.pointed": "PaintbrushVertical", "checkmark.circle.fill": "CheckCircle",
+        "paintbrush.pointed": "PaintbrushVertical",
         "circle": "Circle"
     ]
 
@@ -419,8 +419,9 @@ enum MeowIconCatalog {
         let pattern = "[-+]?(?:\\d*\\.\\d+|\\d+\\.?\\d*)(?:[eE][-+]?\\d+)?"
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let ns = value as NSString
-        return regex.matches(in: value, range: NSRange(location: 0, length: ns.length)).compactMap {
-            Double(ns.substring(with: $0.range)).map(CGFloat.init)
+        return regex.matches(in: value, range: NSRange(location: 0, length: ns.length)).compactMap { match -> CGFloat? in
+            guard let parsed = Double(ns.substring(with: match.range)) else { return nil }
+            return CGFloat(parsed)
         }
     }
 }
@@ -638,8 +639,8 @@ private struct SVGPathParser {
         unitArc.addArc(
             center: .zero,
             radius: 1,
-            startAngle: .radians(startAngle),
-            endAngle: .radians(startAngle + delta),
+            startAngle: .radians(Double(startAngle)),
+            endAngle: .radians(Double(startAngle + delta)),
             clockwise: !sweep
         )
         let transform = CGAffineTransform(
