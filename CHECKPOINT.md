@@ -1000,3 +1000,35 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - At the final inspection, Run #12 was still in progress at **Install Playwright Chromium**. The inventory extraction/upload and Vite build had already succeeded, but screenshot capture and screenshot artifact upload for this exact SHA remain **BELUM TERVERIFIKASI**. Do not describe Run #12 as fully green until that run concludes.
 - R2a-1's core deliverable — complete Lucide icon-node inventory — is fixed and verified. Do not start R2b until the user explicitly proceeds to that stage.
 - Continue from branch `native-swift-parity`; keep PR #2 OPEN/Draft and do not merge.
+
+## R2 — Native Lucide renderer and icon migration (23 November 2026; CI verification pending)
+
+### R2a-1 dependency is complete
+- R2a-1 Run #12 completed SUCCESS: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45213744303
+- Verified artifact `pwa-lucide-icon-inventory` (ID `14835974890`): installed `lucide-react 0.469.0`, 99/99 Lucide node arrays found, 0 missing, 0 unresolved, 8 local inline SVGs catalogued separately, 5/5 required aliases.
+- Final inventory artifact expires 7 December 2026. Do not need to rerun extraction unless the PWA Lucide package/source inventory changes.
+
+### R2 implementation committed
+- Primary implementation commit: `a80dd7b4f0e9c3e7ee33683b92193190681ab563` — `ref: render native UI with extracted Lucide icons`.
+- Renderer correction: `dd09755096bbd3cf6de317bb61cc519015e275d9` — removes a duplicate alias key and makes numeric/arc argument types explicit.
+- Empty tree trigger commit: `6f29cac2eb76c4a52154285c9b83b488815c365d` — no file changes; used to start the native workflow after a Contents-API-only correction.
+- Coverage correction: `5384a4bb3661e789d45685ffe4884760678dd4d2` — adds `CirclePlus` to `MeowIconKey` so all 8 PWA-local SVG icons are represented.
+- Alias coverage correction: `58f0cd62d17700c6378510a238fffead48ac2773` — adds missing old SF aliases (`info.circle`, `pawprint.fill`, `square.grid.2x2`, `square.grid.2x2.fill`, `water.waves`) and makes the catalog completeness test check every alias as well as every declared key.
+- Current branch head at checkpoint time: `58f0cd62d17700c6378510a238fffead48ac2773`.
+
+### Scope of implementation
+- Added `ios/Sources/Theme/MeowIcon.swift`: typed `MeowIconKey` enum (111 keys), cached vector renderer, old SF/PWA alias resolver, path parser and renderer for path/circle/rect/line/polyline/polygon/ellipse, parametrized size/color/stroke width, and DEBUG red-box + log fallback for missing keys.
+- Added the 99-icon compressed zlib resource at `ios/Resources/Icons/lucide-icons.json.z`; the icon geometry comes from the actual installed Lucide package inventory, not manual redraws.
+- Added the 8 app-local inline SVG geometries from `icons.jsx` (SunMoon, CirclePlus, PaintbrushVertical, MessageCircle, DiamondPlus, Smile, QrCode, Landmark), plus four small extra native glyphs (ArrowUpRight, Diamond, Circle, Check).
+- Registered `Resources/Icons` in `ios/project.yml`.
+- Replaced 148 `Image(systemName:)` and 24 `Label(systemImage:)` occurrences with `MeowIcon` in 14 SwiftUI source files: MainTab, Dashboard, Transactions, TransactionEditor, RecurringTransactions, SplitBills, TransactionRow, Reports, Date, Settings, SettingsFeatureSheets, SettingsBudget, SettingsCategoryManager, and Onboarding.
+- Added `testMeowIconCatalogContainsEveryDeclaredKey` to `ios/Tests/MeowlettUITests.swift`; it validates all 111 declared keys and all alias entries against loaded geometry.
+- Existing persisted category strings continue to work through legacy alias normalization. No direct `main` edits, merges, branch deletions, or app feature/action logic changes were made.
+
+### CI status at checkpoint time
+- Run #311: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45225920697
+- Head SHA: `5384a4bb3661e789d45685ffe4884760678dd4d2`.
+- At checkpoint time: Xcode project generation and scheme discovery succeeded; `Build simulator` was in progress. UI tests, device build, IPA packaging, and Light/Dark native preview capture had not yet run.
+- Earlier runs #308, #309, and #310 were cancelled by newer commits while R2 was being corrected. Use Run #311 as the current full validation run.
+- **Do not mark R2 complete until Run #311 reaches a conclusion, UI test `testMeowIconCatalogContainsEveryDeclaredKey` passes, and the native preview artifact has been inspected.** If compile/test/preview fails, fix only the diagnosed issue and rerun CI.
+- PR #2 must remain OPEN and Draft, base `main`. Do not merge or close it.
