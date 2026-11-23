@@ -990,6 +990,49 @@ final class MeowlettUITests: XCTestCase {
     }
 
     @MainActor
+    func testDashboardBalanceCardStaysPinnedWhileHomeContentScrolls() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 10), "The Home scroll view is missing.")
+
+        let balanceCard = app.descendants(matching: .any)["mwlt.dashboard.balanceCard"]
+        XCTAssertTrue(balanceCard.waitForExistence(timeout: 10), "The pinned balance card is missing.")
+
+        let healthHeading = app.staticTexts["KESEHATAN FINANSIAL"]
+        XCTAssertTrue(healthHeading.waitForExistence(timeout: 10), "The Financial Health section is missing.")
+
+        let initialBalanceY = balanceCard.frame.minY
+        let initialHealthY = healthHeading.frame.minY
+        XCTAssertGreaterThan(initialHealthY, initialBalanceY, "Home content should start below the balance card.")
+
+        scroll.swipeUp()
+
+        XCTAssertTrue(balanceCard.exists, "The balance card should remain in the accessibility hierarchy while scrolling.")
+        XCTAssertEqual(
+            balanceCard.frame.minY,
+            initialBalanceY,
+            accuracy: 1.5,
+            "The balance card must stay at its pinned position."
+        )
+        XCTAssertLessThan(
+            healthHeading.frame.minY,
+            initialHealthY - 80,
+            "The Home content should scroll behind the pinned balance card."
+        )
+        XCTAssertTrue(
+            app.buttons["mwlt.dashboard.income.edit"].isHittable,
+            "The pinned card's income edit action should remain interactive after scrolling."
+        )
+
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Home — pinned balance card after scroll"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    @MainActor
     func testDashboardBudgetEditorUsesStandardButtonTap() {
         let app = XCUIApplication()
         launchUITestApp(app)

@@ -149,6 +149,14 @@ struct DashboardView: View {
         guard income > 0 else { return 0 }
         return min(100, Int((Double(spent) / Double(income) * 100).rounded()))
     }
+    // The PWA balance card shows income minus this month's expenses.
+    // Installments remain accounted for by the separate financial calculations.
+    private var balanceCardRemaining: Int64 { income - spent }
+    private var balanceCardProgressColor: Color {
+        if balanceCardRemaining < 0 || expensePercent > 85 { return Color(hex: "#f87171") }
+        if expensePercent > 65 { return Color(hex: "#fbbf24") }
+        return .white.opacity(0.85)
+    }
     private var progressColor: Color {
         if remaining < 0 || expensePercent > 85 { return Color(hex: "#f87171") }
         if expensePercent > 65 { return Color(hex: "#fbbf24") }
@@ -187,7 +195,7 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
-                    balanceCard
+                    balanceCardScrollSpacer
 
                     DashboardWeightedRow(weights: [1, 2], spacing: 12) {
                         streakCard
@@ -209,6 +217,9 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(AppAppearance.background(dark: isDark))
+            .overlay(alignment: .top) {
+                pinnedBalanceCardOverlay
+            }
             .toolbar(.hidden, for: .navigationBar)
             .onAppear {
                 loadPersistedDashboardData()
@@ -269,6 +280,51 @@ struct DashboardView: View {
             }
 
         }
+    }
+
+    // Keep the card's exact layout space in the scroll content while its
+    // interactive copy stays pinned below the fixed frosted header.
+    private var balanceCardScrollSpacer: some View {
+        VStack(spacing: 0) {
+            balanceCard
+                .opacity(0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+            Color.clear.frame(height: 26)
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var pinnedBalanceCardOverlay: some View {
+        balanceCard
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("mwlt.dashboard.balanceCard")
+            .padding(.horizontal, 16)
+            .padding(.top, 77)
+            .frame(maxWidth: 560)
+            .frame(maxWidth: .infinity)
+            .background(alignment: .bottom) {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        AppAppearance.background(dark: isDark)
+                            .opacity(isDark ? 0.48 : 0.42)
+                    }
+                    .frame(height: 26)
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .white, location: 0),
+                                .init(color: .white, location: 0.30),
+                                .init(color: .clear, location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .offset(y: 26)
+            }
+            .zIndex(5)
     }
 
     private var balanceCard: some View {
@@ -335,7 +391,7 @@ struct DashboardView: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(.white.opacity(0.12))
                     Capsule()
-                        .fill(progressColor)
+                        .fill(balanceCardProgressColor)
                         .frame(width: proxy.size.width * min(CGFloat(expensePercent) / 100, 1))
                         .shadow(color: .white.opacity(0.25), radius: 5)
                 }
@@ -347,23 +403,23 @@ struct DashboardView: View {
                 HStack(spacing: 4) {
                     Text(isEnglish ? "Remaining" : "Sisa")
                         .foregroundStyle(.white.opacity(0.42))
-                    Text(rupiah(max(0, remaining)))
+                    Text(rupiah(max(0, balanceCardRemaining)))
                         .fontWeight(.bold)
-                        .foregroundStyle(progressColor)
+                        .foregroundStyle(balanceCardProgressColor)
                 }
                 Spacer()
                 Text("\(max(0, 100 - expensePercent))% " + (isEnglish ? "left" : "tersisa"))
                     .fontWeight(.bold)
-                    .foregroundStyle(progressColor)
+                    .foregroundStyle(balanceCardProgressColor)
             }
             .font(MeowlettTypography.font(size: 10, weight: .regular))
-            if remaining < 0 {
+            if balanceCardRemaining < 0 {
                 HStack(spacing: 8) {
                     MeowIcon(key: "exclamationmark.circle", size: 14)
                         .foregroundStyle(Color(hex: "#fca5a5"))
                     Text(isEnglish
-                         ? "Spending exceeds income by \(rupiah(abs(remaining)))"
-                         : "Pengeluaran melebihi pemasukan sebesar \(rupiah(abs(remaining)))")
+                         ? "Spending exceeds income by \(rupiah(abs(balanceCardRemaining)))"
+                         : "Pengeluaran melebihi pemasukan sebesar \(rupiah(abs(balanceCardRemaining)))")
                         .font(MeowlettTypography.font(size: 11, weight: .bold))
                         .foregroundStyle(Color(hex: "#fca5a5"))
                         .fixedSize(horizontal: false, vertical: true)
