@@ -172,7 +172,7 @@ function parseJavaScriptLiteral(moduleSource, literalStart) {
 function extractIconNode(moduleSource) {
   const call = /createLucideIcon\s*\(\s*(['"])([^'"]+)\1\s*,/g.exec(moduleSource);
   if (!call) {
-    const alias = /export\s*\{\s*default(?:\s+as\s+[\w$]+)?\s*\}\s*from\s*['"]\.\/([a-z0-9-]+)['"]/i.exec(moduleSource);
+    const alias = /export\s*\{\s*(?:default(?:\s+as\s+[\w$]+)?|[A-Za-z_$][\w$]*\s+as\s+default)\s*\}\s*from\s*['"]\.\/([a-z0-9-]+)(?:\.js)?['"]/i.exec(moduleSource);
     if (alias) return { aliasTarget: alias[1] + '.js' };
     throw new Error('neither createLucideIcon call nor default re-export found in module');
   }
