@@ -45,6 +45,19 @@ jobs:
         working-directory: reference/pwa
         run: npm install --no-audit --no-fund --no-package-lock
 
+      - name: Extract PWA Lucide icon nodes
+        working-directory: reference/pwa
+        run: node ../tools/extract-icons.mjs
+
+      - name: Upload PWA Lucide icon inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-lucide-icon-inventory
+          path: reference/out/icons.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Build PWA with Vite
         working-directory: reference/pwa
         run: npm run build

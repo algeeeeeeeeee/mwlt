@@ -915,3 +915,20 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 ### Verification boundary
 - Static changes only. Simulator compilation/execution, actual nil/available results and the new diagnostics artifact contents remain BELUM TERVERIFIKASI.
 - No app screen, app source outside the existing test, PWA source, workflow, main branch or PR status was changed. PR #2 remains Draft. No merge, rebase, force-push or deletion.
+
+## R2a-1 — Extract PWA Lucide icon nodes (23 November 2026)
+
+### Scope and implementation
+- Basis: `native-swift-parity` HEAD `4397e1b5625e9ba088390b7384759faa3d49eed4`.
+- Added `reference/tools/extract-icons.mjs`. It reads the PWA `App.jsx`, `icons.jsx` compatibility shim, and `constants/index.js`; inventories direct App references, `LUCIDE_MAP`, `GOAL_ICONS`, `PRESET_ICONS`, and `ICON_OPTIONS`.
+- The extractor reads the installed version from `reference/pwa/node_modules/lucide-react/package.json`, prints it to the Actions log, then imports each corresponding module from `node_modules/lucide-react/dist/esm/icons/*.js` and takes its exported `__iconNode`. It does not infer node data from icon names or hardcode icon geometry.
+- Compatibility aliases are represented explicitly, including `flower → Flower2`, `Calculator2 → Calculator`, and conditional `House`/`ChartPie` fallback candidates. Icons implemented as local SVG components are separately listed as custom SVG instead of fabricating Lucide node data.
+- The report always includes the required aliases: `wallet → Wallet`, `rocket → Rocket`, `hand.coins → HandCoins`, `coins → Coins`, and `flower → Flower2`. Unavailable module names are written to `missingNames` with their source file path and reason; no missing icon node is fabricated.
+- Output is generated at `reference/out/icons.json`. `.github/workflows/ref-shots.yml` runs the extractor immediately after PWA `npm install` and before `npm run build`, then uploads the JSON as artifact `pwa-lucide-icon-inventory` (14-day retention).
+- Playwright installation/version steps and PWA application source were not changed. No UI, theme, layout, interaction, or application behavior files were edited.
+
+### Verification boundary
+- `node --check` passed for the extractor.
+- A local synthetic fixture exercised parsing of nested goal maps, preset/category aliases, module node loading, missing-name reporting shape, and all five required aliases (5/5 fixture icons resolved). This is a parser/fixture test, not verification against the actual CI-installed Lucide package.
+- Actual installed `lucide-react` version, the five icon module files/nodes, generated `reference/out/icons.json`, and artifact upload remain **BELUM TERVERIFIKASI** until the newly triggered reference workflow runs.
+- Only `reference/tools/extract-icons.mjs`, `.github/workflows/ref-shots.yml`, and this checkpoint are intended to change in this commit. `reference/out/icons.json` is a workflow output and is not committed.
