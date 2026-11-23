@@ -172,7 +172,7 @@ struct DateTabView: View {
                                 RoundedRectangle(cornerRadius: 6)
                                     .fill(item.done ? datePink : .clear)
                                     .frame(width: 20, height: 20)
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(item.done ? datePink : Color.primary.opacity(isDark ? 0.2 : 0.15), lineWidth: 2))
+                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(item.done ? datePink : Color.primary.opacity(isDark ? 0.2 : 0.15), lineWidth: 2).allowsHitTesting(false))
                                     .overlay {
                                         if item.done {
                                             Image(systemName: "checkmark.circle")
@@ -315,7 +315,7 @@ struct DateTabView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 38)
                             .background(datePink.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(datePink.opacity(0.25), lineWidth: 1.5))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(datePink.opacity(0.25), lineWidth: 1.5).allowsHitTesting(false))
                     }
                     .buttonStyle(.plain)
                     Button {
@@ -328,7 +328,7 @@ struct DateTabView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 38)
                             .background(Color.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.25), lineWidth: 1.5))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.25), lineWidth: 1.5).allowsHitTesting(false))
                     }
                     .buttonStyle(.plain)
                 }
@@ -411,6 +411,7 @@ struct DateTabView: View {
                     Image(systemName: "xmark").font(.system(size: 15, weight: .semibold)).foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.date.wishlist.close")
             }
             TextField(isEnglish ? "e.g. Rooftop dinner..." : "Contoh: Dinner di rooftop...", text: $wishlistInput)
                 .focused($wishlistFieldFocused)
@@ -429,6 +430,10 @@ struct DateTabView: View {
                     .background(datePink, in: RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 22)            .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.date.wishlist.save")
         }
         .padding(.horizontal, 20)
         .padding(.top, 22)

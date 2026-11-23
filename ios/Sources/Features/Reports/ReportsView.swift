@@ -390,24 +390,34 @@ struct ReportsView: View {
         VStack(alignment: .leading, spacing: 10) {
             sectionHeading(isEnglish ? "Category Trend (4 months)" : "Tren Kategori (4 bulan)", symbol: "chart.bar.xaxis")
             HStack(spacing: 4) {
-                Text(isEnglish ? "Bar" : "Batang")
-                    .font(MeowlettTypography.font(size: 11, weight: .bold))
-                    .foregroundStyle(trendMode == "bar" ? accent : Color.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(trendMode == "bar" ? accent.opacity(0.13) : .clear, in: Capsule())
-                    .overlay(Capsule().stroke(trendMode == "bar" ? accent : Color.secondary.opacity(0.18), lineWidth: 1.2))
-                    .contentShape(Capsule())
-                    .onTapGesture { trendMode = "bar" }
-                Text(isEnglish ? "Line" : "Garis")
-                    .font(MeowlettTypography.font(size: 11, weight: .bold))
-                    .foregroundStyle(trendMode == "line" ? accent : Color.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(trendMode == "line" ? accent.opacity(0.13) : .clear, in: Capsule())
-                    .overlay(Capsule().stroke(trendMode == "line" ? accent : Color.secondary.opacity(0.18), lineWidth: 1.2))
-                    .contentShape(Capsule())
-                    .onTapGesture { trendMode = "line" }
+                Button {
+                    trendMode = "bar"
+                } label: {
+                    Text(isEnglish ? "Bar" : "Batang")
+                        .font(MeowlettTypography.font(size: 11, weight: .bold))
+                        .foregroundStyle(trendMode == "bar" ? accent : Color.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(trendMode == "bar" ? accent.opacity(0.13) : .clear, in: Capsule())
+                        .overlay(Capsule().stroke(trendMode == "bar" ? accent : Color.secondary.opacity(0.18), lineWidth: 1.2).allowsHitTesting(false))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.reports.trend.bar")
+                Button {
+                    trendMode = "line"
+                } label: {
+                    Text(isEnglish ? "Line" : "Garis")
+                        .font(MeowlettTypography.font(size: 11, weight: .bold))
+                        .foregroundStyle(trendMode == "line" ? accent : Color.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(trendMode == "line" ? accent.opacity(0.13) : .clear, in: Capsule())
+                        .overlay(Capsule().stroke(trendMode == "line" ? accent : Color.secondary.opacity(0.18), lineWidth: 1.2).allowsHitTesting(false))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.reports.trend.line")
                 Spacer()
             }
             HStack {
@@ -602,7 +612,7 @@ struct ReportsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(accent.opacity(0.25), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(accent.opacity(0.25), lineWidth: 1).allowsHitTesting(false))
             }
             .buttonStyle(.plain)
             Button {
@@ -614,9 +624,14 @@ struct ReportsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
-                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
+                    .overlay(RoundedRectangle(cornerRadius: 13).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5).allowsHitTesting(false))
             }
             .buttonStyle(.plain)
+        }
+        .padding(13)
+        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.reports.exportImage")
         }
         .padding(13)
         .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))
@@ -981,6 +996,11 @@ struct ReportsView: View {
                     .buttonStyle(.plain)
 
                     Button {
+                        exportStoryImage()                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.reports.story.cancel")
+
+                    Button {
                         exportStoryImage()
                     } label: {
                         Label(isEnglish ? "Download Image" : "Unduh Gambar", systemImage: "arrow.down.to.line")
@@ -991,6 +1011,11 @@ struct ReportsView: View {
                             .background(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
+                }
+
+                Text(isEnglish ? "Tap outside to close"                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.reports.story.download")
                 }
 
                 Text(isEnglish ? "Tap outside to close" : "Tap di luar untuk tutup")

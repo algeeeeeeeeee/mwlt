@@ -43,6 +43,7 @@ struct SettingsReminderSheet: View {
                 Text(isEnglish ? "Transaction Reminder" : "Pengingat Transaksi")
                     .font(MeowlettTypography.font(size: 16, weight: .black))
                     .foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.settings.reminder.title")
                 Spacer()
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -95,6 +96,8 @@ struct SettingsReminderSheet: View {
                             )
                     }
                     .buttonStyle(.plain)
+                    .padding(.horizontal, 16)                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.settings.reminder.save")
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
                     .padding(.bottom, 24)
@@ -499,6 +502,7 @@ struct SettingsCicilanSheet: View {
             HStack {
                 Label(isEnglish ? "Installments" : "Cicilan", systemImage: "creditcard")
                     .font(.system(size: 16, weight: .black)).foregroundStyle(.primary)
+                    .accessibilityIdentifier("mwlt.transactions.installments.title")
                 Spacer()
                 Button {
                     editorItem = NativeInstallment(id: Int64(Date().timeIntervalSince1970 * 1000), name: "", total: 0, monthly: 0, dueDay: "5", startMonth: currentMonth, duration: 12, paidMonths: [])
@@ -509,11 +513,17 @@ struct SettingsCicilanSheet: View {
                         .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                Button { dismiss() } label: {                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.transactions.installments.add")
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.secondary).frame(width: 30, height: 30)
                         .background(Color(uiColor: .secondarySystemBackground), in: Circle())
                 }.buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20).padding(.vertical, 14)                }.buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.transactions.installments.close")
             }
             .padding(.horizontal, 20).padding(.vertical, 14)
 
@@ -691,7 +701,10 @@ private struct NativeInstallmentEditor: View {
             .navigationTitle(isEnglish ? "Installment" : "Cicilan")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(isEnglish ? "Cancel" : "Batal") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(isEnglish ? "Cancel" : "Batal") { dismiss() }
+                        .accessibilityIdentifier("mwlt.transactions.installments.editor.cancel")
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(isEnglish ? "Save" : "Simpan") {
                         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -708,6 +721,7 @@ private struct NativeInstallmentEditor: View {
                         guard newItem.monthly > 0 else { return }
                         onSave(newItem); dismiss()
                     }
+                    .accessibilityIdentifier("mwlt.transactions.installments.editor.save")
                     .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (Int64(monthly.filter(\.isNumber)) ?? 0) <= 0)
                 }
             }

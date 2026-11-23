@@ -1,11 +1,6 @@
 import SwiftUI
 import UserNotifications
 
-private enum RecurringUtilitySheet: String, Identifiable {
-    case installments, splitBills
-    var id: String { rawValue }
-}
-
 struct NativeRecurringItem: Codable, Identifiable, Equatable {
     var id: Int64
     var description: String
@@ -79,8 +74,8 @@ struct RecurringTransactionsSection: View {
     @State private var loaded = false
     @State private var showRecurring = false
     @State private var showRecurringIncome = false
-    @State private var activeUtilitySheet: RecurringUtilitySheet?
-    @Binding var isUtilitySheetPresented: Bool
+    let onShowInstallments: () -> Void
+    let onShowSplitBills: () -> Void
 
     @State private var editingRecurringID: Int64?
     @State private var recurringName = ""
@@ -121,22 +116,12 @@ struct RecurringTransactionsSection: View {
             RecurringTransactionAutomation.processDueItems(store: store, itemIDs: newlyAddedIDs)
         }
         .onChange(of: recurringIncome) { _, value in persist(value, key: "gm_recurring_income") }
-                .sheet(item: $activeUtilitySheet, onDismiss: { isUtilitySheetPresented = false }) { sheet in
-            switch sheet {
-            case .installments:
-                SettingsCicilanSheet()
-            case .splitBills:
-                NativeSplitBillsSheet()
-            }
-        }
-
     }
 
     private var utilityLinks: some View {
         HStack(spacing: 0) {
             Button {
-                activeUtilitySheet = .installments
-                isUtilitySheetPresented = true
+                onShowInstallments()
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "creditcard")
@@ -160,12 +145,16 @@ struct RecurringTransactionsSection: View {
             .buttonStyle(.plain)
 
             Rectangle()
+                .fill(AppAppearance.border(dark: isDark))            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.transactions.installments")
+
+            Rectangle()
                 .fill(AppAppearance.border(dark: isDark))
                 .frame(width: 1, height: 16)
 
             Button {
-                activeUtilitySheet = .splitBills
-                isUtilitySheetPresented = true
+                onShowSplitBills()
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "person.2")
@@ -179,6 +168,10 @@ struct RecurringTransactionsSection: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+        }
+        .padding(.vertical, 3)            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.transactions.splitBills")
         }
         .padding(.vertical, 3)
     }

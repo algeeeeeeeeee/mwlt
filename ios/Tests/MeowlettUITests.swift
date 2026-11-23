@@ -704,4 +704,112 @@ final class MeowlettUITests: XCTestCase {
             "The Date wishlist sheet did not appear."
         )
     }
+
+
+    @MainActor
+    func testPrimaryMenusAndHeaderUseStandardButtonTap() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+        XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
+        tapTab("dashboard", app: app)
+        tapTab("transactions", app: app)
+        tapTab("report", app: app)
+        tapTab("date", app: app)
+
+        let appearance = app.buttons["mwlt.header.appearance"]
+        XCTAssertTrue(appearance.waitForExistence(timeout: 8))
+        let initialAppearance = appearance.value as? String
+        XCTAssertNotNil(initialAppearance)
+        appearance.tap()
+        let changed = expectation(
+            for: NSPredicate(format: "value != %@", initialAppearance ?? ""),
+            evaluatedWith: appearance,
+            handler: nil
+        )
+        wait(for: [changed], timeout: 8)
+
+        let settings = app.buttons["mwlt.header.settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 8))
+        settings.tap()
+        XCTAssertTrue(app.staticTexts["mwlt.screen.settings"].waitForExistence(timeout: 8))
+    }
+
+    @MainActor
+    func testDashboardBudgetEditorUsesStandardButtonTap() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 10))
+        let budget = app.buttons["mwlt.dashboard.budget.edit"]
+        for _ in 0..<5 {
+            if budget.exists && budget.isHittable { break }
+            scroll.swipeUp()
+        }
+        XCTAssertTrue(budget.waitForExistence(timeout: 8))
+        budget.tap()
+        XCTAssertTrue(app.staticTexts["mwlt.dashboard.moneyEntry.title"].waitForExistence(timeout: 8))
+        let cancel = app.buttons["mwlt.dashboard.moneyEntry.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 8))
+        cancel.tap()
+    }
+
+    @MainActor
+    func testReportStoryExportModalUsesStandardButtonTap() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+        tapTab("report", app: app)
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 8))
+        let export = app.buttons["mwlt.reports.exportImage"]
+        for _ in 0..<5 {
+            if export.exists && export.isHittable { break }
+            scroll.swipeUp()
+        }
+        XCTAssertTrue(export.waitForExistence(timeout: 8))
+        export.tap()
+        let cancel = app.buttons["mwlt.reports.story.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 8))
+        cancel.tap()
+    }
+
+    @MainActor
+    func testInstallmentsMenuUsesStandardButtonTap() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+        tapTab("transactions", app: app)
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 8))
+        let installments = app.buttons["mwlt.transactions.installments"]
+        for _ in 0..<6 {
+            if installments.exists && installments.isHittable { break }
+            scroll.swipeUp()
+        }
+        XCTAssertTrue(installments.waitForExistence(timeout: 8))
+        installments.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["mwlt.transactions.installments.title"].waitForExistence(timeout: 8))
+        let close = app.buttons["mwlt.transactions.installments.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 8))
+        close.tap()
+    }
+
+    @MainActor
+    func testSplitBillsMenuUsesStandardButtonTap() {
+        let app = XCUIApplication()
+        launchUITestApp(app)
+        tapTab("transactions", app: app)
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.waitForExistence(timeout: 8))
+        let splitBills = app.buttons["mwlt.transactions.splitBills"]
+        for _ in 0..<6 {
+            if splitBills.exists && splitBills.isHittable { break }
+            scroll.swipeUp()
+        }
+        XCTAssertTrue(splitBills.waitForExistence(timeout: 8))
+        splitBills.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["mwlt.transactions.splitBills.title"].waitForExistence(timeout: 8))
+        let close = app.buttons["mwlt.transactions.splitBills.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 8))
+        close.tap()
+    }
+
 }

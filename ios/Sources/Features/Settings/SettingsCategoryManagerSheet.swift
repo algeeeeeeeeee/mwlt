@@ -239,7 +239,7 @@ struct SettingsCategoryManagerSheet: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
                             .background(selected ? Color(hex: color).opacity(0.13) : categoryBackground, in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? Color(hex: color) : .clear, lineWidth: 2))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(selected ? Color(hex: color) : .clear, lineWidth: 2).allowsHitTesting(false))
                     }
                     .buttonStyle(.plain)
                 }
@@ -257,7 +257,7 @@ struct SettingsCategoryManagerSheet: View {
                         Circle()
                             .fill(Color(hex: value))
                             .frame(width: 28, height: 28)
-                            .overlay(Circle().stroke(selectedColor(value) ? primaryColor : .clear, lineWidth: 3))
+                            .overlay(Circle().stroke(selectedColor(value) ? primaryColor : .clear, lineWidth: 3).allowsHitTesting(false))
                             .scaleEffect(selectedColor(value) ? 1.08 : 1)
                     }
                     .buttonStyle(.plain)

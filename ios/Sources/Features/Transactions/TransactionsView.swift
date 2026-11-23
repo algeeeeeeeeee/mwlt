@@ -53,6 +53,20 @@ private struct TransactionSortGlyph: View {
     }
 }
 
+private enum TransactionsPresentedSheet: Identifiable {
+    case editor(MeowlettTransaction?)
+    case installments
+    case splitBills
+
+    var id: String {
+        switch self {
+        case .editor: return "editor"
+        case .installments: return "installments"
+        case .splitBills: return "splitBills"
+        }
+    }
+}
+
 struct TransactionsView: View {
     @EnvironmentObject private var store: FinanceStore
     @EnvironmentObject private var modalBlurCoordinator: ModalBlurCoordinator
@@ -66,9 +80,7 @@ struct TransactionsView: View {
     @State private var sortOrder = "date-desc"
     @State private var filterPayment = "all"
     @State private var activeTransactionID: UUID?
-    @State private var showEditor = false
-    @State private var isRecurringUtilityPresented = false
-    @State private var editingTransaction: MeowlettTransaction?
+    @State private var activeSheet: TransactionsPresentedSheet?
     @State private var recentlyDeletedTransaction: MeowlettTransaction?
     @State private var showUndoToast = false
     @State private var undoTask: Task<Void, Never>?
@@ -174,9 +186,12 @@ struct TransactionsView: View {
                         }
                     }
                 }
-                RecurringTransactionsSection(isUtilitySheetPresented: $isRecurringUtilityPresented)
-                    .environmentObject(store)
-                    .padding(.top, 8)
+                RecurringTransactionsSection(
+                    onShowInstallments: { activeSheet = .installments },
+                    onShowSplitBills: { activeSheet = .splitBills }
+                )
+                .environmentObject(store)
+                .padding(.top, 8)
             }
             .padding(.horizontal, 16)
             .padding(.top, 60)
@@ -193,14 +208,21 @@ struct TransactionsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .onChange(of: showEditor || isRecurringUtilityPresented) { _, presented in
+        .onChange(of: activeSheet != nil) { _, presented in
             modalBlurCoordinator.set("transactions", isPresented: presented)
         }
         .onDisappear { modalBlurCoordinator.set("transactions", isPresented: false) }
         .toolbar(.hidden, for: .navigationBar)
-        .sheet(isPresented: $showEditor) {
-            TransactionEditorSheet(transaction: editingTransaction)
-                .environmentObject(store)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .editor(let transaction):
+                TransactionEditorSheet(transaction: transaction)
+                    .environmentObject(store)
+            case .installments:
+                SettingsCicilanSheet()
+            case .splitBills:
+                NativeSplitBillsSheet()
+            }
         }
     }
 
@@ -320,7 +342,7 @@ struct TransactionsView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 6)
             .background(selected ? accent.opacity(0.08) : Color.primary.opacity(0.04), in: Capsule())
-            .overlay(Capsule().stroke(selected ? accent.opacity(0.38) : Color.primary.opacity(0.08), lineWidth: selected ? 1.5 : 1))
+            .overlay(Capsule().stroke(selected ? accent.opacity(0.38) : Color.primary.opacity(0.08), lineWidth: selected ? 1.5 : 1).allowsHitTesting(false))
         }
         .buttonStyle(.plain)
     }
@@ -354,8 +376,7 @@ struct TransactionsView: View {
                     .padding(.bottom, 24)
 
                 Button {
-                    editingTransaction = nil
-                    showEditor = true
+                    activeSheet = .editor(nil)
                 } label: {
                     Label(isEnglish ? "Add first transaction" : "Catat transaksi pertama", systemImage: "plus")
                         .font(MeowlettTypography.font(size: 14, weight: .heavy))
@@ -527,8 +548,7 @@ struct TransactionsView: View {
             if active {
                 HStack(spacing: 8) {
                     Button {
-                        editingTransaction = transaction
-                        showEditor = true
+                        activeSheet = .editor(transaction)
                         activeTransactionID = nil
                     } label: {
                         Label("Edit", systemImage: "pencil")
@@ -537,7 +557,7 @@ struct TransactionsView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
                             .background(AppAppearance.input(dark: isDark), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5).allowsHitTesting(false))
                     }
                     .buttonStyle(.plain)
 
@@ -551,7 +571,7 @@ struct TransactionsView: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
                             .background(Color(hex: isDark ? "#1f0a0a" : "#fff1f2"), in: RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: isDark ? "#3d1414" : "#fecdd3"), lineWidth: 1.5))
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(hex: isDark ? "#3d1414" : "#fecdd3"), lineWidth: 1.5).allowsHitTesting(false))
                     }
                     .buttonStyle(.plain)
                 }

@@ -645,3 +645,87 @@ All requested paths exist under `reference/pwa/`:
 - Sintaks harness diperiksa sebelum commit. Push dilakukan satu kali; nomor run ref-shots akan dicek satu kali setelah push.
 - Hasil capture DOM, perbedaan build/live, URL/status/ukuran bundle, keberadaan empat string, artifact, dan kesimpulan workflow: **BELUM TERVERIFIKASI** sampai workflow menghasilkan artifact/log. Tidak menunggu CI.
 - R1b–R1d tetap antre. PR #2 tetap Draft dan tidak di-merge.
+
+
+## R3 — native interaction inventory, hit-testing audit, dan UI smoke coverage (23 November 2026)
+
+### Basis audit
+- Membaca checkpoint ini (blob sebelum R3: \`104ec6e750ff0031d82d9178a9141b1e90f4ce4c\`) dan \`AUDIT.md\` (blob \`b6049a77c56c752b48e2069f0376e55705b38db0\`) pada branch \`native-swift-parity\`; HEAD awal \`a8a9d78367ad714d5b407bc5247bbc20ae83cd6e\`.
+- Inventaris dipetakan dari SwiftUI source pada HEAD tersebut; ini peta source-to-action, bukan klaim semua alur sudah lulus simulator.
+
+### Inventaris menu dan tombol native
+
+| Area / kontrol | File Swift | Aksi |
+|---|---|---|
+| Header — mode terang/gelap | \`MainTabView.swift\` | Mematikan Follow System lalu mengubah \`darkOverride\` |
+| Header — gear Settings | \`MainTabView.swift\` | Mengatur tab aktif menjadi Settings |
+| Header — foto profil | \`MainTabView.swift\` | Membuka PhotosPicker; foto pilihan dimuat lalu disimpan sebagai base64 |
+| Bottom tab Beranda / Transaksi / Laporan / Date | \`MainTabView.swift\` | Memanggil \`selectTab(tab)\` |
+| FAB + | \`MainTabView.swift\` | Menyetel \`showQuickAdd = true\` dan membuka editor transaksi |
+| Beranda — edit pemasukan | \`DashboardView.swift\` | Membuka editor pemasukan |
+| Beranda — set/edit budget bulanan | \`DashboardView.swift\` | Membuka \`NativeMoneyEntrySheet\`; Simpan menulis nilai budget |
+| Beranda — hapus/tambah budget kategori | \`DashboardView.swift\` | ✕ menghapus limit; tombol persentase menambah limit Rp50.000 |
+| Beranda — tambah/edit/hapus target tabungan | \`DashboardView.swift\` | Membuka editor, memperbarui goal, atau menghapus goal |
+| Beranda — tambah nominal goal | \`DashboardView.swift\` | Input inline; Simpan menambah saldo tersimpan, Batal menutup input |
+| Beranda — Lihat Semua / Catat Sekarang / Lihat Lebih | \`DashboardView.swift\` | Ke Transaksi / callback Quick Add / menambah lima item recent |
+| Transaksi — clear pencarian | \`TransactionsView.swift\` | Mengosongkan query |
+| Transaksi — filter periode | \`TransactionsView.swift\` | Mengubah periode harian, mingguan, bulanan |
+| Transaksi — sort tanggal/jumlah | \`TransactionsView.swift\` | Mengubah urutan tanggal/jumlah ascending/descending |
+| Transaksi — filter metode pembayaran | \`TransactionsView.swift\` | Mengubah \`filterPayment\` |
+| Transaksi — tambah transaksi | \`TransactionsView.swift\` | Membuka editor transaksi baru |
+| Transaksi — expand/Edit/Hapus/Undo | \`TransactionsView.swift\` | Membuka detail, editor, hapus dengan toast, atau memulihkan transaksi |
+| Cicilan | \`RecurringTransactionsSection.swift\`, \`TransactionsView.swift\`, \`SettingsFeatureSheets.swift\` | Membuka daftar; tambah/edit, tandai lunas, hapus; editor simpan/batal |
+| Patungan | \`RecurringTransactionsSection.swift\`, \`TransactionsView.swift\`, \`SplitBillsSheet.swift\` | Membuka daftar; tambah/edit, toggle pembayaran anggota, hapus; editor simpan/batal |
+| Transaksi rutin — expand/tambah/simpan/batal | \`RecurringTransactionsSection.swift\` | Toggle daftar; validasi dan simpan/perbarui draft atau batalkan |
+| Pemasukan rutin — expand/tambah/simpan | \`RecurringTransactionsSection.swift\` | Toggle daftar dan menambah/memperbarui pemasukan rutin |
+| Laporan — mode Bar/Line | \`ReportsView.swift\` | Mengubah \`trendMode\`; kini Button standar |
+| Laporan — tanggal laporan | \`ReportsView.swift\` | DatePicker mengubah \`reportDate\` |
+| Laporan — ekspor CSV/HTML | \`ReportsView.swift\` | Menyiapkan Data dan membuka file exporter |
+| Laporan — Bagikan ringkasan/WhatsApp | \`ReportsView.swift\` | ShareLink atau membuka URL wa.me berisi ringkasan |
+| Laporan — ekspor gambar | \`ReportsView.swift\` | Membuka story modal; Download membentuk gambar dengan ImageRenderer |
+| Date — tambah/checklist/hapus wishlist | \`DateTabView.swift\` | Membuka sheet, toggle status selesai, atau menghapus item |
+| Date — Catat pengeluaran | \`DateTabView.swift\` | Membuka editor transaksi kategori date |
+| Date — expand/Edit/Hapus/Undo | \`DateTabView.swift\` | Membuka detail, edit, hapus dengan Undo, atau pulihkan |
+| Settings — Mode Tampilan / Notifikasi / Kategori / Data | \`SettingsView.swift\` | Membuka sheet masing-masing |
+| Settings — edit nama profil | \`SettingsView.swift\` | Membuka editor inline; OK menyimpan nama |
+| Appearance — close, Follow System, mode, bahasa, preset, custom theme | \`SettingsView.swift\` | Menutup sheet atau mengubah preferensi Appearance |
+| Notifications — close, toggle, hari, reminder, buka Settings iPhone, OK | \`SettingsView.swift\`, \`SettingsFeatureSheets.swift\` | Mengubah preferensi/izin, membuka reminder sheet, deep-link OS Settings atau menutup alert |
+| Reminder — hari/jam/smart/save/close | \`SettingsFeatureSheets.swift\` | Mengubah jadwal; Simpan menjadwalkan notifikasi bila aktif |
+| Category menu — Budget/Kelola/Tutup | \`SettingsView.swift\` | Membuka manager budget/kategori atau menutup menu |
+| Budget kategori — Done | \`SettingsBudgetSheet.swift\` | Menutup sheet; input mengubah limit kategori |
+| Category manager — tambah/edit/hapus, ikon/warna, simpan/reset draft | \`SettingsCategoryManagerSheet.swift\` | Mengelola definisi kategori dan urutan |
+| Data — Backup/Restore/Reset/Done | \`SettingsView.swift\` | Ekspor JSON, impor dan konfirmasi restore, konfirmasi reset, atau tutup |
+| Quick Add — Kalkulator | \`TransactionEditorSheet.swift\` | Membuka kalkulator; angka/operator mengubah hitungan, Gunakan hasil menerapkan nilai |
+| Quick Add — Camera/Upload/Hapus receipt | \`TransactionEditorSheet.swift\` | Membuka kamera/PhotosPicker atau menghapus receipt |
+| Quick Add — kategori/metode/tanggal | \`TransactionEditorSheet.swift\` | Mengubah field draft transaksi |
+| Quick Add — Simpan/Batal/close | \`TransactionEditorSheet.swift\` | Memvalidasi dan menyimpan transaksi atau menutup editor |
+| Kalkulator — angka/operator/C/backspace/Cancel/Gunakan hasil | \`TransactionEditorSheet.swift\` | Mengubah kalkulasi, menerapkan hasil, atau menutup |
+| Cicilan editor — Save/Cancel | \`SettingsFeatureSheets.swift\` | Menyimpan atau membatalkan detail cicilan |
+| Patungan editor — Save/Cancel | \`SplitBillsSheet.swift\` | Menyimpan atau membatalkan detail patungan |
+| Story modal — backdrop/Cancel/Download | \`ReportsView.swift\` | Backdrop/Cancel menutup; Download membentuk file gambar |
+| Konfirmasi restore/reset — backdrop/Cancel/Done | \`SettingsView.swift\` | Backdrop/Cancel membatalkan; Done melakukan restore/reset |
+
+**Aksi kosong:** pemindaian deklarasi Button pada file layar/modal utama tidak menemukan closure kosong yang bisa dikonfirmasi sebagai tombol mati. PhotosPicker, DatePicker, ColorPicker, ShareLink, Toggle, dan Picker memakai aksi/binding native. Perilaku runtime per kontrol tetap **BELUM TERVERIFIKASI** sebelum test/device dijalankan.
+
+### Temuan audit struktur modal dan hit-testing
+1. **Presenter Transaksi tersebar di parent/child:** \`TransactionsView\` sebelumnya memasang sheet editor, sedangkan child \`RecurringTransactionsSection\` memasang sheet Cicilan/Patungan. Ketiga modal kini dipilih oleh satu enum dan satu \`.sheet(item:)\` pada parent; child hanya mengirim callback.
+2. **Modal kedua pada Notifications:** \`SettingsNotificationsSheet\` mempunyai satu \`.sheet\` Reminder dan satu \`.alert\` izin. State keduanya terpisah; alert menutup jalur interaksi ke sheet parent dan tidak ada pemicu source yang menyalakan keduanya bersamaan. Tidak ada bukti konflik runtime.
+3. **Presenter bertingkat lain:** \`TransactionEditorSheet\` memiliki sheet kalkulator/kamera; \`SettingsCicilanSheet\` dan \`NativeSplitBillsSheet\` masing-masing memiliki sheet editor item. Itu child flow yang terbuka dari modal induk.
+4. **Gesture kontrol non-Button:** Bar/Line di \`ReportsView.swift\` dan swatch warna goal di \`DashboardView.swift\` sebelumnya memakai \`onTapGesture\`; kini Button standar. Backdrop story-card dan konfirmasi Data tetap memakai tap-dismiss yang hanya dipasang pada backdrop.
+5. **Overlay dekoratif:** border filter Transaksi, badge header, outline mode Laporan/export, checklist dan tombol Date, serta ring ikon/warna category manager diberi \`allowsHitTesting(false)\`. Backdrop dismiss yang interaktif tidak dinonaktifkan.
+6. **Urutan header:** \`MainTabView.topHeader\` memiliki \`zIndex(10)\`, di atas konten scroll; dipertahankan. Splash root tetap \`zIndex(1000)\`.
+7. **Gesture induk:** tidak ditemukan \`highPriorityGesture\`, \`simultaneousGesture\`, atau modifier \`.gesture(...)\` pada screen files yang dipindai. Dua \`onTapGesture\` tersisa adalah backdrop dismiss pada Reports story dan Settings confirmation; bukan gesture parent seluruh screen.
+8. **View tak terhubung:** \`QuickTransactionSheet\` di \`MainTabView.swift\` dan \`SettingsPlaceholderSheet\` di \`SettingsView.swift\` adalah private view declarations tanpa presenter/call site pada file pemiliknya. Tidak dihapus; aksinya tidak terjangkau dari menu native yang aktif.
+
+### UI test ditambahkan
+- \`testPrimaryMenusAndHeaderUseStandardButtonTap\`: Beranda, Transaksi, Laporan, Date, toggle header dan gear Settings memakai \`button.tap()\`.
+- \`testDashboardBudgetEditorUsesStandardButtonTap\`: Set Budget → editor → Cancel.
+- \`testReportStoryExportModalUsesStandardButtonTap\`: Export Image → modal story → Cancel.
+- \`testInstallmentsMenuUsesStandardButtonTap\`: Cicilan → sheet → Close.
+- \`testSplitBillsMenuUsesStandardButtonTap\`: Patungan → sheet → Close.
+- Test terdahulu tetap mencakup Quick Add/kalkulator, Settings Appearance/Notifications/Category/Budgets/Category Manager/Data/Backup/Restore/Reset, serta Date Wishlist.
+
+### Verifikasi / batas
+- Simulator lokal tidak tersedia, sehingga test/build lokal **BELUM TERVERIFIKASI**.
+- Test baru, suite penuh, build simulator/device, dan kestabilan tap header gear **BELUM TERVERIFIKASI** hingga CI.
+- Tidak mengubah \`main\`, tidak merge PR #2, tidak menghapus file/branch/workflow. PR #2 tetap Draft.

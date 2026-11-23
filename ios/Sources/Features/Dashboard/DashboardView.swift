@@ -297,6 +297,9 @@ struct DashboardView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
+                VStack(alignment: .trailing, spacing: 2) {                .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.dashboard.income.edit")
+                Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(currentMonthLabel.uppercased())
                         .font(MeowlettTypography.font(size: 7, weight: .bold))
@@ -760,9 +763,10 @@ struct DashboardView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 7)
                             .background(readablePrimary.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(readablePrimary.opacity(0.20), lineWidth: 1))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(readablePrimary.opacity(0.20), lineWidth: 1).allowsHitTesting(false))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.dashboard.budget.edit")
                 }
                 .padding(.horizontal, 18)
                 .padding(.vertical, 16)
@@ -788,6 +792,7 @@ struct DashboardView: View {
                                 .frame(width: 24, height: 24)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("mwlt.dashboard.budget.edit")
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
@@ -1009,6 +1014,7 @@ struct DashboardView: View {
                         .background(accent, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("mwlt.dashboard.goal.add")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 10)
@@ -1681,7 +1687,9 @@ private struct NativeMoneyEntrySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(title).font(MeowlettTypography.font(size: 17, weight: .black))
+            Text(title)
+                .font(MeowlettTypography.font(size: 17, weight: .black))
+                .accessibilityIdentifier("mwlt.dashboard.moneyEntry.title")
             Text(language == "en" ? "Enter an amount in Indonesian rupiah." : "Masukkan nominal dalam Rupiah.")
                 .font(MeowlettTypography.font(size: 12, weight: .regular)).foregroundStyle(.secondary)
             HStack(spacing: 8) {
@@ -1704,12 +1712,14 @@ private struct NativeMoneyEntrySheet: View {
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(accent.opacity(0.55), lineWidth: 1.5))
             HStack(spacing: 10) {
                 Button(language == "en" ? "Cancel" : "Batal") { dismiss() }
+                    .accessibilityIdentifier("mwlt.dashboard.moneyEntry.cancel")
                     .foregroundStyle(.primary).frame(maxWidth: .infinity).frame(height: 45)
                     .background(AppAppearance.card2(dark: isDark), in: RoundedRectangle(cornerRadius: 13))
                 Button(language == "en" ? "Save" : "Simpan") {
                     onSave(Int64(amountText.filter(\.isNumber)) ?? 0)
                     dismiss()
                 }
+                .accessibilityIdentifier("mwlt.dashboard.moneyEntry.save")
                 .fontWeight(.heavy).foregroundStyle(.white).frame(maxWidth: .infinity).frame(height: 45)
                 .background(accent, in: RoundedRectangle(cornerRadius: 13))
             }
@@ -1904,9 +1914,18 @@ private struct DashboardGoalEditorSheet: View {
                 Section(isEnglish ? "Color" : "Warna") {
                     HStack {
                         ForEach(colors, id: \.self) { value in
-                            Circle().fill(Color(hex: value)).frame(width: 23, height: 23)
-                                .overlay(Circle().stroke(color == value ? Color.primary : .clear, lineWidth: 2).padding(-3))
-                                .onTapGesture { color = value }
+                            Button {
+                                color = value
+                            } label: {
+                                Circle()
+                                    .fill(Color(hex: value))
+                                    .frame(width: 23, height: 23)
+                                    .overlay(Circle().stroke(color == value ? Color.primary : .clear, lineWidth: 2).padding(-3).allowsHitTesting(false))
+                                    .contentShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Goal color swatch")
+                            .accessibilityIdentifier("mwlt.dashboard.goal.color")
                         }
                     }
                     .padding(.vertical, 6)

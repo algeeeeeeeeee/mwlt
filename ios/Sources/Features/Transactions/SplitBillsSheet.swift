@@ -42,6 +42,7 @@ struct NativeSplitBillsSheet: View {
             HStack {
                 Label(isEnglish ? "Split bills" : "Patungan", systemImage: "person.2")
                     .font(MeowlettTypography.font(size: 16, weight: .black))
+                    .accessibilityIdentifier("mwlt.transactions.splitBills.title")
                 Spacer()
                 Button {
                     editorItem = NativeSplitBill(id: Int64(Date().timeIntervalSince1970 * 1000), title: "", total: 0, members: [], paidBy: "", date: String(ISO8601DateFormatter().string(from: Date.now).prefix(10)), settled: false)
@@ -54,6 +55,9 @@ struct NativeSplitBillsSheet: View {
                         .background(AppAppearance.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                Button { dismiss() } label: {                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.transactions.splitBills.add")
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .bold))
@@ -62,6 +66,10 @@ struct NativeSplitBillsSheet: View {
                         .background(AppAppearance.card2(dark: isDark), in: Circle())
                 }
                 .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 18)                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("mwlt.transactions.splitBills.close")
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)

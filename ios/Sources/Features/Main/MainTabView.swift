@@ -312,6 +312,11 @@ struct MainTabView: View {
             }
             .buttonStyle(.plain)
             Button {
+                // Preserve the stable header navigation interaction from the last working baseline.            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.header.appearance")
+            .accessibilityValue(colorSchemeIsDark ? "dark" : "light")
+            Button {
                 // Preserve the stable header navigation interaction from the last working baseline.
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                     selected = .settings
@@ -326,8 +331,9 @@ struct MainTabView: View {
                     if notificationsEnabled != "1" {
                         Circle().fill(Color(hex: "#ef4444"))
                             .frame(width: 7, height: 7)
-                            .overlay(Circle().strokeBorder(AppAppearance.background(dark: colorSchemeIsDark), lineWidth: 1.5))
+                            .overlay(Circle().strokeBorder(AppAppearance.background(dark: colorSchemeIsDark), lineWidth: 1.5).allowsHitTesting(false))
                             .offset(x: -4, y: 4)
+                            .allowsHitTesting(false)
                     }
                 }
                 // Keep a stable 44pt hit target without changing the 34pt icon artwork.
@@ -357,9 +363,14 @@ struct MainTabView: View {
                         .overlay(Image(systemName: "camera").font(.system(size: 5, weight: .bold)).foregroundStyle(.white))
                         .overlay(Circle().strokeBorder(AppAppearance.background(dark: colorSchemeIsDark), lineWidth: 2))
                         .offset(x: 1, y: 1)
+                        .allowsHitTesting(false)
                 }
             }
             .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("mwlt.header.profilePhoto")
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
