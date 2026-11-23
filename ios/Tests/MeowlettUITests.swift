@@ -590,6 +590,8 @@ final class MeowlettUITests: XCTestCase {
         var standardHittableBeforeTap = false
         var standardTapAttempted = false
         var standardOpened = false
+        var appearanceTapAttempted = false
+        var appearanceTapSucceeded = false
 
         XCTContext.runActivity(named: "Settings paired leg — standard button.tap()") { _ in
             let dashboardTab = app.buttons["mwlt.tab.dashboard"]
@@ -611,7 +613,33 @@ final class MeowlettUITests: XCTestCase {
             standardHittableBeforeTap = headerExists && standardButton.isHittable
             standardReady = dashboardReady && headerExists && standardButton.isEnabled
 
-            print("[MeowlettTapComparison] control=settings leg=standard phase=pre-tap dashboardReady=\(dashboardReady) headerExists=\(headerExists) hittableBeforeWait=\(standardHittableBeforeWait) hittableBeforeTap=\(standardHittableBeforeTap) enabled=\(headerExists && standardButton.isEnabled) timestamp=\(ISO8601DateFormatter().string(from: Date()))")
+            let appearanceButton = app.buttons["mwlt.header.appearance"]
+            let appearanceExists = appearanceButton.waitForExistence(timeout: 10)
+            let appearanceInitialValue = appearanceButton.value as? String
+            let appearanceHittableBeforeTap = appearanceExists && appearanceButton.isHittable
+            let appearanceFrameBeforeTap = appearanceExists ? String(describing: appearanceButton.frame) : "unavailable"
+            let settingsFrameBeforeTap = headerExists ? String(describing: standardButton.frame) : "unavailable"
+
+            print("[MeowlettTapComparison] control=settings leg=standard pre-tap appearanceExists=\(appearanceExists) appearanceIsHittable=\(appearanceHittableBeforeTap) appearanceFrame=\(appearanceFrameBeforeTap) settingsExists=\(headerExists) settingsIsHittable=\(standardHittableBeforeTap) settingsFrame=\(settingsFrameBeforeTap)")
+
+            if appearanceExists && appearanceButton.isEnabled, let appearanceInitialValue {
+                appearanceTapAttempted = true
+                appearanceButton.tap()
+                let appearanceChanged = expectation(
+                    for: NSPredicate(format: "value != %@", appearanceInitialValue),
+                    evaluatedWith: appearanceButton,
+                    handler: nil
+                )
+                let appearanceWaitResult = XCTWaiter.wait(for: [appearanceChanged], timeout: 6)
+                appearanceTapSucceeded = appearanceWaitResult == .completed
+                print("[MeowlettTapComparison] control=appearance method=button.tap() attempted=\(appearanceTapAttempted) succeeded=\(appearanceTapSucceeded) valueBefore=\(appearanceInitialValue) valueAfter=\(appearanceButton.value ?? "nil") frame=\(appearanceButton.frame) isHittableAfter=\(appearanceButton.isHittable)")
+            } else {
+                print("[MeowlettTapComparison] control=appearance method=button.tap() attempted=false succeeded=false reason=missing-disabled-or-no-accessibility-value")
+            }
+
+            // Recheck Settings immediately before its standard tap, after the Appearance comparison.
+            standardHittableBeforeTap = headerExists && standardButton.isHittable
+            print("[MeowlettTapComparison] control=settings leg=standard phase=pre-tap-after-appearance dashboardReady=\(dashboardReady) headerExists=\(headerExists) hittableBeforeWait=\(standardHittableBeforeWait) hittableBeforeTap=\(standardHittableBeforeTap) frame=\(settingsFrameBeforeTap) enabled=\(headerExists && standardButton.isEnabled) appearanceTapAttempted=\(appearanceTapAttempted) appearanceTapSucceeded=\(appearanceTapSucceeded) timestamp=\(ISO8601DateFormatter().string(from: Date()))")
 
             if headerExists && standardButton.isEnabled {
                 logSettingsHitContext(leg: "standard", button: standardButton, app: app)
@@ -675,7 +703,7 @@ final class MeowlettUITests: XCTestCase {
         XCTAssertTrue(coordinateTapAttempted, "The coordinate-center gesture must be attempted.")
         XCTAssertTrue(standardOpened, "The standard button.tap() leg must open Settings within 3 seconds.")
         XCTAssertTrue(coordinateOpened, "The coordinate-center leg must open Settings within 3 seconds.")
-        print("[MeowlettTapComparison] control=settings summary standardOpened=\(standardOpened) coordinateOpened=\(coordinateOpened) standardHittableBeforeWait=\(standardHittableBeforeWait) standardHittableBeforeTap=\(standardHittableBeforeTap) coordinateHittableBeforeWait=\(coordinateHittableBeforeWait) coordinateHittableBeforeTap=\(coordinateHittableBeforeTap)")
+        print("[MeowlettTapComparison] control=settings summary appearanceTapAttempted=\(appearanceTapAttempted) appearanceTapSucceeded=\(appearanceTapSucceeded) standardOpened=\(standardOpened) coordinateOpened=\(coordinateOpened) standardHittableBeforeWait=\(standardHittableBeforeWait) standardHittableBeforeTap=\(standardHittableBeforeTap) coordinateHittableBeforeWait=\(coordinateHittableBeforeWait) coordinateHittableBeforeTap=\(coordinateHittableBeforeTap)")
     }
 
     @MainActor
@@ -753,8 +781,22 @@ final class MeowlettUITests: XCTestCase {
     func testPrimaryMenusAndHeaderUseStandardButtonTap() {
         let app = XCUIApplication()
         launchUITestApp(app)
-        XCTAssertTrue(app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15))
-        tapTab("dashboard", app: app)
+        let dashboardTab = app.buttons["mwlt.tab.dashboard"]
+        XCTAssertTrue(dashboardTab.waitForExistence(timeout: 15))
+        let dashboardSelected = expectation(
+            for: NSPredicate(format: "value == %@", "selected"),
+            evaluatedWith: dashboardTab,
+            handler: nil
+        )
+        wait(for: [dashboardSelected], timeout: 8)
+        XCTAssertEqual(dashboardTab.value as? String, "selected", "Dashboard tab should already be selected after launch.")
+
+        let dashboardIncomeEdit = app.buttons["mwlt.dashboard.income.edit"]
+        XCTAssertTrue(
+            dashboardIncomeEdit.waitForExistence(timeout: 8),
+            "A Dashboard-specific control should be available on the Dashboard screen."
+        )
+
         tapTab("transactions", app: app)
         tapTab("report", app: app)
         tapTab("date", app: app)

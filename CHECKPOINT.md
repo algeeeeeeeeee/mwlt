@@ -832,3 +832,25 @@ Explicit zIndex dalam MainTabView: hanya `topHeader = 10`. Background, page Grou
 - Tidak ada perubahan pada behavior/source app, tidak ada test dihapus, tidak ada perubahan workflow atau PR state.
 - UI test baru hanya mencetak state dan hierarki. Belum ada hasil simulator dari commit diagnostik ini.
 - Commit/push dilakukan satu kali; nomor/status workflow pasca-push akan dilaporkan di percakapan setelah satu pemeriksaan. Hasil build/test baru tetap **BELUM TERVERIFIKASI**.
+
+
+## R3c — Dashboard selector and Settings header tap comparison (23 November 2026)
+
+### Basis and Run #305
+- Basis: `7b283a8ac7ef090d4f42c8532582e0f57433e88b`; Run #305: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45138519257.
+- CI: Build simulator passed; UI smoke test step failed. 15 passed, 2 failed out of 17: `testPrimaryMenusAndHeaderUseStandardButtonTap`, `testSettingsHeaderStandardTapVersusCoordinateTap`.
+- Run #305 DebugDescription confirms `mwlt.tab.dashboard` exists with value `selected`; `mwlt.dashboard.income.edit` also exists. The hierarchy does not contain a Dashboard title identified as `mwlt.screen.dashboard`.
+- Dashboard failure came from `tapTab("dashboard")`, whose helper requires `app.staticTexts["mwlt.screen.dashboard"]`. Source puts `mwlt.screen.<rawValue>` only on the non-Dashboard title branch; the Dashboard branch presents greeting and username. This is a test selector mismatch, not proof the Dashboard tap failed.
+- Run #305 hierarchy reports Appearance frame `{{247.0, 74.0}, {34.0, 34.0}}` and Settings frame `{{288.0, 69.0}, {44.0, 44.0}}`. Both are present as Buttons.
+
+### Changes — UI tests and checkpoint only
+- `testPrimaryMenusAndHeaderUseStandardButtonTap` now verifies `mwlt.tab.dashboard` has accessibility value `selected` and checks the real Dashboard button `mwlt.dashboard.income.edit`. It no longer expects the nonexistent `mwlt.screen.dashboard`. Transactions, Reports, Date and header checks remain.
+- `testSettingsHeaderStandardTapVersusCoordinateTap` logs `exists`, `isHittable`, and `frame` for `mwlt.header.appearance` and `mwlt.header.settings` before the tap sequence. It attempts Appearance with `button.tap()`, waits for the accessibility value to change, and records whether it succeeded. It then records Settings hittability/frame again immediately before calling Settings `button.tap()`.
+- Source comparison: both are sibling standard Buttons in the header HStack. Appearance is a 34×34 Image button with circular background, plain style, accessibility identifier and value. Settings is a 44×44 ZStack button with rectangular content shape and plain style; its red notification badge decoration is `allowsHitTesting(false)`. Their source modifiers, label hierarchies, and dimensions differ as described; the exact reason for XCTest's AX scroll failure on Settings is **BELUM TERVERIFIKASI** until the new runtime logs are available.
+- All 17 test methods remain. No application source, visual layout, action, behavior, or workflow was changed.
+
+### Verification
+- Static inspection confirms the Dashboard test now targets real accessibility elements; test count is unchanged at 17.
+- Raw braces in UI test source: `{`=67, `}`=67 (textual count includes braces in interpolation and string literals).
+- Compilation and runtime behavior of this revision: **BELUM TERVERIFIKASI** pending CI.
+- Whether Appearance `button.tap()` succeeds, and the exact pre-tap `isHittable`/frame comparison in the simulator: **BELUM TERVERIFIKASI**.
