@@ -6,6 +6,7 @@ final class MeowlettUITests: XCTestCase {
 
 
     func testMeowIconCatalogContainsEveryDeclaredKey() {
+        print("[MeowIconCatalog] \(MeowIconCatalog.loadDiagnostics)")
         let missing = MeowIconCatalog.missingKeys
         XCTAssertTrue(
             missing.isEmpty,
