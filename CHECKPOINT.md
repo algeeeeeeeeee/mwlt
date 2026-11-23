@@ -1152,3 +1152,12 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - Run #318: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45246083065, head SHA `eb12a46fa34324cad21b5f6514ee88051c903527`. It is pending at last check; no job has started yet. It should validate both the bundle-loader repair and the pinned-card regression test.
 - PR #2 remains OPEN and Draft, base `main`; no merge or direct `main` edit.
 - R2 remains **NOT COMPLETE** until Run #318 passes icon catalog validation, UI regression tests, iPhone device build, IPA creation, Light/Dark preview validation, and visual review of the scrolled-card attachment and comparison preview.
+
+## R2 — Run #317 cancellation and Run #318 execution update (24 November 2026, 02:14 WIB)
+
+- Correction: Run #317 was cancelled by the push of the sticky-card implementation while the second XCTest, `testMeowIconCatalogContainsEveryDeclaredKey`, had just started. The only completed UI test in the partial log was `testMainTabsQuickAddAndCalculatorPresentation` (passed); the icon test was cancelled before its diagnostic line/result. Run #317 provides **no conclusion** about the bundle-loader repair.
+- Partial diagnostic artifact from cancelled Run #317: `Meowlett-UI-Test-Diagnostics-45244303195-1`, artifact ID `14852199383`, expires 7 December 2026. It contains only partial xcresult data.
+- Current source commit remains `eb12a46fa34324cad21b5f6514ee88051c903527`.
+- Current latest branch head is `3a4bb488321e9991170ad4c676308767c543687c`; this commit changes only `CHECKPOINT.md` and is ignored by the native workflow path filter.
+- Run #318: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45246083065, source SHA `eb12a46fa34324cad21b5f6514ee88051c903527`, job ID `137944135283`. It is IN PROGRESS at `Build simulator`; checkout, app icon generation, XcodeGen, project generation, and scheme discovery all succeeded.
+- The next meaningful results are the simulator build and then the full UI suite, including catalog geometry validation and the new sticky-card regression test. Do not push source/workflow changes while Run #318 is active unless it reveals a failure that needs fixing.
