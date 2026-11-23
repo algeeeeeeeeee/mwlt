@@ -1135,3 +1135,20 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - Add a native UI regression test asserting the balance card frame remains fixed after scrolling while the Financial Health section moves.
 - At this checkpoint, no code for the sticky-card change has been committed yet. Run #317 is still active at native UI smoke tests after a successful simulator build; avoid cancelling it until the loader diagnosis completes.
 - PR #2 remains OPEN and Draft, base `main`; never merge.
+
+## R2 — Sticky Home balance card implementation (24 November 2026, 02:11 WIB)
+
+- Commit `eb12a46fa34324cad21b5f6514ee88051c903527` (`feat: pin Home balance card with frosted scroll edge`).
+- Modified only:
+  - `ios/Sources/Features/Dashboard/DashboardView.swift`
+  - `ios/Tests/MeowlettUITests.swift`
+- Implementation:
+  - The scroll column keeps a transparent, non-interactive copy of the card's layout height plus 26 pt of reserved glass-edge space.
+  - The visible, interactive balance card is now a fixed overlay at the same 77 pt offset already used below the native header; it no longer scrolls away with the dashboard cards.
+  - A full-width `ultraThinMaterial` fade band sits immediately beneath the card so the scrolling content moves behind a frosted surface. The existing frosted header in `MainTabView.topHeader` remains unchanged.
+  - The card's displayed Remaining/progress/warning calculation now matches the PWA card formula (`income - current-month expenses`). Installment commitments remain separate from that displayed card total.
+- New regression test: `testDashboardBalanceCardStaysPinnedWhileHomeContentScrolls`; it checks the card's vertical frame stays fixed, the Financial Health section moves on scroll, the income edit button remains hittable, and it attaches a screenshot after the scroll.
+- Run #317: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45244303195. Simulator build succeeded; UI test step has finished, but the job is still in post-job cleanup and the logs/results are not yet downloadable. Do not infer test outcome until the run finalizes.
+- Run #318: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45246083065, head SHA `eb12a46fa34324cad21b5f6514ee88051c903527`. It is pending at last check; no job has started yet. It should validate both the bundle-loader repair and the pinned-card regression test.
+- PR #2 remains OPEN and Draft, base `main`; no merge or direct `main` edit.
+- R2 remains **NOT COMPLETE** until Run #318 passes icon catalog validation, UI regression tests, iPhone device build, IPA creation, Light/Dark preview validation, and visual review of the scrolled-card attachment and comparison preview.
