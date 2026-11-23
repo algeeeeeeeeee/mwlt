@@ -1177,3 +1177,26 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - The standalone IPA workflow checks Release bundle metadata, executable presence, registered fonts, and rejects a bundled Mach-O WebKit dependency, then packages and uploads an unsigned IPA artifact. It explicitly does not run UI tests; the full native workflow remains the authoritative UI/preview validation.
 - Source code is unchanged from `eb12a46fa34324cad21b5f6514ee88051c903527` (pinned balance card, frosted glass, icon-loader repair and new regression test). Only this checkpoint file changed for the trigger.
 - Continue monitoring Run #318 for XCTest, iPhone device build, the main unsigned IPA, and Light/Dark preview validation. Do not treat standalone RC success as completion of R2.
+
+## User-requested IPA delivered; full native validation continues (24 November 2026, about 02:28 WIB)
+
+### Standalone IPA RC
+- Workflow: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45248030105
+- Conclusion: SUCCESS. The job used the normal unsigned Xcode Release archive path (not build fallback), verified bundle metadata and executable presence, checked bundled Mach-O dependencies for WebKit, packaged the IPA, and uploaded the artifact.
+- Workflow commit: `db9719f05fe4b0c0bb3628a37ac8104f44a5e005`. Its source-code tree is the same as implementation commit `eb12a46fa34324cad21b5f6514ee88051c903527`; the difference is checkpoint Markdown only.
+- Artifact: `Meowlett-IPA-RC-46`, ID `14855055957`, expires 7 December 2026.
+- Extracted IPA: `Meowlett-rc-preview-db9719f.ipa`, version 4.1.0 (build 1), bundle ID `com.mwlt.meowlett`, 1,913,684 bytes.
+- Local downloaded copy: `/mnt/data/meowlett-ipa-rc-46/Meowlett-rc-preview-db9719f.ipa`; ZIP integrity passed, and the IPA contains `Payload/Meowlett.app/Meowlett`, `Info.plist`, and `lucide-icons.json.z`. The Info.plist display name is U+200B (visually blank).
+- IPA SHA-256: `2dbaf338700ccb384a8ecce4fc9255041331874f3710f7e0b8e10818671c0e16`.
+- It is unsigned and the standalone RC workflow does not execute UI tests. Do not treat it as proof of UI parity or as install-ready signed distribution.
+- Font registration clarification: five Plus Jakarta Sans font files are bundled. `MeowlettApp.init()` calls `MeowlettTypography.registerBundledFonts()`, which uses CoreText to register all five fonts at process launch. The RC script checks only Info.plist `UIAppFonts`, so its `NOT REGISTERED` text does not account for this manual CoreText startup registration.
+- Workflow diagnostics issue found after success: the RC workflow shell script uses unescaped backticks inside double-quoted `echo` lines in the step summary (leading to harmless `command not found` output), and it references `APP_EXECUTABLE` in the same step where it only appends it to `GITHUB_ENV` (so that variable is not available in that step). The artifact still packaged and uploaded successfully, but its generated summary/Release-only string diagnostic is not trustworthy. Fix `.github/workflows/ios-ipa-rc.yml` after Run #318 finalizes to avoid cancelling the active native build; use a local executable variable parsed from Info.plist and safe `printf`/heredoc summary output.
+
+### Full native workflow remains active
+- Run #318: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45246083065
+- Source SHA: `eb12a46fa34324cad21b5f6514ee88051c903527`.
+- Simulator build: SUCCESS.
+- Native UI smoke tests: IN PROGRESS; not yet concluded.
+- Pending: upload xcresult, device Release build, compiled blank Home Screen label check, main-workflow unsigned IPA, Light/Dark preview capture, visual/OCR validation, and preview comparison upload.
+- PR #2 remains OPEN and Draft, base `main`. Latest branch head at the time of this checkpoint is `db9719f05fe4b0c0bb3628a37ac8104f44a5e005`. No merge or direct `main` edits.
+- Next: continue monitoring Run #318. Once it completes, inspect XCTest and scrolled-card screenshot/preview artifacts. Only then patch and verify the IPA workflow summary diagnostics if needed; do not claim R2 complete before full native validation.
