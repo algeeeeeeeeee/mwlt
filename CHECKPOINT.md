@@ -950,33 +950,53 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - Combined commit status returned no check records at the time of inspection. The follow-up workflow result, installed `lucide-react` version, actual required icon nodes, generated `reference/out/icons.json`, and uploaded artifact remain **BELUM TERVERIFIKASI**.
 - Do not begin R2b until `icons.json` is successfully generated and inspected.
 
-## R2a-1 — icon extractor repair in progress (23 November 2026)
+## R2a-1 — Lucide icon-node inventory fixed and verified (23 November 2026)
 
-### Current branch and PR safety
+### Repository and PR state
 - Repository: `algeeeeeeeeee/mwlt`.
 - Working branch: `native-swift-parity`.
-- Current implementation commit before this checkpoint: `02f5b0be3da5dbafcb2e2f1b160f6ec60036f739` (`ref: support named Lucide default re-exports`).
-- PR #2 remains OPEN and Draft, base `main`. Do not merge or close it.
-- No direct changes to `main`, no branch deletion, no file/workflow deletion, and no edits to native Swift or PWA application UI/source.
+- Pull request #2 remains OPEN and Draft with base `main`. Do not merge or close it.
+- Final checkpoint update is documentation-only. No direct edit to `main`, no branch/file/workflow deletion, and no changes to PWA UI/source or native Swift source.
+- Last code change is `02f5b0be3da5dbafcb2e2f1b160f6ec60036f739` (`ref: support named Lucide default re-exports`). Checkpoint commits are separate documentation-only updates.
 
-### Failure chain and fixes already pushed
-- `8d2fe8659044c88383fcddff7438d96d26bce938`: initial extractor/workflow.
-- Run #7 (`45201662645`) exposed a JavaScript quote-escaping syntax error in `namedImport`. The earlier note that `node --check` passed was incorrect for the exact committed file; CI evidence is authoritative.
-- `fb6f7f64bfc46ea75cb243eb06ce603cd4c16cca`: fixed import quote parsing. Run #8 succeeded, but the generated report had 0/99 found because `__iconNode` was not a named export in the loaded ESM module.
-- `08af43b57670f2a6b409e980a303356d5d785ec5`: documented the CI failure and correction.
-- `6c926c2dd08bcf27e7b7ca2dc66d60a54628f92d`: first source parser attempt; Run #9 again reported 0/99 because module component names/arguments differ from the assumed shape.
-- `4a3bbeda353f9e88ee2da392c7165e52e5383de4`: accepted PascalCase module names and parsed inline or `__iconNode` literal data. Run #10 still had 0/99 because the code incorrectly required the component name to match the kebab-case file slug.
-- `7a65cfadcf44bc32493bc83e518a977d188c9925`: removed that incorrect name comparison and follows compatibility alias re-exports. Run #11 generated an artifact with 94 found, 5 missing, 8 custom SVG, 0 unresolved, and all five required aliases found (5/5).
-- Run #11 missing names were precisely the old Lucide alias modules: `AlertCircle`, `AlertTriangle`, `BarChart2`, `CheckCircle`, and `Home`. Their ESM alias files use a named symbol exported as `default` (for example, `CircleAlert as default`), not only `export { default }`.
-- `02f5b0be3da5dbafcb2e2f1b160f6ec60036f739`: updated the alias matcher to accept both `default as Name` and `Name as default`, with optional `.js` extension in the relative re-export path.
+### Final extractor implementation
+- The extractor reads `reference/pwa/src/App.jsx`, `reference/pwa/src/icons.jsx`, and `reference/pwa/src/constants/index.js` to inventory App direct icon imports, `LUCIDE_MAP`, `GOAL_ICONS`, `PRESET_ICONS`, and `ICON_OPTIONS`.
+- It reads the installed `lucide-react` version from `reference/pwa/node_modules/lucide-react/package.json` and reads actual icon modules from `reference/pwa/node_modules/lucide-react/dist/esm/icons/*.js`.
+- Icon-node literals are parsed from module source; package code is not evaluated and icon geometry is not hardcoded.
+- Compatibility modules are followed through Lucide's default re-exports, including both `default as Name` and `Name as default` forms. The resolved canonical file and alias chain are recorded in each icon entry.
+- App-local inline SVG components are reported separately as custom SVG, not fabricated as Lucide modules.
+- Workflow and application UI files were not changed as part of these repairs. `reference/out/icons.json` remains a generated workflow output and is not committed.
 
-### Latest evidence and pending action
-- Installed package version observed in CI: `lucide-react 0.469.0`.
-- Run #11: `45213468264`; artifact `pwa-lucide-icon-inventory`, ID `14836134070`, currently available until 7 December 2026. Its JSON reports 94/99 modules found and all required five aliases found; it is not the final inventory because five old aliases remain unresolved.
-- Run #12: `45213744303`, triggered by commit `02f5b0be3da5dbafcb2e2f1b160f6ec60036f739`. At checkpoint time it is PENDING behind Run #11 due the workflow's branch concurrency group. Run #11 is still executing `Install Playwright Chromium`; extraction, inventory upload, and Vite build have already succeeded.
-- Next action: once Run #12 starts, inspect its artifact `pwa-lucide-icon-inventory`. Expected confirmation is 99/99 Lucide modules found, 0 missing, 8 custom SVG, 0 unresolved, and all required aliases 5/5. If not, inspect the exact remaining module shape and correct only the extractor.
-- Continue checking until Run #12's inventory is inspected and the screenshot/build workflow result is known. Then replace this interim status with a final checkpoint section. Do not start R2b until the complete `icons.json` inventory is verified.
+### Verified artifact
+- CI package version: `lucide-react 0.469.0`.
+- Run #12: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45213744303
+- Head SHA for that run: `02f5b0be3da5dbafcb2e2f1b160f6ec60036f739`.
+- Artifact: `pwa-lucide-icon-inventory`, ID `14835974890`, expires 7 December 2026.
+- Downloaded and inspected the artifact's `icons.json`. Summary: **99 found, 0 missing, 8 custom SVG, 0 unresolved, required aliases 5/5**.
+- Additional local integrity checks passed: 99 unique icon entries; all have non-empty node arrays; all 323 child-node records use the expected [tag, attributes] shape; both `missingNames` and `unresolvedNames` are empty.
+- Required aliases verified:
+  - `wallet → Wallet`
+  - `rocket → Rocket`
+  - `hand.coins → HandCoins`
+  - `coins → Coins`
+  - `flower → Flower2`
+- Legacy compatibility aliases now resolve to canonical modules:
+  - `AlertCircle → CircleAlert`
+  - `AlertTriangle → TriangleAlert`
+  - `BarChart2 → ChartNoAxesColumn`
+  - `CheckCircle → CircleCheckBig`
+  - `Home → House`
 
-### Scope
-- Intended code changes remain confined to `reference/tools/extract-icons.mjs`; `reference/out/icons.json` is a workflow artifact and is not committed.
-- No application source, visual UI, app behavior, PWA workflow definition, native Swift source, or existing PR state has been changed by the extractor repair.
+### CI history and diagnosis
+- Commit `8d2fe8659044c88383fcddff7438d96d26bce938`, Run #7 (`45201662645`): failed with a JavaScript syntax error in the import regex before writing `icons.json`.
+- Commit `fb6f7f64bfc46ea75cb243eb06ce603cd4c16cca`, Run #8 (`45209710552`): the workflow completed, but artifact reported 0/99 because the script incorrectly expected `__iconNode` as a named runtime export.
+- Commit `08af43b57670f2a6b409e980a303356d5d785ec5`: documented the initial CI failure and correction.
+- Commit `6c926c2dd08bcf27e7b7ca2dc66d60a54628f92d`, Run #9 (`45211293545`): 0/99; parser assumed PascalCase names and inline array call arguments.
+- Commit `4a3bbeda353f9e88ee2da392c7165e52e5383de4`, Run #10 (`45212966130`): 0/99; parser incorrectly required the component name to equal the kebab-case module filename.
+- Commit `7a65cfadcf44bc32493bc83e518a977d188c9925`, Run #11 (`45213468264`): 94/99; the remaining five were Lucide compatibility modules using a named symbol re-exported as `default`. Run #11 ultimately completed SUCCESS, including the PWA build and Beranda Light/Dark screenshots; artifact `pwa-reference-build-live-home` ID `14837931222`.
+- Commit `02f5b0be3da5dbafcb2e2f1b160f6ec60036f739`, Run #12: corrected the named-default re-export matcher. The final inventory artifact proves 99/99; extraction, artifact upload, Vite build, and build patch steps all completed successfully.
+
+### Verification boundary and next handoff
+- At the final inspection, Run #12 was still in progress at **Install Playwright Chromium**. The inventory extraction/upload and Vite build had already succeeded, but screenshot capture and screenshot artifact upload for this exact SHA remain **BELUM TERVERIFIKASI**. Do not describe Run #12 as fully green until that run concludes.
+- R2a-1's core deliverable — complete Lucide icon-node inventory — is fixed and verified. Do not start R2b until the user explicitly proceeds to that stage.
+- Continue from branch `native-swift-parity`; keep PR #2 OPEN/Draft and do not merge.
