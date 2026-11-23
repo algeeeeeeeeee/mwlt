@@ -1,6 +1,165 @@
 import XCTest
+import UIKit
 
 final class MeowlettUITests: XCTestCase {
+
+    private struct SFSymbolProbe {
+        let name: String
+        let locations: [String]
+    }
+
+    // Direct Image(systemName:)/Label(systemImage:) names and finite built-in
+    // symbol maps under ios/Sources. Persisted user-provided values are not
+    // statically knowable and are not guessed.
+    private let sfSymbolProbes: [SFSymbolProbe] = [
+        SFSymbolProbe(name: "airplane", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1659", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:41", "ios/Sources/Models/MeowlettTransaction.swift:83"]),
+        SFSymbolProbe(name: "alarm.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:52", "ios/Sources/Models/MeowlettTransaction.swift:111"]),
+        SFSymbolProbe(name: "arrow.down.to.line", locations: ["ios/Sources/Features/Reports/ReportsView.swift:621", "ios/Sources/Features/Reports/ReportsView.swift:998", "ios/Sources/Features/Settings/SettingsView.swift:1177"]),
+        SFSymbolProbe(name: "arrow.right", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1479"]),
+        SFSymbolProbe(name: "arrow.up.right", locations: ["ios/Sources/Features/Reports/ReportsView.swift:371", "ios/Sources/Features/Reports/ReportsView.swift:520"]),
+        SFSymbolProbe(name: "arrow.up.to.line", locations: ["ios/Sources/Features/Settings/SettingsView.swift:1190"]),
+        SFSymbolProbe(name: "bag.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1666", "ios/Sources/Models/MeowlettTransaction.swift:76"]),
+        SFSymbolProbe(name: "banknote", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1670", "ios/Sources/Features/Dashboard/DashboardView.swift:944", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:247", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:267", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:275", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:451", "ios/Sources/Features/Transactions/TransactionsView.swift:321", "ios/Sources/Models/MeowlettTransaction.swift:85", "ios/Sources/Models/MeowlettTransaction.swift:87"]),
+        SFSymbolProbe(name: "bell", locations: ["ios/Sources/Features/Settings/SettingsFeatureSheets.swift:143", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:183", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:287", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:40"]),
+        SFSymbolProbe(name: "bell.badge", locations: ["ios/Sources/Features/Settings/SettingsView.swift:823"]),
+        SFSymbolProbe(name: "bell.fill", locations: ["ios/Sources/Features/Settings/SettingsView.swift:715", "ios/Sources/Features/Settings/SettingsView.swift:742", "ios/Sources/Models/MeowlettTransaction.swift:112"]),
+        SFSymbolProbe(name: "bell.slash.fill", locations: ["ios/Sources/Features/Settings/SettingsView.swift:715", "ios/Sources/Features/Settings/SettingsView.swift:742"]),
+        SFSymbolProbe(name: "bolt", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:550", "ios/Sources/Features/Reports/ReportsView.swift:347", "ios/Sources/Features/Reports/ReportsView.swift:486"]),
+        SFSymbolProbe(name: "bolt.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:45", "ios/Sources/Models/MeowlettTransaction.swift:92"]),
+        SFSymbolProbe(name: "book.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1662", "ios/Sources/Models/MeowlettTransaction.swift:100"]),
+        SFSymbolProbe(name: "building.columns", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1296", "ios/Sources/Features/Transactions/TransactionsView.swift:322", "ios/Sources/Features/Transactions/TransactionsView.swift:480"]),
+        SFSymbolProbe(name: "calendar", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:519", "ios/Sources/Features/Reports/ReportsView.swift:657", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:52", "ios/Sources/Features/Transactions/TransactionEditorSheet.swift:190", "ios/Sources/Models/MeowlettTransaction.swift:110"]),
+        SFSymbolProbe(name: "camera", locations: ["ios/Sources/Features/Main/MainTabView.swift:360", "ios/Sources/Features/Settings/SettingsView.swift:183", "ios/Sources/Features/Transactions/TransactionEditorSheet.swift:306"]),
+        SFSymbolProbe(name: "camera.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1661"]),
+        SFSymbolProbe(name: "car.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1657", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:41", "ios/Sources/Models/MeowlettTransaction.swift:74"]),
+        SFSymbolProbe(name: "chart.bar", locations: ["ios/Sources/Features/Settings/SettingsView.swift:1046"]),
+        SFSymbolProbe(name: "chart.line.uptrend.xyaxis", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:619", "ios/Sources/Features/Reports/ReportsView.swift:499", "ios/Sources/Features/Reports/ReportsView.swift:870", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:44", "ios/Sources/Models/MeowlettTransaction.swift:88"]),
+        SFSymbolProbe(name: "chart.pie", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1352"]),
+        SFSymbolProbe(name: "checkmark", locations: ["ios/Sources/Features/Onboarding/OnboardingView.swift:270", "ios/Sources/Features/Onboarding/OnboardingView.swift:348", "ios/Sources/Features/Onboarding/OnboardingView.swift:421", "ios/Sources/Features/Onboarding/OnboardingView.swift:444"]),
+        SFSymbolProbe(name: "checkmark.circle", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:639", "ios/Sources/Features/Date/DateTabView.swift:178", "ios/Sources/Features/Reports/ReportsView.swift:906"]),
+        SFSymbolProbe(name: "checkmark.circle.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1106", "ios/Sources/Features/Settings/SettingsView.swift:289", "ios/Sources/Features/Settings/SettingsView.swift:470", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:183"]),
+        SFSymbolProbe(name: "chevron.down", locations: ["ios/Sources/Features/Date/DateTabView.swift:293", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:229", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:595", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:194", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:253", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:166", "ios/Sources/Features/Transactions/TransactionsView.swift:264", "ios/Sources/Features/Transactions/TransactionsView.swift:537"]),
+        SFSymbolProbe(name: "chevron.right", locations: ["ios/Sources/Features/Settings/SettingsView.swift:1096", "ios/Sources/Features/Settings/SettingsView.swift:273", "ios/Sources/Features/Settings/SettingsView.swift:837"]),
+        SFSymbolProbe(name: "circle", locations: ["ios/Sources/Features/Transactions/SplitBillsSheet.swift:183"]),
+        SFSymbolProbe(name: "clock.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:52", "ios/Sources/Models/MeowlettTransaction.swift:109"]),
+        SFSymbolProbe(name: "coins", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:45"]),
+        SFSymbolProbe(name: "creditcard", locations: ["ios/Sources/Features/Settings/SettingsFeatureSheets.swift:502", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:541", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:127"]),
+        SFSymbolProbe(name: "creditcard.fill", locations: ["ios/Sources/Features/Settings/SettingsFeatureSheets.swift:583"]),
+        SFSymbolProbe(name: "cross.case.fill", locations: ["ios/Sources/Models/MeowlettTransaction.swift:77"]),
+        SFSymbolProbe(name: "cup.and.saucer.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:40", "ios/Sources/Models/MeowlettTransaction.swift:81"]),
+        SFSymbolProbe(name: "desktopcomputer", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:46", "ios/Sources/Models/MeowlettTransaction.swift:96"]),
+        SFSymbolProbe(name: "diamond", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:519"]),
+        SFSymbolProbe(name: "doc.text", locations: ["ios/Sources/Features/Reports/ReportsView.swift:584"]),
+        SFSymbolProbe(name: "doc.text.fill", locations: ["ios/Sources/Models/MeowlettTransaction.swift:78"]),
+        SFSymbolProbe(name: "dollarsign.circle", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1295", "ios/Sources/Features/Transactions/TransactionsView.swift:480"]),
+        SFSymbolProbe(name: "dollarsign.circle.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:43", "ios/Sources/Models/MeowlettTransaction.swift:89"]),
+        SFSymbolProbe(name: "drop.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:45", "ios/Sources/Models/MeowlettTransaction.swift:91"]),
+        SFSymbolProbe(name: "dumbbell.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1667", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:43", "ios/Sources/Models/MeowlettTransaction.swift:69"]),
+        SFSymbolProbe(name: "exclamationmark.circle", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:363", "ios/Sources/Features/Reports/ReportsView.swift:215"]),
+        SFSymbolProbe(name: "exclamationmark.circle.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:861", "ios/Sources/Features/Dashboard/DashboardView.swift:910"]),
+        SFSymbolProbe(name: "exclamationmark.triangle", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:639", "ios/Sources/Features/Reports/ReportsView.swift:906"]),
+        SFSymbolProbe(name: "film.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:48", "ios/Sources/Models/MeowlettTransaction.swift:99"]),
+        SFSymbolProbe(name: "flame", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:496", "ios/Sources/Features/Dashboard/DashboardView.swift:519"]),
+        SFSymbolProbe(name: "flame.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:46", "ios/Sources/Models/MeowlettTransaction.swift:94"]),
+        SFSymbolProbe(name: "flower", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:49", "ios/Sources/Models/MeowlettTransaction.swift:102"]),
+        SFSymbolProbe(name: "fork.knife", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:40", "ios/Sources/Models/MeowlettTransaction.swift:65"]),
+        SFSymbolProbe(name: "function", locations: ["ios/Sources/Features/Reports/ReportsView.swift:920", "ios/Sources/Features/Transactions/TransactionEditorSheet.swift:175"]),
+        SFSymbolProbe(name: "gamecontroller.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1664", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:47", "ios/Sources/Models/MeowlettTransaction.swift:71"]),
+        SFSymbolProbe(name: "gearshape", locations: ["ios/Sources/Features/Main/MainTabView.swift:323"]),
+        SFSymbolProbe(name: "gift.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1660", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:42", "ios/Sources/Models/MeowlettTransaction.swift:68"]),
+        SFSymbolProbe(name: "globe", locations: ["ios/Sources/Features/Settings/SettingsView.swift:386"]),
+        SFSymbolProbe(name: "hand.coins", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1504"]),
+        SFSymbolProbe(name: "heart", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1665", "ios/Sources/Features/Date/DateTabView.swift:239", "ios/Sources/Features/Date/DateTabView.swift:275", "ios/Sources/Features/Main/MainTabView.swift:295", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:42", "ios/Sources/Models/MeowlettTransaction.swift:75"]),
+        SFSymbolProbe(name: "heart.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1665", "ios/Sources/Models/MeowlettTransaction.swift:75"]),
+        SFSymbolProbe(name: "heart.text.square", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:663"]),
+        SFSymbolProbe(name: "house.fill", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1658", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:45", "ios/Sources/Models/MeowlettTransaction.swift:90"]),
+        SFSymbolProbe(name: "info.circle", locations: ["ios/Sources/Features/Settings/SettingsView.swift:774"]),
+        SFSymbolProbe(name: "iphone", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1655", "ios/Sources/Models/MeowlettTransaction.swift:70"]),
+        SFSymbolProbe(name: "laptopcomputer", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1656", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:47", "ios/Sources/Models/MeowlettTransaction.swift:97"]),
+        SFSymbolProbe(name: "leaf", locations: ["ios/Sources/Features/Settings/SettingsView.swift:588"]),
+        SFSymbolProbe(name: "leaf.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:48", "ios/Sources/Models/MeowlettTransaction.swift:101"]),
+        SFSymbolProbe(name: "line.3.horizontal", locations: ["ios/Sources/Features/Transactions/TransactionsView.swift:320"]),
+        SFSymbolProbe(name: "list.bullet", locations: ["ios/Sources/Features/Reports/ReportsView.swift:245"]),
+        SFSymbolProbe(name: "magnifyingglass", locations: ["ios/Sources/Features/Transactions/TransactionsView.swift:231", "ios/Sources/Features/Transactions/TransactionsView.swift:398", "ios/Sources/Models/MeowlettTransaction.swift:72"]),
+        SFSymbolProbe(name: "message.fill", locations: ["ios/Sources/Features/Reports/ReportsView.swift:609"]),
+        SFSymbolProbe(name: "moon", locations: ["ios/Sources/Features/Main/MainTabView.swift:307"]),
+        SFSymbolProbe(name: "moon.fill", locations: ["ios/Sources/Features/Onboarding/OnboardingView.swift:442", "ios/Sources/Features/Settings/SettingsView.swift:324"]),
+        SFSymbolProbe(name: "mug.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:40", "ios/Sources/Models/MeowlettTransaction.swift:66"]),
+        SFSymbolProbe(name: "music.note", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1663", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:48", "ios/Sources/Models/MeowlettTransaction.swift:98"]),
+        SFSymbolProbe(name: "nosign", locations: ["ios/Sources/Features/Reports/ReportsView.swift:721"]),
+        SFSymbolProbe(name: "paintbrush.pointed", locations: ["ios/Sources/Features/Settings/SettingsView.swift:460"]),
+        SFSymbolProbe(name: "paintpalette", locations: ["ios/Sources/Features/Settings/SettingsView.swift:411"]),
+        SFSymbolProbe(name: "paintpalette.fill", locations: ["ios/Sources/Features/Onboarding/OnboardingView.swift:299", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:42", "ios/Sources/Models/MeowlettTransaction.swift:67"]),
+        SFSymbolProbe(name: "pawprint.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:49", "ios/Sources/Models/MeowlettTransaction.swift:79"]),
+        SFSymbolProbe(name: "pencil", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1060", "ios/Sources/Features/Dashboard/DashboardView.swift:289", "ios/Sources/Features/Dashboard/DashboardView.swift:787", "ios/Sources/Features/Date/DateTabView.swift:312", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:170", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:626", "ios/Sources/Features/Settings/SettingsView.swift:223", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:209", "ios/Sources/Features/Transactions/TransactionsView.swift:554"]),
+        SFSymbolProbe(name: "person.2", locations: ["ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:156", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:43", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:77"]),
+        SFSymbolProbe(name: "person.2.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:51", "ios/Sources/Models/MeowlettTransaction.swift:108"]),
+        SFSymbolProbe(name: "photo", locations: ["ios/Sources/Features/Transactions/TransactionEditorSheet.swift:293", "ios/Sources/Features/Transactions/TransactionsView.swift:523"]),
+        SFSymbolProbe(name: "pills.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:42"]),
+        SFSymbolProbe(name: "plus", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1004", "ios/Sources/Features/Dashboard/DashboardView.swift:1186", "ios/Sources/Features/Dashboard/DashboardView.swift:1526", "ios/Sources/Features/Dashboard/DashboardView.swift:958", "ios/Sources/Features/Date/DateTabView.swift:143", "ios/Sources/Features/Date/DateTabView.swift:226", "ios/Sources/Features/Main/MainTabView.swift:425", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:509", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:50", "ios/Sources/Features/Transactions/TransactionsView.swift:381"]),
+        SFSymbolProbe(name: "plus.circle", locations: ["ios/Sources/Features/Transactions/TransactionsView.swift:358"]),
+        SFSymbolProbe(name: "qrcode", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1296", "ios/Sources/Features/Transactions/TransactionsView.swift:323", "ios/Sources/Features/Transactions/TransactionsView.swift:480"]),
+        SFSymbolProbe(name: "receipt", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1467", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:53", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:147", "ios/Sources/Models/MeowlettTransaction.swift:114"]),
+        SFSymbolProbe(name: "repeat", locations: ["ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:180", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:208", "ios/Sources/Features/Transactions/RecurringTransactionsSection.swift:217"]),
+        SFSymbolProbe(name: "rocket", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:983"]),
+        SFSymbolProbe(name: "scope", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:51", "ios/Sources/Models/MeowlettTransaction.swift:105"]),
+        SFSymbolProbe(name: "shippingbox", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1594", "ios/Sources/Features/Transactions/TransactionsView.swift:490"]),
+        SFSymbolProbe(name: "shippingbox.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:50", "ios/Sources/Models/MeowlettTransaction.swift:80"]),
+        SFSymbolProbe(name: "slider.horizontal.3", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:778"]),
+        SFSymbolProbe(name: "sparkles", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1669", "ios/Sources/Features/Settings/SettingsView.swift:590", "ios/Sources/Models/MeowlettTransaction.swift:73"]),
+        SFSymbolProbe(name: "square.and.arrow.up", locations: ["ios/Sources/Features/Reports/ReportsView.swift:594"]),
+        SFSymbolProbe(name: "square.grid.2x2", locations: ["ios/Sources/Features/Settings/SettingsView.swift:1060"]),
+        SFSymbolProbe(name: "square.grid.2x2.fill", locations: ["ios/Sources/Models/MeowlettTransaction.swift:127"]),
+        SFSymbolProbe(name: "sun.horizon", locations: ["ios/Sources/Features/Settings/SettingsView.swift:367"]),
+        SFSymbolProbe(name: "sun.max", locations: ["ios/Sources/Features/Main/MainTabView.swift:307", "ios/Sources/Features/Settings/SettingsView.swift:592"]),
+        SFSymbolProbe(name: "sun.max.fill", locations: ["ios/Sources/Features/Onboarding/OnboardingView.swift:442", "ios/Sources/Features/Settings/SettingsView.swift:324"]),
+        SFSymbolProbe(name: "tablecells", locations: ["ios/Sources/Features/Reports/ReportsView.swift:570"]),
+        SFSymbolProbe(name: "tag", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:837"]),
+        SFSymbolProbe(name: "tag.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:53", "ios/Sources/Models/MeowlettTransaction.swift:113"]),
+        SFSymbolProbe(name: "takeoutbag.and.cup.and.straw.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:40", "ios/Sources/Models/MeowlettTransaction.swift:82"]),
+        SFSymbolProbe(name: "trash", locations: ["ios/Sources/Features/Date/DateTabView.swift:347", "ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:192", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:630", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:218", "ios/Sources/Features/Transactions/TransactionsView.swift:598"]),
+        SFSymbolProbe(name: "tray.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:51", "ios/Sources/Models/MeowlettTransaction.swift:107"]),
+        SFSymbolProbe(name: "tshirt.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:41", "ios/Sources/Models/MeowlettTransaction.swift:84"]),
+        SFSymbolProbe(name: "umbrella.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:49", "ios/Sources/Models/MeowlettTransaction.swift:103"]),
+        SFSymbolProbe(name: "wallet", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:739"]),
+        SFSymbolProbe(name: "wallet.bifold", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1272", "ios/Sources/Features/Dashboard/DashboardView.swift:1668"]),
+        SFSymbolProbe(name: "wallet.bifold.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:44", "ios/Sources/Models/MeowlettTransaction.swift:86"]),
+        SFSymbolProbe(name: "water.waves", locations: ["ios/Sources/Features/Settings/SettingsView.swift:589"]),
+        SFSymbolProbe(name: "wind", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:46", "ios/Sources/Features/Settings/SettingsView.swift:593", "ios/Sources/Models/MeowlettTransaction.swift:95"]),
+        SFSymbolProbe(name: "wrench.fill", locations: ["ios/Sources/Features/Settings/SettingsCategoryManagerSheet.swift:46", "ios/Sources/Models/MeowlettTransaction.swift:93"]),
+        SFSymbolProbe(name: "xmark", locations: ["ios/Sources/Features/Dashboard/DashboardView.swift:1066", "ios/Sources/Features/Dashboard/DashboardView.swift:1170", "ios/Sources/Features/Dashboard/DashboardView.swift:1378", "ios/Sources/Features/Date/DateTabView.swift:191", "ios/Sources/Features/Date/DateTabView.swift:411", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:49", "ios/Sources/Features/Settings/SettingsFeatureSheets.swift:517", "ios/Sources/Features/Settings/SettingsView.swift:1031", "ios/Sources/Features/Settings/SettingsView.swift:335", "ios/Sources/Features/Settings/SettingsView.swift:723", "ios/Sources/Features/Transactions/SplitBillsSheet.swift:60", "ios/Sources/Features/Transactions/TransactionEditorSheet.swift:140", "ios/Sources/Features/Transactions/TransactionsView.swift:240"])
+    ]
+
+    @MainActor
+    func testSFSymbolAvailabilityInventory() {
+        var report = [
+            "SF SYMBOL AVAILABILITY INVENTORY",
+            "Format: NAMA | file:baris | nil atau ada",
+            "Missing symbols are diagnostics only; no assertions are used."
+        ]
+        for probe in sfSymbolProbes {
+            let image = UIImage(systemName: probe.name)
+            let status: String
+            if let image {
+                status = image.size.width > 0 && image.size.height > 0 ? "ada" : "0x0"
+            } else {
+                status = "nil"
+            }
+            for location in probe.locations {
+                let row = "\(probe.name) | \(location) | \(status)"
+                print("[MeowlettSFSymbolAudit] \(row)")
+                report.append(row)
+            }
+        }
+        let completeReport = report.joined(separator: "\n")
+        XCTContext.runActivity(named: "SF Symbol availability inventory") { activity in
+            let attachment = XCTAttachment(string: completeReport)
+            attachment.name = "SF Symbol availability inventory"
+            attachment.lifetime = .keepAlways
+            activity.add(attachment)
+        }
+        print("[MeowlettSFSymbolAudit] inventoryComplete uniqueNames=\(sfSymbolProbes.count) locationRows=\(report.count - 3)")
+    }
 
     @MainActor
     private func capturePostSplashNavigationDiagnostics(_ app: XCUIApplication) {

@@ -854,3 +854,64 @@ Explicit zIndex dalam MainTabView: hanya `topHeader = 10`. Background, page Grou
 - Raw braces in UI test source: `{`=67, `}`=67 (textual count includes braces in interpolation and string literals).
 - Compilation and runtime behavior of this revision: **BELUM TERVERIFIKASI** pending CI.
 - Whether Appearance `button.tap()` succeeds, and the exact pre-tap `isHittable`/frame comparison in the simulator: **BELUM TERVERIFIKASI**.
+
+## R2-audit — SF Symbols inventory and PWA/native icon comparison (23 November 2026)
+
+### Scope and evidence
+- Basis: native-swift-parity HEAD 6a483a8bcf230e6de515ef141ef9587acd2984de (Run #306 completed SUCCESS).
+- Audited tracked Swift sources under ios/Sources for Image(systemName:), Label(systemImage:), and finite symbol-name maps feeding dynamic icon calls.
+- PWA sources: reference/pwa/src/App.jsx, reference/pwa/src/icons.jsx, reference/pwa/src/constants/index.js.
+- Live image evidence: successful PWA Reference Screenshots Run #6 at commit a8a9d78367ad714d5b407bc5247bbc20ae83cd6e; artifact pwa-reference-build-live-home; image ref-live/beranda-light.png.
+- Only CHECKPOINT.md and ios/Tests/MeowlettUITests.swift change. No app UI, screen layout, app behavior, PWA source, or workflow file is changed.
+- The diagnostic is in the existing MeowlettUITests target, does not interact with the app, and has no XCTAssert calls. UIImage(systemName:) nil/zero-sized results are logged and do not fail the test.
+- The test prints NAMA | file:baris | nil atau ada for each recorded location and attaches the full report as SF Symbol availability inventory with keepAlways lifetime.
+- ios-native.yml already uploads the .xcresult in an if: always() step with 14-day retention, so the attachment is included without workflow edits.
+- Arbitrary user-provided persisted category icon strings cannot be enumerated statically; all finite built-in mappings and direct source callsites are listed.
+
+### PWA icons by screen/modal and native comparison
+Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semantic mismatch; LEBIH = native-only icon at a corresponding screen/state; HILANG = only when runtime returns nil or size 0×0. Actual HILANG findings remain BELUM TERVERIFIKASI until CI output is inspected.
+
+| Screen / state | PWA icons, size and condition | Native counterpart | Assessment |
+|---|---|---|---|
+| Shared header | Sun/Moon 15 for current mode; Settings 15; Camera 5 on avatar; Date title Heart 18 | MainTabView.swift:295,307,323,360 | BEDA BENTUK; availability BELUM TERVERIFIKASI |
+| Bottom navigation / FAB | Cat 18 active / 22 inactive; Transactions/Report custom list SVG 18/22; Date custom heart SVG 18/22; FAB inline plus 22 | MainTabView custom Shapes; SF plus :425 | BEDA BENTUK; compare custom native tab shapes visually later |
+| Beranda — balance/status/insights | Pencil 7; AlertCircle 14/11 for warnings; Flame 13; DiamondPlus 11 at streak ≥3; Zap 13; HeartPulse 14; TrendingUp 16; AlertTriangle or CheckCircle 11 by budget status | DashboardView.swift:289,363,496,519,550,619,639,663 | BEDA BENTUK; native calendar at :519 is LEBIH for short streak where PWA shows text only |
+| Beranda — budget/goals | Wallet 20; SlidersHorizontal 13; Pencil 13; PiggyBank 13; Rocket 36; Plus 13/14; GOAL_ICONS 13; CheckCircle 10 when goal reached | DashboardView.swift:739,778,787,944,958,983,1004,1041,1060,1066; goal map :1653–1670 | BEDA BENTUK; SALAH: native maps piggybank goal to banknote, PWA uses PiggyBank |
+| Beranda — categories/recent activity/payment | CatIcon 13/21; Receipt 13; ArrowRight 13; HandCoins 32; Wallet 13; DollarSign/QrCode/Landmark 8; ImagePlus 8 only when receipt exists | DashboardView.swift:837,1272,1295–1301,1467,1479,1504,1594,1620,1903 | BEDA BENTUK; dynamic category/payment mappings differ; runtime values BELUM TERVERIFIKASI |
+| Beranda — Rincian Kategori | ChartPie variable at App.jsx:3092, size 13; icons.jsx resolves ChartPie as _ChartPie || BarChart2 | DashboardView.swift:1352 uses chart.pie | SALAH — live screenshot shows three vertical bars (BarChart2), not a pie wedge |
+| Transaksi — search/filter/empty state | Search 15 and 34 for empty search; X 14; ChevronDown 10/14; filter custom SVG 11; CirclePlus 38 when list empty; Plus 16; CatIcon 11/20/22; DollarSign/QrCode/Landmark 8; ImagePlus 8 with receipt | TransactionsView.swift:231,240,264,320–334,358,381,398,490,508,523,537 | BEDA BENTUK; native plus.circle vs PWA CirclePlus; line.3.horizontal vs custom filter SVG |
+| Transaksi — recurring entries | CreditCard 11; Users 11; Repeat 11/15/26; ChevronDown 11; Banknote 11/15; DiamondPlus 11/15/20; Save 14; Pencil/Trash2 13 | RecurringTransactionsSection.swift:127,156,180,194,208,217,247,253,267,275,416,451,493,519; TransactionsView.swift:554,568,598 | BEDA BENTUK for matched concepts |
+| Laporan — overview/trends | AlertCircle 18; LayoutList 13; CatIcon 11/14/17; Zap 13; TrendingUp 11/16/13; BarChart2 13/12; AlertTriangle/CheckCircle 11 conditionally; Ban 28 for no data; Calculator2 11 | ReportsView.swift:215,245,287,347,371,486,499,520,538,721,755,801,870,884,906,920,1125 | BEDA BENTUK; native nosign differs from PWA Ban |
+| Laporan — export/share | Download 14/15; Share2 15; MessageCircle 16; Calendar 13 | ReportsView.swift:570,584,594,609,621,657,998 | BEDA BENTUK: native tablecells/doc.text/square.and.arrow.up/message.fill/arrow.down.to.line/calendar differ from PWA glyphs |
+| Date — main/wishlist | Heart 14/36/16; Plus 13/12; Sparkles 28; CheckCircle 11 only when done; X 13/20; Pencil 14; ChevronDown 14; Trash2 14 | DateTabView.swift:133,143,154,178,191,216,226,239,275,293,312,325,347,411,454 | BEDA BENTUK |
+| Settings root | Camera 9; Pencil 12; ChevronRight 16; BadgeDollarSign 18; Settings 18; CatIcon 17; edit/delete 13; Download/Upload/Trash2 18 on Data cards | SettingsView.swift:183,223,273,386,411,435,460,528,837,1082,1096,1177,1190,1205,1428; SettingsCategoryManagerSheet.swift:142,170,192,236,284; SettingsBudgetSheet.swift:90 | BEDA BENTUK; category/data symbols differ between Lucide and SF |
+| Settings — Appearance/theme modal | Moon/Sun 18; custom SunMoon SVG 18; Globe 18; Palette 18; PresetIcon 11/12 (Leaf, Waves, Grape, Apple, Citrus, Wind, PaintbrushVertical); PaintbrushVertical 12; CheckCircle 10/12; X 16 | SettingsView.swift:324,335,367,386,411,435,460,470,528,586–594 | BEDA BENTUK; SALAH mappings: PWA Purple=Grape, Rose=Apple, Orange=Citrus, Custom=PaintbrushVertical; native substitutes sparkles, heart, sun.max and wind |
+| Settings — Notifications/Reminder modal | Bell/BellOff 18; X 16; BadgeInfo 18; BellRing 18; ChevronRight 16; Reminder title Bell 18, hero Bell 22, row Bell 18, close X 14 | SettingsView.swift:715,723,742,774,823,837; SettingsFeatureSheets.swift:40,49,143,183,287 | BEDA BENTUK; enabled/disabled concept retained with bell.fill/bell.slash.fill |
+| Settings — Category menu/budget | ChevronRight 16; BadgeDollarSign 18; Settings 18; CatIcon 17; ICON_OPTIONS picker 16 | SettingsView.swift:1046,1060,1082,1096; SettingsBudgetSheet.swift:90; SettingsCategoryManagerSheet.swift:142,236,284 | BEDA BENTUK; SALAH: native Other category uses square.grid.2x2.fill vs PWA Package |
+| Modal — Quick Add/editor/calculator | Calculator2 alias→Calculator 16; Calendar 14; CatIcon 11; Trash2 13; Camera 14; ImagePlus 14; X 12 | TransactionEditorSheet.swift:140,175,190,212,242,281,293,306 | SALAH: native function glyph is not PWA Calculator; common controls BEDA BENTUK |
+| Modal — Cicilan | CreditCard 18/32/20; Plus 13; X 14; Pencil 15; Trash2 15 | SettingsFeatureSheets.swift:40–630; RecurringTransactionsSection.swift:127,247,267,451 | BEDA BENTUK |
+| Modal — Split Bills/Patungan | Users 18/32; Plus 13; X 18; Equal 14; CheckCheck 16; User 16; Pencil 15; Trash2 15 | SplitBillsSheet.swift:43,50,60,77,147,166,183,209,218 | BEDA BENTUK; native checkmark.circle.fill/circle paid state differs from PWA CheckCheck |
+| Modal — Income edit | Smile 17; X 20 while editor is visible | Native Dashboard money-entry flow has no corresponding Smile icon call | PWA-only decorative icon; not an SF nil result |
+| Modal — Goal editor/quick savings | X 12/20; Plus 11/14; GOAL_ICONS 13; Pencil 12; CheckCircle 10 | DashboardView.swift:983,1004,1041,1060,1066,1186; goal map :1653–1670 | BEDA BENTUK; SALAH for piggybank→banknote |
+| Modal — Date Wishlist/Record Spending | X 13/20; Heart 14/36/16; Plus 12; Pencil 14; Trash2 14; CheckCircle 11; ChevronDown 14 | DateTabView.swift:143–454 | BEDA BENTUK |
+| Modal — Category Manager | ICON_OPTIONS/LUCIDE_MAP 16; CatIcon 16; Pencil/Trash2 13 | SettingsCategoryManagerSheet.swift:39–53,142,170,192,236,284; MeowlettTransaction.swift:63–114 | BEDA BENTUK generally; SALAH for piggybank→banknote and Other→square.grid.2x2.fill |
+| Modal — Data/Backup/Restore/Reset | Download/Upload/Trash2 18 | SettingsView.swift:1177,1190,1205 (dataAction size 18) | BEDA BENTUK |
+| Modal — Overall monthly budget | Wallet 18; X 13 | DashboardView.swift:1272,1378 | BEDA BENTUK |
+| Modal — Story card | Download 15 on download action | ReportsView.swift:998 | BEDA BENTUK |
+| Modal — Daily Note | Book 18 while PWA Daily Note modal is shown | No corresponding native Daily Note presenter found in current audit | PWA-only feature; not an SF availability failure |
+
+### SF Symbol probe
+- Added testSFSymbolAvailabilityInventory to the existing MeowlettUITests target. It checks direct literal calls and finite built-in map values with UIImage(systemName:).
+- Static inventory contains 116 unique symbol names and 277 source-location records.
+- Each location prints NAMA | file:baris | nil/ada; a zero-size image is separately reported as 0x0. Each unique name is passed once to UIImage(systemName:).
+- No assertion is used, so nil does not fail the test. The complete report is an XCTAttachment in the .xcresult.
+- ios-native.yml already uploads the .xcresult with if: always() and 14-day retention. Runtime values and new artifact contents remain BELUM TERVERIFIKASI until CI is inspected.
+
+### Live screenshot decision — Rincian Kategori
+- App.jsx:3092 uses ChartPie at size 13; icons.jsx resolves it as _ChartPie || BarChart2.
+- The actual ref-live/beranda-light.png from PWA Reference Screenshots Run #6 was opened and its Rincian Kategori glyph enlarged: it consists of three vertical bars, not a pie wedge.
+- Browser-live therefore renders BarChart2. Native DashboardView.swift:1352 uses chart.pie, so this mapping is SALAH. This is screenshot-based, not inferred from the JSX identifier.
+
+### Verification boundary
+- Static changes only. Simulator compilation/execution, actual nil/available results and the new diagnostics artifact contents remain BELUM TERVERIFIKASI.
+- No app screen, app source outside the existing test, PWA source, workflow, main branch or PR status was changed. PR #2 remains Draft. No merge, rebase, force-push or deletion.
