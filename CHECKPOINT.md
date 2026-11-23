@@ -1093,3 +1093,32 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - No source or workflow changes were made while the run was active. No changes directly to `main`, no merge, and no deletion.
 - Next: recheck Run #315; once it completes, inspect the logs and xcresult, then confirm device build, IPA, and all 14 Light/Dark screenshots. Visually inspect the preview artifact before marking R2 complete.
 - R2 remains **NOT COMPLETE**. Do not begin R3 or claim full icon visual parity until the required validations pass.
+
+## R2 — Run #315 diagnosis and bundle-loader repair (24 November 2026, 02:00 WIB)
+
+### Run #315 final result
+- Run #315: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45229972731
+- Head SHA: `25c5045a81a49bce5232977539ff2f4d6594abfa`.
+- Simulator app build: SUCCESS.
+- Native UI smoke tests: FAILURE, 1 failure out of 19 tests; 18 other tests passed (825.079 seconds of XCTest execution).
+- Sole failing test: `testMeowIconCatalogContainsEveryDeclaredKey`. It reported every declared Lucide icon and alias as missing geometry. The previous linker issue was resolved; the test actually launched and ran.
+- The GitHub job log confirms the compressed resource was copied to the app bundle root and to the UI-test bundle root as `lucide-icons.json.z`. It also confirms no test-linker error. The compressed file was independently checked: zlib decompression yields valid JSON with 99 icons, 323 vector nodes, schemaVersion 1, and the expected `icons[].node` layout.
+- Diagnostic artifact: `Meowlett-UI-Test-Diagnostics-45229972731-1`, artifact ID `14848705811`, expires 7 December 2026. The job log's exact XCTest assertion and the bundle-copy commands are the available diagnosis; no app/device validation occurred after the test gate.
+
+### Loader repair
+- Commit `255bcc109ce427464be9d4e5cc7910f95b18b249` (`fix: resolve Lucide catalog from owning bundle`):
+  - Changes the bundle token to an `NSObject` subclass so `Bundle(for:)` resolves a concrete owning bundle.
+  - Searches the token bundle, `Bundle.main`, loaded bundles, and frameworks for the resource before giving up.
+  - Enlarges the decompression buffer and returns explicit diagnostics for missing/unreadable resource, decompression failure, invalid JSON, unexpected schema, or the successfully loaded icon count/path count.
+- Commit `5fd594470feef186fa5e56e1cd19c44318cbf4ff` (`test: report Lucide catalog resource diagnostics`) logs the loader diagnostic from the catalog test.
+- The resource copy commands from Run #315 prove both bundles received the file. The exact reason the previous `Bundle(for:)` lookup returned no paths was not logged in that run, so the new run's diagnostic will distinguish bundle selection from decompression or JSON parsing.
+
+### Current validation run
+- Run #316: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45244295813 — intermediate source-only commit; cancelled automatically by the following test-diagnostic commit. No failure conclusion from this run.
+- Run #317: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45244303195
+- Head SHA: `5fd594470feef186fa5e56e1cd19c44318cbf4ff`.
+- Job ID: `137936937441`.
+- At 02:00 WIB, Xcode project generation and scheme discovery succeeded; simulator build was in progress. UI tests, device build, IPA, and Light/Dark previews were pending.
+- PR #2 remains OPEN and Draft, base `main`. No direct `main` edits, merge, branch deletions, or workflow deletions.
+- Next: let Run #317 finish; inspect the `[MeowIconCatalog]` diagnostic and test outcomes. If the catalog test passes, proceed through iPhone device build, IPA, and Light/Dark previews; visually inspect preview artifacts before declaring R2 complete.
+- R2 remains **NOT COMPLETE**. Do not begin R3 or claim full icon parity until all required validations pass.
