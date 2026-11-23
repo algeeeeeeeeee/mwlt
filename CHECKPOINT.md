@@ -1122,3 +1122,16 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - PR #2 remains OPEN and Draft, base `main`. No direct `main` edits, merge, branch deletions, or workflow deletions.
 - Next: let Run #317 finish; inspect the `[MeowIconCatalog]` diagnostic and test outcomes. If the catalog test passes, proceed through iPhone device build, IPA, and Light/Dark previews; visually inspect preview artifacts before declaring R2 complete.
 - R2 remains **NOT COMPLETE**. Do not begin R3 or claim full icon parity until all required validations pass.
+
+## R2 — Home balance-card sticky/frosted-glass request (24 November 2026, 02:08 WIB)
+
+- User's requested native Home improvement: keep the balance card fixed while scrolling Home content; preserve the existing frosted header above it; add a frosted-glass band below the card so the scrolling cards/content pass beneath and become blurred there.
+- PWA reference was inspected in `src/components/TabDashboard.jsx`: balance card visual content/values are the reference, but PWA currently renders it inside its scrolling dashboard column. The sticky behavior is a deliberate native UX enhancement requested by the user; do not alter PWA implementation.
+- Native reference inspected:
+  - `MainTabView.topHeader` already uses `.ultraThinMaterial`, with a dark/light tint overlay and shadow.
+  - `DashboardView.body` currently places `balanceCard` as the first item inside its `ScrollView`; it therefore scrolls away with the other Home cards.
+  - The current content top inset is 77 pt to position below the fixed header.
+- Planned implementation: retain the balance card's layout height in the scroll content using a non-interactive/invisible spacer; render the interactive card as a fixed overlay at the existing 77 pt top offset; add a full-width ultra-thin material fade strip below it. This should keep the content's initial layout unchanged while allowing lower cards to scroll underneath the pinned card/glass region.
+- Add a native UI regression test asserting the balance card frame remains fixed after scrolling while the Financial Health section moves.
+- At this checkpoint, no code for the sticky-card change has been committed yet. Run #317 is still active at native UI smoke tests after a successful simulator build; avoid cancelling it until the loader diagnosis completes.
+- PR #2 remains OPEN and Draft, base `main`; never merge.
