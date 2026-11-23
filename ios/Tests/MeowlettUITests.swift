@@ -1,6 +1,6 @@
 import XCTest
 import UIKit
-@testable import Meowlett
+import Meowlett
 
 final class MeowlettUITests: XCTestCase {
 

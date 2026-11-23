@@ -165,7 +165,7 @@ private struct MeowIconNode {
 
 private final class MeowIconBundleToken {}
 
-enum MeowIconCatalog {
+public enum MeowIconCatalog {
     private static let aliases: [String: String] = [
         "utensil": "Utensils", "utensils": "Utensils", "fork.knife": "Utensils",
         "coffee": "Coffee", "cup.and.saucer.fill": "Coffee",
@@ -291,7 +291,7 @@ enum MeowIconCatalog {
         return result
     }()
 
-    static var missingKeys: [String] {
+    public static var missingKeys: [String] {
         let missingDeclared = MeowIconKey.allCases.map(\.rawValue).filter { path(for: $0) == nil }
         let missingAliases = aliases.keys.sorted().filter { path(for: $0) == nil }.map { "alias:\($0)" }
         return missingDeclared + missingAliases
