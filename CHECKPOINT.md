@@ -1169,3 +1169,11 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - The UI suite now has the existing 19 tests plus `testDashboardBalanceCardStaysPinnedWhileHomeContentScrolls`.
 - No UI-test diagnostics artifact has been uploaded yet. iPhone device build, IPA packaging, and preview capture/validation remain pending.
 - No source edits after commit `eb12a46fa34324cad21b5f6514ee88051c903527`; later commits only update `CHECKPOINT.md`.
+
+## User-requested parallel unsigned IPA build (24 November 2026, about 02:20 WIB)
+
+- User requested an IPA first while the full native build continues.
+- Triggered the standalone `ios-ipa-rc.yml` workflow with this Markdown-only checkpoint commit. The commit message contains `[ipa]` so the RC workflow builds immediately; `ios-native.yml` has `paths-ignore: '**.md'`, so this checkpoint-only push does not cancel Run #318.
+- The standalone IPA workflow checks Release bundle metadata, executable presence, registered fonts, and rejects a bundled Mach-O WebKit dependency, then packages and uploads an unsigned IPA artifact. It explicitly does not run UI tests; the full native workflow remains the authoritative UI/preview validation.
+- Source code is unchanged from `eb12a46fa34324cad21b5f6514ee88051c903527` (pinned balance card, frosted glass, icon-loader repair and new regression test). Only this checkpoint file changed for the trigger.
+- Continue monitoring Run #318 for XCTest, iPhone device build, the main unsigned IPA, and Light/Dark preview validation. Do not treat standalone RC success as completion of R2.
