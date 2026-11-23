@@ -932,3 +932,20 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - A local synthetic fixture exercised parsing of nested goal maps, preset/category aliases, module node loading, missing-name reporting shape, and all five required aliases (5/5 fixture icons resolved). This is a parser/fixture test, not verification against the actual CI-installed Lucide package.
 - Actual installed `lucide-react` version, the five icon module files/nodes, generated `reference/out/icons.json`, and artifact upload remain **BELUM TERVERIFIKASI** until the newly triggered reference workflow runs.
 - Only `reference/tools/extract-icons.mjs`, `.github/workflows/ref-shots.yml`, and this checkpoint are intended to change in this commit. `reference/out/icons.json` is a workflow output and is not committed.
+
+## R2a-1 follow-up — CI syntax failure and correction (23 November 2026)
+
+### Run #7 evidence
+- Run #7 on commit `8d2fe8659044c88383fcddff7438d96d26bce938` failed at `reference/tools/extract-icons.mjs:26` with `SyntaxError: missing ) after argument list`.
+- PWA dependency installation succeeded. The extractor failed before generating `reference/out/icons.json`; the inventory upload therefore failed because the file was absent. PWA build, Playwright install, and screenshot capture were skipped. No artifacts were produced.
+- The earlier R2a-1 statement that `node --check` passed did not reflect the exact committed source used by CI. The CI result is authoritative; the synthetic fixture did not detect this parse error.
+
+### Correction
+- Commit `fb6f7f64bfc46ea75cb243eb06ce603cd4c16cca` (`ref: fix icon extractor import parsing`) changes only `reference/tools/extract-icons.mjs`.
+- The `namedImport` regular expression now handles both single-quoted and double-quoted module specifiers.
+- Local Node fixtures for `./icons.jsx` (double quotes) and `lucide-react` (single quotes) passed.
+- No PWA UI/source, workflow, or native Swift source was changed. No merge, branch deletion, or main-branch edit was made.
+
+### Verification still outstanding
+- Combined commit status returned no check records at the time of inspection. The follow-up workflow result, installed `lucide-react` version, actual required icon nodes, generated `reference/out/icons.json`, and uploaded artifact remain **BELUM TERVERIFIKASI**.
+- Do not begin R2b until `icons.json` is successfully generated and inspected.
