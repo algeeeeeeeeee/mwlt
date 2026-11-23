@@ -29,14 +29,8 @@ function namedImport(source, specifier) {
   return match ? { block: match[1], full: match[0] } : null;
 }
 
-function extractIconNode(moduleSource, expectedSlug) {
-  const call = /createLucideIcon\s*\(\s*(['"])([^'"]+)\1\s*,/g.exec(moduleSource);
-  if (!call) throw new Error('createLucideIcon call not found in module');
-  if (call[2] !== expectedSlug) {
-    throw new Error('module icon name "' + call[2] + '" does not match file "' + expectedSlug + '"');
-  }
-
-  let argumentStart = call.index + call[0].length;
+function parseJavaScriptLiteral(moduleSource, literalStart) {
+  let index = literalStart;
 
   function skipTrivia(source, position) {
     let i = position;
@@ -58,42 +52,18 @@ function extractIconNode(moduleSource, expectedSlug) {
     return i;
   }
 
-  argumentStart = skipTrivia(moduleSource, argumentStart);
-  let literalStart = argumentStart;
-
-  if (moduleSource[literalStart] !== '[') {
-    const argument = /^[A-Za-z_$][\w$]*/.exec(moduleSource.slice(literalStart));
-    if (!argument) throw new Error('unsupported createLucideIcon iconNode argument');
-    if (argument[0] !== '__iconNode') {
-      throw new Error('unexpected iconNode reference: ' + argument[0]);
-    }
-
-    const declaration = /(?:export\s+)?(?:const|let|var)\s+__iconNode(?:\s*:\s*[^=\n]+)?\s*=/g.exec(moduleSource);
-    if (!declaration) throw new Error('__iconNode declaration not found in module');
-    literalStart = skipTrivia(moduleSource, declaration.index + declaration[0].length);
-  }
-
-  let index = literalStart;
-
   function parseString() {
     const quote = moduleSource[index];
     index += 1;
     let value = '';
-
     while (index < moduleSource.length) {
       const ch = moduleSource[index];
       index += 1;
-
       if (ch === quote) return value;
-      if (ch !== '\\') {
-        value += ch;
-        continue;
-      }
-
+      if (ch !== '\\') { value += ch; continue; }
       if (index >= moduleSource.length) throw new Error('unterminated string escape');
       const escaped = moduleSource[index];
       index += 1;
-
       if (escaped === 'n') value += '\n';
       else if (escaped === 'r') value += '\r';
       else if (escaped === 't') value += '\t';
@@ -102,9 +72,8 @@ function extractIconNode(moduleSource, expectedSlug) {
       else if (escaped === 'v') value += '\v';
       else if (escaped === '0') value += '\0';
       else if (escaped === '\n') continue;
-      else if (escaped === '\r') {
-        if (moduleSource[index] === '\n') index += 1;
-      } else if (escaped === 'x') {
+      else if (escaped === '\r') { if (moduleSource[index] === '\n') index += 1; }
+      else if (escaped === 'x') {
         const hex = moduleSource.slice(index, index + 2);
         if (!/^[\da-f]{2}$/i.test(hex)) throw new Error('invalid hexadecimal string escape');
         value += String.fromCharCode(parseInt(hex, 16));
@@ -114,11 +83,8 @@ function extractIconNode(moduleSource, expectedSlug) {
         if (!/^[\da-f]{4}$/i.test(hex)) throw new Error('invalid unicode string escape');
         value += String.fromCharCode(parseInt(hex, 16));
         index += 4;
-      } else {
-        value += escaped;
-      }
+      } else value += escaped;
     }
-
     throw new Error('unterminated string literal in icon module');
   }
 
@@ -169,7 +135,6 @@ function extractIconNode(moduleSource, expectedSlug) {
         index += 1;
         object[key] = parseValue();
         index = skipTrivia(moduleSource, index);
-
         if (moduleSource[index] === ',') {
           index += 1;
           index = skipTrivia(moduleSource, index);
@@ -200,9 +165,56 @@ function extractIconNode(moduleSource, expectedSlug) {
     throw new Error('unsupported JavaScript value in icon node at offset ' + index);
   }
 
-  const node = parseValue();
-  if (!Array.isArray(node)) throw new Error('parsed iconNode is not an array');
-  return node;
+  const value = parseValue();
+  return { value, end: index };
+}
+
+function extractIconNode(moduleSource) {
+  const call = /createLucideIcon\s*\(\s*(['"])([^'"]+)\1\s*,/g.exec(moduleSource);
+  if (!call) {
+    const alias = /export\s*\{\s*default(?:\s+as\s+[\w$]+)?\s*\}\s*from\s*['"]\.\/([a-z0-9-]+)['"]/i.exec(moduleSource);
+    if (alias) return { aliasTarget: alias[1] + '.js' };
+    throw new Error('neither createLucideIcon call nor default re-export found in module');
+  }
+
+  let literalStart = call.index + call[0].length;
+  while (/\s/.test(moduleSource[literalStart] || '')) literalStart += 1;
+
+  if (moduleSource[literalStart] !== '[') {
+    const argument = /^[A-Za-z_$][\w$]*/.exec(moduleSource.slice(literalStart));
+    if (!argument) throw new Error('unsupported createLucideIcon iconNode argument');
+    if (argument[0] !== '__iconNode') {
+      throw new Error('unexpected iconNode reference: ' + argument[0]);
+    }
+    const declaration = /(?:export\s+)?(?:const|let|var)\s+__iconNode(?:\s*:\s*[^=\n]+)?\s*=/g.exec(moduleSource);
+    if (!declaration) throw new Error('__iconNode declaration not found in module');
+    literalStart = declaration.index + declaration[0].length;
+    while (/\s/.test(moduleSource[literalStart] || '')) literalStart += 1;
+  }
+
+  const parsed = parseJavaScriptLiteral(moduleSource, literalStart);
+  if (!Array.isArray(parsed.value)) throw new Error('parsed iconNode is not an array');
+  return { node: parsed.value, componentName: call[2] };
+}
+
+async function loadIconNode(file, seen = new Set()) {
+  if (seen.has(file)) throw new Error('icon module re-export cycle: ' + [...seen, file].join(' -> '));
+  seen.add(file);
+  const fullPath = path.join(iconsDir, file);
+  const moduleSource = await readFile(fullPath, 'utf8');
+  const extracted = extractIconNode(moduleSource);
+
+  if (extracted.aliasTarget) {
+    const nested = await loadIconNode(extracted.aliasTarget, seen);
+    return { ...nested, aliasChain: [file, ...(nested.aliasChain || [])] };
+  }
+
+  return {
+    node: extracted.node,
+    componentName: extracted.componentName,
+    resolvedFile: file,
+    aliasChain: [file],
+  };
 }
 
 function specifiers(block) {
@@ -317,9 +329,17 @@ for (const name of [...iconUses.keys()].sort()) {
   const file = iconFile(name);
   const fullPath = path.join(iconsDir, file);
   try {
-    const moduleSource = await readFile(fullPath, 'utf8');
-    const node = extractIconNode(moduleSource, file.slice(0, -3));
-    iconData.push({ name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: true, node, usedAs: [...iconUses.get(name)].sort() });
+    const loaded = await loadIconNode(file);
+    iconData.push({
+      name,
+      file: 'node_modules/lucide-react/dist/esm/icons/' + file,
+      resolvedFile: 'node_modules/lucide-react/dist/esm/icons/' + loaded.resolvedFile,
+      aliasChain: loaded.aliasChain,
+      componentName: loaded.componentName,
+      found: true,
+      node: loaded.node,
+      usedAs: [...iconUses.get(name)].sort(),
+    });
   } catch (error) {
     const item = { name, file: 'node_modules/lucide-react/dist/esm/icons/' + file, found: false, reason: error.message || String(error), usedAs: [...iconUses.get(name)].sort() };
     missing.push(item);
