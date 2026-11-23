@@ -1032,3 +1032,33 @@ Legend: BEDA BENTUK = same broad role, different Lucide/SF glyph; SALAH = semant
 - Earlier runs #308, #309, and #310 were cancelled by newer commits while R2 was being corrected. Use Run #311 as the current full validation run.
 - **Do not mark R2 complete until Run #311 reaches a conclusion, UI test `testMeowIconCatalogContainsEveryDeclaredKey` passes, and the native preview artifact has been inspected.** If compile/test/preview fails, fix only the diagnosed issue and rerun CI.
 - PR #2 must remain OPEN and Draft, base `main`. Do not merge or close it.
+
+## R2 — UI-test bundle linker repair (23 November 2026; latest native CI queued)
+
+### Recent validation failures and exact diagnosis
+- Run #311: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45225920697 — simulator app build succeeded; UI test link failed with undefined symbol `Meowlett.MeowIconCatalog.missingKeys.getter`.
+- Run #312: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45226712273 — same linker failure after making the catalog public and importing the app module from the UI-test target. That approach did not solve how this UI test bundle links app-target Swift symbols.
+- Both failures occurred before any UI tests executed. No evidence yet that the icon resource decodes at runtime.
+
+### Latest fix
+- Commit `79ffa4e113a5a666232a36fede318aa700efe21e` (`test: compile Lucide catalog with UI test bundle`):
+  - Adds `ios/Sources/Theme/MeowIcon.swift` as a source in the `MeowlettUITests` target as well as the app target.
+  - Adds `ios/Resources/Icons` to the UI-test bundle as a resource directory.
+  - Removes `@testable import Meowlett` from UI tests.
+  - Returns `MeowIconCatalog` and `missingKeys` to internal visibility; the UI-test bundle compiles the same renderer source locally, avoiding the cross-target undefined symbol.
+  - The catalog test now executes against the test bundle containing the compressed Lucide resource, so it can verify actual resource loading/decompression and icon-key geometry.
+- Commit `2fc5e40c28ef5d70bb006e6d4bca7e6f3ced2a6d` is an empty-tree CI trigger commit (no file changes). The source tree is identical to `79ffa4e`.
+
+### CI state
+- Run #313: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45229431224
+- Run #313 head SHA: `79ffa4e113a5a666232a36fede318aa700efe21e`; same source tree as current branch head `2fc5e40c28ef5d70bb006e6d4bca7e6f3ced2a6d`.
+- At checkpoint time, the native iOS job exists but remains `queued`; it has not begun and has no step results yet. This is a GitHub macOS runner queue, not a reported source/test failure.
+- The app simulator build was successful on runs #311 and #312; their UI-test linker step failed. Device build, IPA packaging, and native Light/Dark screenshot tasks were skipped because UI smoke tests failed.
+
+### Current project safety and handoff
+- Working branch: `native-swift-parity`.
+- PR #2 state: OPEN, Draft, base `main`; do not merge or close.
+- Current branch head before this checkpoint: `2fc5e40c28ef5d70bb006e6d4bca7e6f3ced2a6d`.
+- No changes directly to `main`, no branch/file/workflow deletions, and no merge.
+- Next required action: inspect Run #313 until the native job begins; verify simulator build, UI smoke tests including `testMeowIconCatalogContainsEveryDeclaredKey`, device build, IPA, and Light/Dark preview artifact. Inspect the preview before calling R2 complete. If another failure occurs, use the job logs/xcresult first and fix only the evidenced cause.
+- R2 is **NOT COMPLETE** until the UI test, native device build and previews all pass/are inspected. Do not begin R3 or claim full icon visual parity before then.
