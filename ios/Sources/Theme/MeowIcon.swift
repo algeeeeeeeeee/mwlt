@@ -33,6 +33,7 @@ enum MeowIconKey: String, CaseIterable {
     case chevronDown = "ChevronDown"
     case chevronRight = "ChevronRight"
     case circle = "Circle"
+    case circlePlus = "CirclePlus"
     case circleDollarSign = "CircleDollarSign"
     case citrus = "Citrus"
     case clock = "Clock"
