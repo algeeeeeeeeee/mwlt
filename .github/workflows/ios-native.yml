@@ -18,7 +18,7 @@ permissions:
 concurrency:
   # Version the group so a runner cleanup from an older workflow cannot hold
   # a newer native build in the pending state.
-  group: meowlett-native-ios-v9-${{ github.ref }}
+  group: meowlett-native-ios-v10-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
