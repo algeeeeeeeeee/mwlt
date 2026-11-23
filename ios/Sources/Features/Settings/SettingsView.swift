@@ -845,10 +845,6 @@ private struct SettingsNotificationsSheet: View {
                         }
                     }
                     .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 28)                    }
-                    .buttonStyle(.plain)
                     .accessibilityIdentifier("mwlt.settings.notifications.reminder")
                 }
                 .padding(.horizontal, 20)

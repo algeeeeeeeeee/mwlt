@@ -311,9 +311,6 @@ struct MainTabView: View {
                     .background(Color.primary.opacity(colorSchemeIsDark ? 0.07 : 0.05), in: Circle())
             }
             .buttonStyle(.plain)
-            Button {
-                // Preserve the stable header navigation interaction from the last working baseline.            }
-            .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.header.appearance")
             .accessibilityValue(colorSchemeIsDark ? "dark" : "light")
             Button {
@@ -366,9 +363,6 @@ struct MainTabView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 16)            }
             .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.header.profilePhoto")
         }

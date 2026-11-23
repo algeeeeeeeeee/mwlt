@@ -55,8 +55,6 @@ struct NativeSplitBillsSheet: View {
                         .background(AppAppearance.primary, in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
-                Button { dismiss() } label: {                }
-                .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.transactions.splitBills.add")
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
@@ -65,9 +63,6 @@ struct NativeSplitBillsSheet: View {
                         .frame(width: 30, height: 30)
                         .background(AppAppearance.card2(dark: isDark), in: Circle())
                 }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 18)                }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.transactions.splitBills.close")
             }

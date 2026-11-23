@@ -296,8 +296,6 @@ struct DashboardView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                Spacer()
-                VStack(alignment: .trailing, spacing: 2) {                .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.dashboard.income.edit")
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {

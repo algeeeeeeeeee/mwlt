@@ -729,3 +729,43 @@ All requested paths exist under `reference/pwa/`:
 - Simulator lokal tidak tersedia, sehingga test/build lokal **BELUM TERVERIFIKASI**.
 - Test baru, suite penuh, build simulator/device, dan kestabilan tap header gear **BELUM TERVERIFIKASI** hingga CI.
 - Tidak mengubah \`main\`, tidak merge PR #2, tidak menghapus file/branch/workflow. PR #2 tetap Draft.
+
+
+## R3 compile repair — syntax damage from commit 1074fc7 (23 November 2026)
+
+### Basis and diagnosis
+- Basis branch HEAD: `1074fc7023ff2e9ceceee4fada03d8c88df70ed2`; Run #303 (`ios-native.yml`) failed during `SwiftCompile` before any UI test executed.
+- Opened the commit diff against parent `a8a9d78367ad714d5b407bc5247bbc20ae83cd6e` for the eight affected Swift files.
+- The diff showed duplicated fragments inserted mid-expression: orphan `.buttonStyle` / `.accessibilityIdentifier` chains, extra closing braces, one stray `VStack` opener, placeholder empty Buttons, and duplicate parent padding blocks. The errors in the Run #303 compiler log were cascading consequences of these malformed hunks.
+
+### Minimal corrections (no full or partial file revert)
+- `DashboardView.swift`: removed the stray `VStack` opener/duplicate spacer; kept the income edit accessibility ID on its existing Button.
+- `DateTabView.swift`: attached the wishlist Save ID to its existing Button and removed the duplicate closure/padding fragment.
+- `MainTabView.swift`: moved appearance and profile-photo IDs onto their existing controls; removed the malformed placeholder Button and duplicate header closures.
+- `RecurringTransactionsSection.swift`: attached Cicilan/Patungan IDs to the existing standard Buttons; removed two orphan separator/closure fragments. The child presenter remains removed.
+- `ReportsView.swift`: attached export/cancel/download IDs to their real Buttons; removed the malformed duplicate export-card container, placeholder action Button, and malformed Text fragment.
+- `SettingsFeatureSheets.swift`: attached Reminder Save and Cicilan Add/Close IDs to their original Buttons; removed the empty placeholder Button and duplicate header closure.
+- `SettingsView.swift`: attached the reminder-row ID to its original Button; removed the duplicate parent-stack closure/modifier fragment.
+- `SplitBillsSheet.swift`: attached Patungan Add/Close IDs to their original Buttons; removed the empty placeholder Button and duplicate header closure.
+- No feature, data flow, action handler, or user-visible business logic was added or changed. No file was reverted.
+
+### Pre-push validation
+| Swift file | `{` count | `}` count |
+|---|---:|---:|
+| `DashboardView.swift` | 379 | 379 |
+| `DateTabView.swift` | 108 | 108 |
+| `MainTabView.swift` | 117 | 117 |
+| `RecurringTransactionsSection.swift` | 144 | 144 |
+| `ReportsView.swift` | 311 | 311 |
+| `SettingsFeatureSheets.swift` | 160 | 160 |
+| `SettingsView.swift` | 309 | 309 |
+| `SplitBillsSheet.swift` | 90 | 90 |
+
+- All eight raw brace counts match.
+- `.allowsHitTesting(false)` counts are unchanged from the R3 commit in every affected file: DashboardView.swift 2→2; DateTabView.swift 3→3; MainTabView.swift 5→5; RecurringTransactionsSection.swift 0→0; ReportsView.swift 4→4; SettingsFeatureSheets.swift 0→0; SettingsView.swift 0→0; SplitBillsSheet.swift 0→0.
+- The single `.sheet(item: $activeSheet)` remains in `TransactionsView.swift` (count 1); `RecurringTransactionsSection.swift` has no sheet presenter (count 0).
+- Empty placeholder dismiss Buttons in the eight files: none.
+- A local Swift toolchain is available. `swiftc -parse` passed on a syntax fixture containing the repaired Button/modifier/container patterns. Parsing the eight complete repository files locally: **BELUM TERVERIFIKASI** because repository connector source content was not available as local source files in this runtime.
+- Commit/push workflow lookup: pending one post-push check; no CI polling or waiting.
+
+PR #2 remains Draft; no merge, rebase, force-push, branch deletion, or workflow change.

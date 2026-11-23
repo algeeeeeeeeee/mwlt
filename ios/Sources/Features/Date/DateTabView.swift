@@ -430,9 +430,6 @@ struct DateTabView: View {
                     .background(datePink, in: RoundedRectangle(cornerRadius: 14))
             }
             .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 22)            .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.date.wishlist.save")
         }
         .padding(.horizontal, 20)

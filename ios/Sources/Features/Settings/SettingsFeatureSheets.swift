@@ -96,7 +96,6 @@ struct SettingsReminderSheet: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 16)                    .buttonStyle(.plain)
                     .accessibilityIdentifier("mwlt.settings.reminder.save")
                     .padding(.horizontal, 16)
                     .padding(.top, 14)
@@ -513,16 +512,13 @@ struct SettingsCicilanSheet: View {
                         .background(LinearGradient(colors: [AppAppearance.accent, AppAppearance.primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
-                Button { dismiss() } label: {                }
-                .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.transactions.installments.add")
                 Button { dismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.secondary).frame(width: 30, height: 30)
                         .background(Color(uiColor: .secondarySystemBackground), in: Circle())
-                }.buttonStyle(.plain)
-            }
-            .padding(.horizontal, 20).padding(.vertical, 14)                }.buttonStyle(.plain)
+                }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("mwlt.transactions.installments.close")
             }
             .padding(.horizontal, 20).padding(.vertical, 14)

@@ -627,10 +627,6 @@ struct ReportsView: View {
                     .overlay(RoundedRectangle(cornerRadius: 13).stroke(AppAppearance.border(dark: isDark), lineWidth: 1.5).allowsHitTesting(false))
             }
             .buttonStyle(.plain)
-        }
-        .padding(13)
-        .background(AppAppearance.card(dark: isDark), in: RoundedRectangle(cornerRadius: 16))            }
-            .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.reports.exportImage")
         }
         .padding(13)
@@ -994,10 +990,6 @@ struct ReportsView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.20), lineWidth: 1.5))
                     }
                     .buttonStyle(.plain)
-
-                    Button {
-                        exportStoryImage()                    }
-                    .buttonStyle(.plain)
                     .accessibilityIdentifier("mwlt.reports.story.cancel")
 
                     Button {
@@ -1010,10 +1002,6 @@ struct ReportsView: View {
                             .padding(.vertical, 12)
                             .background(LinearGradient(colors: [accent, primary], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 14))
                     }
-                    .buttonStyle(.plain)
-                }
-
-                Text(isEnglish ? "Tap outside to close"                    }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("mwlt.reports.story.download")
                 }

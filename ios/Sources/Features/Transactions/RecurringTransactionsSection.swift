@@ -143,10 +143,6 @@ struct RecurringTransactionsSection: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-
-            Rectangle()
-                .fill(AppAppearance.border(dark: isDark))            }
-            .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.transactions.installments")
 
             Rectangle()
@@ -167,9 +163,6 @@ struct RecurringTransactionsSection: View {
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-        }
-        .padding(.vertical, 3)            }
             .buttonStyle(.plain)
             .accessibilityIdentifier("mwlt.transactions.splitBills")
         }
