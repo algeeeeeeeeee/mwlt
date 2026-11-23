@@ -3,9 +3,51 @@ import XCTest
 final class MeowlettUITests: XCTestCase {
 
     @MainActor
+    private func capturePostSplashNavigationDiagnostics(_ app: XCUIApplication) {
+        // The app content stays accessibility-hidden until RootView removes its splash overlay.
+        let splashTitle = app.staticTexts["mwlt.splash.title"]
+        if splashTitle.waitForExistence(timeout: 3) {
+            let splashRemoved = expectation(
+                for: NSPredicate(format: "exists == false"),
+                evaluatedWith: splashTitle,
+                handler: nil
+            )
+            let result = XCTWaiter.wait(for: [splashRemoved], timeout: 10)
+            print("[MeowlettPostSplash] splashRemovalWait=\(result)")
+        } else {
+            let dashboardVisible = app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 15)
+            print("[MeowlettPostSplash] splashTitleNotObserved dashboardVisible=\(dashboardVisible)")
+        }
+
+        print("[MeowlettPostSplash] app.debugDescription BEGIN")
+        print(app.debugDescription)
+        print("[MeowlettPostSplash] app.debugDescription END")
+
+        let targets: [(String, XCUIElement)] = [
+            ("mwlt.tab.dashboard", app.buttons["mwlt.tab.dashboard"]),
+            ("mwlt.tab.transactions", app.buttons["mwlt.tab.transactions"]),
+            ("mwlt.tab.report", app.buttons["mwlt.tab.report"]),
+            ("mwlt.tab.date", app.buttons["mwlt.tab.date"]),
+            ("mwlt.header.settings", app.buttons["mwlt.header.settings"])
+        ]
+        for (identifier, element) in targets {
+            let isExists = element.exists
+            let isHittable = isExists && element.isHittable
+            print("[MeowlettPostSplash] \(identifier) isExists=\(isExists) isHittable=\(isHittable)")
+        }
+    }
+
+    @MainActor
     private func launchUITestApp(_ app: XCUIApplication, additionalArguments: [String] = []) {
         app.launchArguments = ["-uitest-reset", "--mwlt-preview-mode"] + additionalArguments
         app.launch()
+
+        // The splash-specific test intentionally holds this overlay until Continue is tapped.
+        let holdsSplash = additionalArguments.contains("--mwlt-test-splash")
+            || additionalArguments.contains("--mwlt-preview-splash")
+        if !holdsSplash {
+            capturePostSplashNavigationDiagnostics(app)
+        }
     }
 
     @MainActor
@@ -207,6 +249,7 @@ final class MeowlettUITests: XCTestCase {
         let continueButton = app.buttons["mwlt.splash.continue"]
         XCTAssertTrue(continueButton.waitForExistence(timeout: 8))
         continueButton.tap()
+        capturePostSplashNavigationDiagnostics(app)
 
         XCTAssertTrue(
             app.buttons["mwlt.tab.dashboard"].waitForExistence(timeout: 12),

@@ -769,3 +769,66 @@ All requested paths exist under `reference/pwa/`:
 - Commit/push workflow lookup: pending one post-push check; no CI polling or waiting.
 
 PR #2 remains Draft; no merge, rebase, force-push, branch deletion, or workflow change.
+
+
+## R3b diagnosis navigasi tab & splash (23 November 2026)
+
+### Basis dan batas kerja
+- Basis: branch `native-swift-parity`, HEAD `444a80de0427fec45d8ed6a86fced16a5bbf9766`; Run #304 (`ios-native.yml`) build simulator **SUCCESS**, step `Run native UI smoke tests` **FAILURE**; 17 test case dijalankan, 12 lulus dan 5 gagal. XCTest mencatat 14 assertion failures. Artifact diagnostik tersimpan: https://github.com/algeeeeeeeeee/mwlt/actions/runs/45134122284/artifacts/14801190385.
+- Tidak mengubah `MainTabView.swift`, `MeowlettApp.swift`, atau `NativeSplashView.swift`; tidak mengubah perilaku aplikasi. Perubahan kode hanya diagnostik UI test.
+- Semua 17 test method dipertahankan; tidak ada test yang dihapus.
+
+### 1. Audit struktur dan lapisan dari source
+
+**MainTabView root**
+`MainTabView.swift` membentuk hierarki:
+1. `GeometryReader`.
+2. Root `ZStack`: background aplikasi paling bawah, lalu inner `ZStack(alignment: .top)`.
+3. Inner ZStack berisi selected screen Group (Dashboard / Transactions / Reports / Date / Settings) dengan frame selebar/setinggi geometry.
+4. `topHeader` setelah Group, diberi `.zIndex(10)`.
+5. Di luar GeometryReader, `.overlay(alignment: .bottom) { bottomNavigation }` menaruh dock/FAB/tab di bawah konten.
+6. `.blur(radius: ...)` diterapkan ke hasil MainTabView ketika Quick Add atau modal blur aktif.
+
+Explicit zIndex dalam MainTabView: hanya `topHeader = 10`. Background, page Group, dan bottomNavigation tidak diberi nilai zIndex eksplisit. Splash berada di RootView dan memiliki `zIndex(1000)`.
+
+**Lapisan full-screen / hit-testing**
+- Page Group memang full-screen sebagai konten aktif; itu bukan lapisan transparan tambahan.
+- Tidak ditemukan overlay/loading full-screen tambahan di `MainTabView.swift`, dan file tersebut tidak menyisipkan NativeSplashView.
+- Header blur dibuat oleh `topHeader.background { Rectangle().fill(.ultraThinMaterial) ... }`; ukurannya mengikuti HStack header, bukan ukuran layar. Parent topHeader tidak memakai `allowsHitTesting(false)`, karena berisi tombol aktif. Decoration kecil (badge gear/photo serta outline/fill dock) memakai `allowsHitTesting(false)`.
+- Bottom dock ada sebagai outer bottom overlay. Gradient background-nya mengikuti area dock/navbar, bukan seluruh tinggi layar. Background bukan foreground overlay penutup konten.
+- Modifier `.blur(...)` pada MainTabView hanya memblur hasil komposit view; bukan view baru yang ditumpuk, dan tidak dengan sendirinya menonaktifkan hit-testing.
+- Splash RootView adalah pengecualian: overlay NativeSplashView memenuhi area root, diletakkan pada zIndex 1000 dan tidak memakai `allowsHitTesting(false)`. RootView secara eksplisit menyembunyikan accessibility konten di bawahnya selama splash aktif.
+
+**Splash lifecycle**
+- `RootView` menginisialisasi `@State showNativeSplash = true`.
+- `RootView.overlay` membuat NativeSplashView hanya dalam cabang `if showNativeSplash`; callback onFinish mengubah state ke false di dalam `withAnimation` (.4s normal, .18s Reduce Motion), dengan `.transition(.opacity)`. Karena cabangnya kondisional, setelah transisi selesai NativeSplashView dikeluarkan dari hierarchy, bukan sekadar dibuat transparan.
+- Pada launch normal, `NativeSplashView.task` mengisi progress lalu memanggil `onFinish()` setelah 2.7s (atau 0.45s saat Reduce Motion). Pada `--mwlt-test-splash` ia sengaja menahan splash dan memperlihatkan tombol Continue; Continue memanggil onFinish. Pada `--mwlt-preview-splash` splash juga ditahan untuk capture.
+- Kebenaran lifecycle pada perangkat/simulator tetap perlu dibaca dari diagnostik runtime baru: **BELUM TERVERIFIKASI**.
+
+**Gesture dalam MainTabView**
+- Tidak ada `.onTapGesture`, `TapGesture`, `DragGesture`, `.gesture(...)`, `.highPriorityGesture`, atau `.simultaneousGesture` pada `MainTabView.swift`.
+- Yang ditemukan hanya lifecycle hooks: `.onAppear` pada MainTabView (baris 253) dan konten Quick Add (baris 514), serta `.onChange` untuk Quick Add, selected, dan selectedHeaderPhoto (baris 257, 260, 264). Ini bukan gesture input.
+
+**Tombol navigasi**
+- Keempat tab dock dibuat dengan SwiftUI `Button` di dalam `ForEach` (bukan gesture). Identifier-nya `mwlt.tab.<rawValue>`; accessibilityValue adalah `selected` saat `selected == tab && !showQuickAdd`, selain itu `not-selected`.
+- Action Button memanggil `selectTab(tab)`. Fungsi tersebut menulis `selected = tab` langsung ketika Reduce Motion aktif; jika tidak, menulis state yang sama di dalam `withAnimation(.timingCurve(... duration: 0.22))`.
+- Tombol Settings di header juga Button standar dengan identifier `mwlt.header.settings`; action menulis `selected = .settings` di dalam spring animation.
+- Cabang judul Dashboard di header hanya menampilkan greeting dan nama pengguna; identifier `mwlt.screen.<tab>` ditempel pada judul untuk cabang tab non-Dashboard. Tidak ditemukan identifier `mwlt.screen.dashboard` pada repo. Dengan demikian helper test `tapTab("dashboard")` yang mengharuskan `mwlt.screen.dashboard` berpotensi false-negative walaupun Dashboard sudah terpilih.
+
+### 2. Diagnostik UI test yang ditambahkan
+- `capturePostSplashNavigationDiagnostics(_:) ` memeriksa splash `mwlt.splash.title` setelah launch. Jika terlihat, ia menunggu predicate `exists == false`; jika tidak terlihat, ia menunggu tombol Dashboard menjadi ada. Status hasil tunggu dicetak.
+- Setelah itu, helper mencetak seluruh `app.debugDescription`, lalu `isExists` dan `isHittable` untuk `mwlt.tab.dashboard`, `mwlt.tab.transactions`, `mwlt.tab.report`, `mwlt.tab.date`, dan `mwlt.header.settings`. Debug description menjadi snapshot hierarki/frame untuk inspeksi; tidak menggunakan API `elementAtPoint`.
+- Helper dipanggil setiap launch biasa melalui `launchUITestApp`. Untuk test yang sengaja menahan splash (`--mwlt-test-splash` / `--mwlt-preview-splash`), helper dipanggil setelah Continue; test splash tidak dihapus.
+- Jumlah test method tetap 17; semua test lama tetap ada. Hasil diagnostik runtime dari workflow baru: **BELUM TERVERIFIKASI**.
+
+### 3. Kandidat penyebab, urutan awal (semua runtime BELUM TERVERIFIKASI)
+1. **Assertion Dashboard memakai identifier yang tidak dibuat oleh UI:** kode header Dashboard memakai greeting/nama dan tidak memberi `mwlt.screen.dashboard`; sementara `tapTab("dashboard")` mengharuskan staticText identifier itu. Ini menjelaskan kegagalan pada awal `testPrimaryMenusAndHeaderUseStandardButtonTap` tanpa membuktikan tap Dashboard gagal.
+2. **Tap Button tab / pembaruan accessibilityValue untuk Transactions dan Reports:** kode menggunakan Button standar dan `selectTab` menulis state dengan benar secara eksplisit. Run #304 gagal menunggu value `selected` untuk Transactions/Report. Karena MainTabView tidak memiliki parent gesture, perlu bandingkan debugDescription, keberadaan dan isHittable pasca-splash untuk melihat apakah kontrol ada dan dapat ditap; sumber masalah event delivery vs XCTest accessibility snapshot masih **BELUM TERVERIFIKASI**.
+3. **AX action Settings pada fixed header:** tombol punya frame 44×44, contentShape Rectangle, identifier stabil dan action Button standar. Error #304 adalah `kAXErrorCannotComplete` pada `kAXScrollToVisibleAction`, bukan bukti bahwa kode action Settings tidak berjalan. Hubungan dengan container/header SwiftUI perlu bukti snapshot baru; **BELUM TERVERIFIKASI**.
+4. **Timing splash/visibility:** RootView memakai overlay full-screen zIndex 1000 dan `.accessibilityHidden(showNativeSplash)`; test helper sebelumnya tidak menunggu splash hilang secara eksplisit. Ini kandidat timing yang layak dikendalikan, tetapi tab query di test sebelumnya sudah menggunakan waitForExistence; race sebagai akar kegagalan **BELUM TERVERIFIKASI**.
+5. **Header material / bottom dock backgrounds:** material header hanya mengikuti tinggi header; dock gradient mengikuti area bawah; overlay dekoratif diberi `allowsHitTesting(false)`. Dari source, tidak terlihat view full-screen transparan yang menutupi tab setelah splash hilang. Dugaan intercept oleh blur/header/background **BELUM TERVERIFIKASI** dan kurang didukung kode.
+
+### Batas verifikasi
+- Tidak ada perubahan pada behavior/source app, tidak ada test dihapus, tidak ada perubahan workflow atau PR state.
+- UI test baru hanya mencetak state dan hierarki. Belum ada hasil simulator dari commit diagnostik ini.
+- Commit/push dilakukan satu kali; nomor/status workflow pasca-push akan dilaporkan di percakapan setelah satu pemeriksaan. Hasil build/test baru tetap **BELUM TERVERIFIKASI**.
